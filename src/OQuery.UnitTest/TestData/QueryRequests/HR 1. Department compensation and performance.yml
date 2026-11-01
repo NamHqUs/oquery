@@ -1,0 +1,23 @@
+Entity: Employees
+Projection:
+  - 'Department.Name | Department'
+  - 'COUNT(Id) | Headcount'
+  - 'ROUND(AVG(Salary), <2>) | AverageSalary'
+  - 'ROUND(SUM(Salary), <2>) | AnnualPayroll'
+  - 'ROUND(AVG(ReviewSummary.AverageRating), <2>) | AverageRating'
+  - 'ROUND(SUM(Coalesce(ReviewSummary.Bonuses, <0>)), <2>) | TotalBonuses'
+Sorts: AnnualPayroll DESC
+Page: 1
+PageSize: 10
+Contexts:
+  - Name: ReviewSummary
+    Alias: ReviewSummary
+    JoinType: Left
+    Query:
+      Entity: PerformanceReviews
+      Projection:
+        - 'EmployeeId | EmployeeId'
+        - 'AVG(Rating) | AverageRating'
+        - 'SUM(BonusAmount) | Bonuses'
+      Filter: ReviewYear = <2025>
+    Condition: Id = ReviewSummary.EmployeeId

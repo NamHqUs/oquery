@@ -1,0 +1,203 @@
+{
+  "MainQuery": {
+    "Name": "Sample-Union completed orders and active policies",
+    "Entity": "Users",
+    "Projection": [
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ],
+        "Alias": "UserId"
+      }
+    ],
+    "Filters": {
+      "logicalOperation": 1,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "CompletedOrders.UserId"
+          },
+          "operation": 13,
+          "right": null,
+          "parameterized": true
+        },
+        {
+          "logicalOperator": 1,
+          "left": {
+            "kind": "field",
+            "field": "ActivePolicies.UserId"
+          },
+          "operation": 13,
+          "right": null,
+          "parameterized": true
+        }
+      ]
+    },
+    "Sorts": null,
+    "Page": null,
+    "PageSize": null,
+    "Id": "Sample-Union completed orders and active policies",
+    "ExtraRelations": [
+      {
+        "RefContextId": "legacy-CompletedOrders",
+        "Alias": "CompletedOrders",
+        "Condition": {
+          "logicalOperation": 0,
+          "filters": [
+            {
+              "logicalOperator": 0,
+              "left": {
+                "kind": "field",
+                "field": "Id"
+              },
+              "operation": 0,
+              "right": {
+                "kind": "field",
+                "field": "CompletedOrders.UserId"
+              },
+              "parameterized": true
+            }
+          ]
+        },
+        "JoinType": "Left"
+      },
+      {
+        "RefContextId": "legacy-ActivePolicies",
+        "Alias": "ActivePolicies",
+        "Condition": {
+          "logicalOperation": 0,
+          "filters": [
+            {
+              "logicalOperator": 0,
+              "left": {
+                "kind": "field",
+                "field": "Id"
+              },
+              "operation": 0,
+              "right": {
+                "kind": "field",
+                "field": "ActivePolicies.UserId"
+              },
+              "parameterized": true
+            }
+          ]
+        },
+        "JoinType": "Left"
+      }
+    ]
+  },
+  "Contexts": [
+    {
+      "Name": "CompletedOrders",
+      "Entity": "Orders",
+      "Projection": [
+        {
+          "Fields": [
+            {
+              "kind": "field",
+              "field": "UserId"
+            }
+          ],
+          "Alias": "UserId"
+        },
+        {
+          "Fields": [
+            {
+              "kind": "function",
+              "function": "CountDistinct",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Id"
+                }
+              ]
+            }
+          ],
+          "Alias": "MatchCount"
+        }
+      ],
+      "Filters": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Status"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "value",
+              "value": "Completed"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "Sorts": null,
+      "Page": null,
+      "PageSize": null,
+      "Id": "legacy-CompletedOrders",
+      "ExtraRelations": null
+    },
+    {
+      "Name": "ActivePolicies",
+      "Entity": "Policies",
+      "Projection": [
+        {
+          "Fields": [
+            {
+              "kind": "field",
+              "field": "UserId"
+            }
+          ],
+          "Alias": "UserId"
+        },
+        {
+          "Fields": [
+            {
+              "kind": "function",
+              "function": "CountDistinct",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Id"
+                }
+              ]
+            }
+          ],
+          "Alias": "MatchCount"
+        }
+      ],
+      "Filters": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Status"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "value",
+              "value": "Active"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "Sorts": null,
+      "Page": null,
+      "PageSize": null,
+      "Id": "legacy-ActivePolicies",
+      "ExtraRelations": null
+    }
+  ],
+  "IsBuiltin": false
+}

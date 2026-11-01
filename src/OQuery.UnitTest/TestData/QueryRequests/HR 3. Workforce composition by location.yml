@@ -1,0 +1,30 @@
+Entity: Locations
+Projection:
+  - 'City | OfficeCity'
+  - State
+  - 'LocationStaff.Headcount | Headcount'
+  - 'LocationStaff.DepartmentsRepresented | DepartmentsRepresented'
+  - 'LocationStaff.FullTime | FullTime'
+  - 'LocationStaff.PartTime | PartTime'
+  - 'LocationStaff.Contractors | Contractors'
+  - 'LocationStaff.AverageTenureYears | AverageTenureYears'
+  - 'LocationStaff.AnnualPayroll | AnnualPayroll'
+Sorts: Headcount DESC, AnnualPayroll DESC, OfficeCity ASC, State ASC
+Page: 1
+PageSize: 10
+Contexts:
+  - Name: LocationStaff
+    Alias: LocationStaff
+    JoinType: Inner
+    Query:
+      Entity: Employees
+      Projection:
+        - 'LocationId | LocationId'
+        - 'COUNT(Id) | Headcount'
+        - 'CountDistinct(DepartmentId) | DepartmentsRepresented'
+        - 'CountIf(EmploymentType = <Full-time>) | FullTime'
+        - 'CountIf(EmploymentType = <Part-time>) | PartTime'
+        - 'CountIf(EmploymentType = <Contract>) | Contractors'
+        - 'ROUND(AVG((DateSub(HireDate, <2025-10-31>) / <365.25>)), <1>) | AverageTenureYears'
+        - 'ROUND(SUM(Salary), <2>) | AnnualPayroll'
+    Condition: Id = LocationStaff.LocationId

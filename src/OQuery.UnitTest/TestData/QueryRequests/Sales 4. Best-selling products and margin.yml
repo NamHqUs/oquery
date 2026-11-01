@@ -1,0 +1,14 @@
+Entity: NorthStarProducts
+Projection:
+  - 'Id | ProductId'
+  - 'Name | Product'
+  - Category
+  - 'SUM(OrderItems.Quantity) | UnitsSold'
+  - 'CountDistinct(OrderItems.Order.Id) | OrderCount'
+  - 'ROUND(SUM((OrderItems.Quantity * OrderItems.UnitPrice - OrderItems.DiscountAmount)), <2>) | NetRevenue'
+  - 'ROUND(SUM((OrderItems.Quantity * (OrderItems.UnitPrice - OrderItems.Product.CostPrice) - OrderItems.DiscountAmount)), <2>) | GrossProfit'
+  - 'ROUND((<100.0> * SUM((OrderItems.Quantity * (OrderItems.UnitPrice - OrderItems.Product.CostPrice) - OrderItems.DiscountAmount)) / NULLIF(SUM((OrderItems.Quantity * OrderItems.UnitPrice - OrderItems.DiscountAmount)), <0>)), <2>) | MarginPercent'
+Filter: OrderItems.Order.Status = <Completed>
+Sorts: GrossProfit DESC
+Page: 1
+PageSize: 10

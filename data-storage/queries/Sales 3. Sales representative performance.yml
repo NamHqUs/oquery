@@ -1,0 +1,14 @@
+Entity: Employees
+Projection:
+  - 'Id | SalesRepId'
+  - 'Concat(FirstName, < >, LastName) | SalesRep'
+  - 'Location.City | HomeCity'
+  - 'Department.Name | Department'
+  - 'CountDistinct(SalesOrders.Id) | CompletedOrders'
+  - 'SUM(SalesOrders.Items.Quantity) | UnitsSold'
+  - 'ROUND(SUM((SalesOrders.Items.Quantity * SalesOrders.Items.UnitPrice - SalesOrders.Items.DiscountAmount)), <2>) | NetSales'
+  - 'ROUND(SUM((SalesOrders.Items.Quantity * (SalesOrders.Items.UnitPrice - SalesOrders.Items.Product.CostPrice) - SalesOrders.Items.DiscountAmount)), <2>) | GrossProfit'
+Filter: Department.Name = <Retail Sales> AND SalesOrders.Status = <Completed>
+Sorts: NetSales DESC
+Page: 1
+PageSize: 10

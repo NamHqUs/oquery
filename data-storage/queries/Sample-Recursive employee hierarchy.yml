@@ -1,0 +1,17 @@
+Entity: Employees
+Projection:
+  - 'Id | Id'
+  - 'ManagerId | ManagerId'
+  - '<0> | Level'
+Filter: Id = <1>
+Contexts:
+  - Name: EmployeeTree
+    Alias: EmployeeTree
+    JoinType: Inner
+    Query:
+      Entity: Employees
+      Projection:
+        - 'Id | Id'
+        - 'ManagerId | ManagerId'
+        - 'Difference(EmployeeTree.Level, <-1>) | Level'
+    Condition: ManagerId = EmployeeTree.Id

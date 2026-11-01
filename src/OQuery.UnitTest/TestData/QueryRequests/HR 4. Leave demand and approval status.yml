@@ -1,0 +1,12 @@
+Entity: LeaveRequests
+Projection:
+  - 'Employee.Department.Name | Department'
+  - LeaveType
+  - Status
+  - 'COUNT(Id) | Requests'
+  - 'SUM(Days) | DaysRequested'
+  - 'ROUND(AVG(Days), <1>) | AverageRequestDays'
+  - 'CountDistinct(Employee.Id) | EmployeesRequesting'
+Sorts: DaysRequested DESC, Requests DESC, Department ASC, LeaveType ASC, Status ASC
+Page: 1
+PageSize: 10

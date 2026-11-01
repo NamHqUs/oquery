@@ -1,0 +1,7 @@
+Entity: Employees
+Projection:
+  - DepartmentId
+  - 'Id | EmployeeId'
+  - Salary
+  - 'Rank(DepartmentId, Salary) | DepartmentRank'
+Sorts: DepartmentId ASC, DepartmentRank ASC, EmployeeId ASC

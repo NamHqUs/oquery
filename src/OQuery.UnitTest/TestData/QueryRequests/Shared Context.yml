@@ -1,0 +1,38 @@
+Entity: User
+Projection:
+  - Name
+  - Manager1.Name
+  - Manager2.Age
+  - Manager3.Birthday
+Contexts:
+  - Name: User Context
+    Alias: Manager1
+    JoinType: Left
+    Query:
+      Entity: User
+      Projection:
+        - Id
+        - Name
+        - Age
+    Condition: ManagerId = Id
+  - Name: User Context
+    Alias: Manager2
+    JoinType: Left
+    Query:
+      Entity: User
+      Projection:
+        - Id
+        - Name
+        - Age
+    Condition: ManagerId = Id
+  - Name: Context 2
+    Alias: Manager3
+    JoinType: Left
+    Query:
+      Entity: User
+      Projection:
+        - Id
+        - Birthday
+      Page: 1
+      PageSize: 50
+    Condition: ManagerId = Id

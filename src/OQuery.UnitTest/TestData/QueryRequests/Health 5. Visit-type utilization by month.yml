@@ -1,0 +1,12 @@
+Entity: Visits
+Projection:
+  - 'MonthKey(VisitDate) | VisitMonth'
+  - VisitType
+  - 'COUNT(Id) | ScheduledVisits'
+  - 'CountIf(Status = <No-Show>) | NoShows'
+  - 'ROUND((<100.0> * CountIf(Status = <No-Show>) / COUNT(Id)), <2>) | NoShowPercent'
+  - 'ROUND(AvgIf(DurationMinutes, Status = <Completed>), <1>) | AverageMinutes'
+  - 'ROUND(SUM(Charge), <2>) | Charges'
+Sorts: ScheduledVisits DESC
+Page: 1
+PageSize: 10

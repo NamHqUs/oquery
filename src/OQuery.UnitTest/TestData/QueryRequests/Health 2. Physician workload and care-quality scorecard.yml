@@ -1,0 +1,39 @@
+Entity: Employees
+Projection:
+  - 'Id | DoctorId'
+  - 'Concat(FirstName, < >, LastName) | Physician'
+  - 'Department.Name | Department'
+  - 'Location.City | ClinicCity'
+  - 'DoctorVisits.VisitCount | VisitCount'
+  - 'DoctorVisits.PatientCount | PatientCount'
+  - 'ROUND(DoctorVisits.AverageVisitMinutes, <1>) | AverageVisitMinutes'
+  - 'ROUND(DoctorVisits.Charges, <2>) | Charges'
+  - 'ROUND((<100.0> * SUM(Coalesce(DoctorLabs.AbnormalCount, <0>)) / NULLIF(SUM(Coalesce(DoctorLabs.LabCount, <0>)), <0>)), <2>) | AbnormalLabPercent'
+Filter: Department.Name = <Primary Care> OR Department.Name = <Specialty Care> OR Department.Name = <Emergency Medicine>
+Sorts: VisitCount DESC, Charges DESC
+Page: 1
+PageSize: 10
+Contexts:
+  - Name: DoctorVisits
+    Alias: DoctorVisits
+    JoinType: Left
+    Query:
+      Entity: Visits
+      Projection:
+        - 'DoctorId | DoctorId'
+        - 'CountDistinct(Id) | VisitCount'
+        - 'CountDistinct(UserId) | PatientCount'
+        - 'AVG(DurationMinutes) | AverageVisitMinutes'
+        - 'SUM(Charge) | Charges'
+      Filter: Status = <Completed>
+    Condition: Id = DoctorVisits.DoctorId
+  - Name: DoctorLabs
+    Alias: DoctorLabs
+    JoinType: Left
+    Query:
+      Entity: LabResults
+      Projection:
+        - 'Visit.DoctorId | DoctorId'
+        - 'COUNT(Id) | LabCount'
+        - 'CountIf(IsAbnormal = <True>) | AbnormalCount'
+    Condition: Id = DoctorLabs.DoctorId

@@ -1,0 +1,80 @@
+{
+  "MainQuery": {
+    "Name": "Test - Query directly on REF CONTEXT",
+    "Entity": "User Context",
+    "Projection": [
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ],
+        "Alias": null
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Name"
+          }
+        ],
+        "Alias": null
+      }
+    ],
+    "Filters": null,
+    "Sorts": null,
+    "Page": 1,
+    "PageSize": null,
+    "Id": "Test-Query directly on REF CONTEXT",
+    "ExtraRelations": []
+  },
+  "Contexts": [
+    {
+      "Name": "User Context",
+      "Entity": "User",
+      "Projection": [
+        {
+          "Fields": [
+            {
+              "kind": "field",
+              "field": "Id"
+            }
+          ],
+          "Alias": null
+        },
+        {
+          "Fields": [
+            {
+              "kind": "field",
+              "field": "Name"
+            }
+          ],
+          "Alias": null
+        },
+        {
+          "Fields": [
+            {
+              "kind": "function",
+              "function": "COUNT",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Members.Id"
+                }
+              ]
+            }
+          ],
+          "Alias": "Total Members"
+        }
+      ],
+      "Filters": null,
+      "Sorts": null,
+      "Page": 1,
+      "PageSize": null,
+      "Id": "context-04aea06d-ae76-4075-9f41-8032dace5e6b",
+      "ExtraRelations": null
+    }
+  ],
+  "IsBuiltin": false
+}

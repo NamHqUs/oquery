@@ -1,0 +1,36 @@
+Entity: Policies
+Projection:
+  - 'User.Id | MemberId'
+  - 'Concat(User.FirstName, < >, User.LastName) | Member'
+  - 'Plan.Name | Plan'
+  - 'Status | PolicyStatus'
+  - 'Coalesce(MemberClaims.Claims, <0>) | Claims'
+  - 'ROUND(Coalesce(MemberPremiums.PremiumsCollected, <0>), <2>) | PremiumsCollected'
+  - 'ROUND(Coalesce(MemberClaims.AllowedAmount, <0>), <2>) | AllowedAmount'
+  - 'ROUND(Coalesce(MemberClaims.InsurerPaid, <0>), <2>) | InsurerPaid'
+  - 'ROUND((<100.0> * Coalesce(MemberClaims.InsurerPaid, <0>) / NULLIF(MemberPremiums.PremiumsCollected, <0>)), <2>) | MemberLossRatioPercent'
+Sorts: MemberLossRatioPercent DESC, Claims DESC
+Page: 1
+PageSize: 10
+Contexts:
+  - Name: MemberPremiums
+    Alias: MemberPremiums
+    JoinType: Left
+    Query:
+      Entity: PremiumPayments
+      Projection:
+        - 'Policy.UserId | UserId'
+        - 'SUM(Amount) | PremiumsCollected'
+      Filter: Status = <Paid>
+    Condition: UserId = MemberPremiums.UserId
+  - Name: MemberClaims
+    Alias: MemberClaims
+    JoinType: Left
+    Query:
+      Entity: Claims
+      Projection:
+        - 'Policy.UserId | UserId'
+        - 'COUNT(Id) | Claims'
+        - 'SUM(AllowedAmount) | AllowedAmount'
+        - 'SUM(PaidAmount) | InsurerPaid'
+    Condition: UserId = MemberClaims.UserId

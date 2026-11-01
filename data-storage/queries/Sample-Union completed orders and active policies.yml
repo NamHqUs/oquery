@@ -1,0 +1,25 @@
+Entity: Users
+Projection:
+  - 'Id | UserId'
+Filter: CompletedOrders.UserId IS NOT NULL OR ActivePolicies.UserId IS NOT NULL
+Contexts:
+  - Name: CompletedOrders
+    Alias: CompletedOrders
+    JoinType: Left
+    Query:
+      Entity: Orders
+      Projection:
+        - 'UserId | UserId'
+        - 'CountDistinct(Id) | MatchCount'
+      Filter: Status = <Completed>
+    Condition: Id = CompletedOrders.UserId
+  - Name: ActivePolicies
+    Alias: ActivePolicies
+    JoinType: Left
+    Query:
+      Entity: Policies
+      Projection:
+        - 'UserId | UserId'
+        - 'CountDistinct(Id) | MatchCount'
+      Filter: Status = <Active>
+    Condition: Id = ActivePolicies.UserId

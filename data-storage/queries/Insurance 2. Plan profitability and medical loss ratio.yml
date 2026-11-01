@@ -1,0 +1,35 @@
+Entity: InsurancePlans
+Projection:
+  - 'Name | Plan'
+  - Tier
+  - 'CountDistinct(Policies.Id) | PolicyCount'
+  - 'ROUND(Coalesce(PremiumTotals.PremiumRevenue, <0>), <2>) | PremiumRevenue'
+  - 'Coalesce(ClaimTotals.ClaimCount, <0>) | ClaimCount'
+  - 'ROUND(Coalesce(ClaimTotals.ClaimsPaid, <0>), <2>) | ClaimsPaid'
+  - 'MedicalLossRatio(ClaimTotals.ClaimsPaid, PremiumTotals.PremiumRevenue) | MedicalLossRatioPercent'
+  - 'Coalesce(ClaimTotals.DeniedClaims, <0>) | DeniedClaims'
+Sorts: MedicalLossRatioPercent DESC
+Page: 1
+PageSize: 10
+Contexts:
+  - Name: PremiumTotals
+    Alias: PremiumTotals
+    JoinType: Left
+    Query:
+      Entity: PremiumPayments
+      Projection:
+        - 'Policy.PlanId | PlanId'
+        - 'SUM(Amount) | PremiumRevenue'
+      Filter: Status = <Paid>
+    Condition: Id = PremiumTotals.PlanId
+  - Name: ClaimTotals
+    Alias: ClaimTotals
+    JoinType: Left
+    Query:
+      Entity: Claims
+      Projection:
+        - 'Policy.PlanId | PlanId'
+        - 'SUM(PaidAmount) | ClaimsPaid'
+        - 'COUNT(Id) | ClaimCount'
+        - 'CountIf(Status = <Denied>) | DeniedClaims'
+    Condition: Id = ClaimTotals.PlanId

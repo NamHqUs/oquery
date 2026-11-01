@@ -1,0 +1,315 @@
+{
+  "MainQuery": {
+    "Name": "Health 1. Diagnosis burden by clinic",
+    "Entity": "Visits",
+    "Projection": [
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Diagnosis.Name"
+          }
+        ],
+        "Alias": "Diagnosis"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Diagnosis.Category"
+          }
+        ],
+        "Alias": "DiagnosisCategory"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Location.City"
+          }
+        ],
+        "Alias": "ClinicCity"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "CountDistinct",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ]
+          }
+        ],
+        "Alias": "VisitCount"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "CountDistinct",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "UserId"
+              }
+            ]
+          }
+        ],
+        "Alias": "UniquePatients"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "AVG",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "Charge"
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "AverageCharge"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "group",
+                "fields": [
+                  {
+                    "kind": "value",
+                    "value": 100.0
+                  },
+                  {
+                    "oper": "*",
+                    "kind": "function",
+                    "function": "SUM",
+                    "arguments": [
+                      {
+                        "kind": "function",
+                        "function": "Coalesce",
+                        "arguments": [
+                          {
+                            "kind": "field",
+                            "field": "VisitLabs.AbnormalCount"
+                          },
+                          {
+                            "kind": "value",
+                            "value": 0
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "oper": "/",
+                    "kind": "function",
+                    "function": "NULLIF",
+                    "arguments": [
+                      {
+                        "kind": "function",
+                        "function": "SUM",
+                        "arguments": [
+                          {
+                            "kind": "function",
+                            "function": "Coalesce",
+                            "arguments": [
+                              {
+                                "kind": "field",
+                                "field": "VisitLabs.LabCount"
+                              },
+                              {
+                                "kind": "value",
+                                "value": 0
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "value",
+                        "value": 0
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "AbnormalLabPercent"
+      }
+    ],
+    "Filters": {
+      "logicalOperation": 0,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "Status"
+          },
+          "operation": 0,
+          "right": {
+            "kind": "value",
+            "value": "Completed"
+          },
+          "parameterized": true
+        }
+      ]
+    },
+    "Sorts": [
+      [
+        {
+          "Field": {
+            "kind": "field",
+            "field": "VisitCount"
+          },
+          "Direction": "Descending"
+        },
+        {
+          "Field": {
+            "kind": "field",
+            "field": "AbnormalLabPercent"
+          },
+          "Direction": "Descending"
+        },
+        {
+          "Field": {
+            "kind": "field",
+            "field": "Diagnosis.Name"
+          },
+          "Direction": "Ascending"
+        },
+        {
+          "Field": {
+            "kind": "field",
+            "field": "Location.City"
+          },
+          "Direction": "Ascending"
+        }
+      ]
+    ],
+    "Page": 1,
+    "PageSize": 10,
+    "Id": "Health 1. Diagnosis burden by clinic",
+    "ExtraRelations": [
+      {
+        "RefContextId": "legacy-VisitLabs",
+        "Alias": "VisitLabs",
+        "Condition": {
+          "logicalOperation": 0,
+          "filters": [
+            {
+              "logicalOperator": 0,
+              "left": {
+                "kind": "field",
+                "field": "Id"
+              },
+              "operation": 0,
+              "right": {
+                "kind": "field",
+                "field": "VisitLabs.VisitId"
+              },
+              "parameterized": true
+            }
+          ]
+        },
+        "JoinType": "Left"
+      }
+    ]
+  },
+  "Contexts": [
+    {
+      "Name": "VisitLabs",
+      "Entity": "LabResults",
+      "Projection": [
+        {
+          "Fields": [
+            {
+              "kind": "field",
+              "field": "VisitId"
+            }
+          ],
+          "Alias": "VisitId"
+        },
+        {
+          "Fields": [
+            {
+              "kind": "function",
+              "function": "COUNT",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Id"
+                }
+              ]
+            }
+          ],
+          "Alias": "LabCount"
+        },
+        {
+          "Fields": [
+            {
+              "kind": "function",
+              "function": "CountIf",
+              "arguments": [
+                {
+                  "kind": "condition",
+                  "condition": {
+                    "logicalOperation": 0,
+                    "filters": [
+                      {
+                        "logicalOperator": 0,
+                        "left": {
+                          "kind": "field",
+                          "field": "IsAbnormal"
+                        },
+                        "operation": 0,
+                        "right": {
+                          "kind": "value",
+                          "value": true
+                        },
+                        "parameterized": true
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "Alias": "AbnormalCount"
+        }
+      ],
+      "Filters": null,
+      "Sorts": null,
+      "Page": null,
+      "PageSize": null,
+      "Id": "legacy-VisitLabs",
+      "ExtraRelations": null
+    }
+  ],
+  "IsBuiltin": false
+}

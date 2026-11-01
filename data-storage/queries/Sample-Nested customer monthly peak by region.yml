@@ -1,0 +1,25 @@
+Entity: Users
+Projection:
+  - 'State | Region'
+  - 'AVG(CustomerBestMonth.BestMonthRevenue) | AverageBestMonth'
+Contexts:
+  - Name: CustomerMonth
+    Alias: CustomerMonth
+    JoinType: Inner
+    Query:
+      Entity: Orders
+      Projection:
+        - 'UserId | UserId'
+        - 'Year(OrderDate) | SalesYear'
+        - 'Month(OrderDate) | SalesMonth'
+        - 'SUM((Items.Quantity * Items.UnitPrice - Items.DiscountAmount)) | MonthlyRevenue'
+      Filter: Status = <Completed>
+  - Name: CustomerBestMonth
+    Alias: CustomerBestMonth
+    JoinType: Inner
+    Query:
+      Entity: CustomerMonth
+      Projection:
+        - 'UserId | UserId'
+        - 'MAX(MonthlyRevenue) | BestMonthRevenue'
+    Condition: Id = CustomerBestMonth.UserId

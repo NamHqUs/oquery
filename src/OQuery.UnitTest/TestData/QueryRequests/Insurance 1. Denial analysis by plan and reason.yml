@@ -1,0 +1,13 @@
+Entity: Claims
+Projection:
+  - 'Policy.Plan.Tier | Tier'
+  - 'Policy.Plan.Name | Plan'
+  - DenialReason
+  - 'COUNT(Id) | DeniedClaims'
+  - 'ROUND(SUM(BilledAmount), <2>) | BilledAmount'
+  - 'ROUND(SUM(AllowedAmount), <2>) | AllowedAmount'
+  - 'ROUND(AVG(BilledAmount), <2>) | AverageBilledAmount'
+Filter: Status = <Denied>
+Sorts: DeniedClaims DESC, BilledAmount DESC
+Page: 1
+PageSize: 10

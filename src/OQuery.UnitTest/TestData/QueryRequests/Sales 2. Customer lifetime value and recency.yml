@@ -1,0 +1,12 @@
+Entity: Users
+Projection:
+  - 'Id | UserId'
+  - 'Concat(FirstName, < >, LastName) | Customer'
+  - 'CountDistinct(Orders.Id) | OrderCount'
+  - 'ROUND(SUM((Orders.Items.Quantity * Orders.Items.UnitPrice - Orders.Items.DiscountAmount)), <2>) | LifetimeValue'
+  - 'MAX(Orders.OrderDate) | LastOrderDate'
+  - 'CountDistinct(Orders.Channel) | ChannelsUsed'
+Filter: Orders.Status = <Completed>
+Sorts: LifetimeValue DESC, LastOrderDate DESC
+Page: 1
+PageSize: 10

@@ -1,0 +1,25 @@
+Entity: Employees
+Projection:
+  - 'Id | ManagerId'
+  - 'Concat(FirstName, < >, LastName) | Manager'
+  - 'Department.Name | Department'
+  - 'CountDistinct(DirectReports.Id) | DirectReports'
+  - 'CountDistinct(DirectReports.LocationId) | TeamLocations'
+  - 'ROUND(AVG(DirectReports.Salary), <2>) | AverageTeamSalary'
+  - 'ROUND(ReviewSummary.AverageTeamRating, <2>) | AverageTeamRating'
+  - 'ROUND(SUM(DirectReports.Salary), <2>) | TeamPayroll'
+Filter: DirectReports.Id IS NOT NULL
+Sorts: DirectReports DESC, TeamPayroll DESC
+Page: 1
+PageSize: 10
+Contexts:
+  - Name: ReviewSummary
+    Alias: ReviewSummary
+    JoinType: Left
+    Query:
+      Entity: PerformanceReviews
+      Projection:
+        - 'Employee.ManagerId | ManagerId'
+        - 'AVG(Rating) | AverageTeamRating'
+      Filter: ReviewYear = <2025>
+    Condition: Id = ReviewSummary.ManagerId

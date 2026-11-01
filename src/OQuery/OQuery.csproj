@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+
+		<PackageId>OQuery</PackageId>
+		<Version>1.0.2</Version>
+		<Authors>Namh</Authors>
+		<Description>
+			Metadata-driven
+			Dynamic query
+			Dynamic projection
+			Runtime schema
+			SQL query engine
+			LINQ-like
+			ADO.NET
+			Relational metadata
+			Reporting
+			Query builder
+		</Description>
+		<PackageTags>oquery;query-builder;ado-net;metadata;linq</PackageTags>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<RepositoryUrl>https://github.com/NamHqUs/oquery</RepositoryUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="YamlDotNet" Version="16.3.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
+		<None Include="..\..\MANUAL.md" Pack="true" PackagePath="\" />
+		<None Include="..\..\TECH.md" Pack="true" PackagePath="\" />
+		<None Include="..\..\QUERY-MODEL-REFERENCE.md" Pack="true" PackagePath="\" />
+		<None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+</Project>

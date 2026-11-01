@@ -1,0 +1,34 @@
+Entity: Users
+Projection:
+  - 'Id | CustomerId'
+  - 'Concat(FirstName, < >, LastName) | Customer'
+  - 'RecentOrders.Id | OrderId'
+  - 'RecentOrders.OrderDate | OrderDate'
+  - 'RecentOrders.OrderAmount | OrderAmount'
+Filter: RecentOrders.OrderRank <= <3>
+Sorts: CustomerId ASC, RecentOrders.OrderDate DESC, OrderId ASC
+Contexts:
+  - Name: RankedOrders
+    Alias: RankedOrders
+    JoinType: Inner
+    Query:
+      Entity: Orders
+      Projection:
+        - 'UserId | UserId'
+        - 'Id | Id'
+        - 'OrderDate | OrderDate'
+        - 'SUM((Items.Quantity * Items.UnitPrice - Items.DiscountAmount)) | OrderAmount'
+        - 'RowNumber(UserId, OrderDate) | OrderRank'
+      Filter: Status = <Completed>
+  - Name: RecentOrders
+    Alias: RecentOrders
+    JoinType: Left
+    Query:
+      Entity: RankedOrders
+      Projection:
+        - 'UserId | UserId'
+        - 'Id | Id'
+        - 'OrderDate | OrderDate'
+        - 'OrderAmount | OrderAmount'
+        - 'OrderRank | OrderRank'
+    Condition: Id = RecentOrders.UserId

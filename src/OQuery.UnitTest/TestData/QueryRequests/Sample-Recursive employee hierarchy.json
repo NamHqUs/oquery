@@ -1,0 +1,134 @@
+{
+  "MainQuery": {
+    "Name": "Sample-Recursive employee hierarchy",
+    "Entity": "Employees",
+    "Projection": [
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ],
+        "Alias": "Id"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "ManagerId"
+          }
+        ],
+        "Alias": "ManagerId"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "value",
+            "value": 0
+          }
+        ],
+        "Alias": "Level"
+      }
+    ],
+    "Filters": {
+      "logicalOperation": 0,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "Id"
+          },
+          "operation": 0,
+          "right": {
+            "kind": "value",
+            "value": 1
+          },
+          "parameterized": true
+        }
+      ]
+    },
+    "Sorts": null,
+    "Page": null,
+    "PageSize": null,
+    "Id": "Sample-Recursive employee hierarchy",
+    "ExtraRelations": [
+      {
+        "RefContextId": "legacy-EmployeeTree",
+        "Alias": "EmployeeTree",
+        "Condition": {
+          "logicalOperation": 0,
+          "filters": [
+            {
+              "logicalOperator": 0,
+              "left": {
+                "kind": "field",
+                "field": "ManagerId"
+              },
+              "operation": 0,
+              "right": {
+                "kind": "field",
+                "field": "EmployeeTree.Id"
+              },
+              "parameterized": true
+            }
+          ]
+        },
+        "JoinType": "Inner"
+      }
+    ]
+  },
+  "Contexts": [
+    {
+      "Name": "EmployeeTree",
+      "Entity": "Employees",
+      "Projection": [
+        {
+          "Fields": [
+            {
+              "kind": "field",
+              "field": "Id"
+            }
+          ],
+          "Alias": "Id"
+        },
+        {
+          "Fields": [
+            {
+              "kind": "field",
+              "field": "ManagerId"
+            }
+          ],
+          "Alias": "ManagerId"
+        },
+        {
+          "Fields": [
+            {
+              "kind": "function",
+              "function": "Difference",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "EmployeeTree.Level"
+                },
+                {
+                  "kind": "value",
+                  "value": -1
+                }
+              ]
+            }
+          ],
+          "Alias": "Level"
+        }
+      ],
+      "Filters": null,
+      "Sorts": null,
+      "Page": null,
+      "PageSize": null,
+      "Id": "legacy-EmployeeTree",
+      "ExtraRelations": null
+    }
+  ],
+  "IsBuiltin": false
+}

@@ -1,0 +1,167 @@
+{
+  "MainQuery": {
+    "Name": "Sales 2. Customer lifetime value and recency",
+    "Entity": "Users",
+    "Projection": [
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ],
+        "Alias": "UserId"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "Concat",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "FirstName"
+              },
+              {
+                "kind": "value",
+                "value": " "
+              },
+              {
+                "kind": "field",
+                "field": "LastName"
+              }
+            ]
+          }
+        ],
+        "Alias": "Customer"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "CountDistinct",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Orders.Id"
+              }
+            ]
+          }
+        ],
+        "Alias": "OrderCount"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "SUM",
+                "arguments": [
+                  {
+                    "kind": "group",
+                    "fields": [
+                      {
+                        "kind": "field",
+                        "field": "Orders.Items.Quantity"
+                      },
+                      {
+                        "oper": "*",
+                        "kind": "field",
+                        "field": "Orders.Items.UnitPrice"
+                      },
+                      {
+                        "oper": "-",
+                        "kind": "field",
+                        "field": "Orders.Items.DiscountAmount"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "LifetimeValue"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "MAX",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Orders.OrderDate"
+              }
+            ]
+          }
+        ],
+        "Alias": "LastOrderDate"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "CountDistinct",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Orders.Channel"
+              }
+            ]
+          }
+        ],
+        "Alias": "ChannelsUsed"
+      }
+    ],
+    "Filters": {
+      "logicalOperation": 0,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "Orders.Status"
+          },
+          "operation": 0,
+          "right": {
+            "kind": "value",
+            "value": "Completed"
+          },
+          "parameterized": true
+        }
+      ]
+    },
+    "Sorts": [
+      [
+        {
+          "Field": {
+            "kind": "field",
+            "field": "LifetimeValue"
+          },
+          "Direction": "Descending"
+        },
+        {
+          "Field": {
+            "kind": "field",
+            "field": "LastOrderDate"
+          },
+          "Direction": "Descending"
+        }
+      ]
+    ],
+    "Page": 1,
+    "PageSize": 10,
+    "Id": "Sales 2. Customer lifetime value and recency",
+    "ExtraRelations": null
+  },
+  "Contexts": [],
+  "IsBuiltin": false
+}

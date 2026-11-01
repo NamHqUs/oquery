@@ -1,0 +1,219 @@
+{
+  "MainQuery": {
+    "Name": "Shared Context",
+    "Entity": "User",
+    "Projection": [
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Name"
+          }
+        ],
+        "Alias": null
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": ""
+          }
+        ],
+        "Alias": "NEW_LINE"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Manager1.Name"
+          }
+        ],
+        "Alias": null
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": ""
+          }
+        ],
+        "Alias": "NEW_LINE"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Manager2.Age"
+          }
+        ],
+        "Alias": null
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": ""
+          }
+        ],
+        "Alias": "NEW_LINE"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Manager3.Birthday"
+          }
+        ],
+        "Alias": null
+      }
+    ],
+    "Filters": null,
+    "Sorts": null,
+    "Page": null,
+    "PageSize": null,
+    "Id": "Shared Context",
+    "ExtraRelations": [
+      {
+        "RefContextId": "context-04364f3b-b860-4c94-9d6f-b14238ac60d7",
+        "Alias": "Manager1",
+        "Condition": {
+          "logicalOperation": 0,
+          "filters": [
+            {
+              "logicalOperator": 0,
+              "left": {
+                "kind": "field",
+                "field": "ManagerId"
+              },
+              "operation": 0,
+              "right": {
+                "kind": "field",
+                "field": "Id"
+              },
+              "parameterized": false
+            }
+          ]
+        },
+        "JoinType": "Left"
+      },
+      {
+        "RefContextId": "context-04364f3b-b860-4c94-9d6f-b14238ac60d7",
+        "Alias": "Manager2",
+        "Condition": {
+          "logicalOperation": 0,
+          "filters": [
+            {
+              "logicalOperator": 0,
+              "left": {
+                "kind": "field",
+                "field": "ManagerId"
+              },
+              "operation": 0,
+              "right": {
+                "kind": "field",
+                "field": "Id"
+              },
+              "parameterized": false
+            }
+          ]
+        },
+        "JoinType": "Left"
+      },
+      {
+        "RefContextId": "context-9d796b6a-d8cc-42f0-aaa0-43fa4b75a392",
+        "Alias": "Manager3",
+        "Condition": {
+          "logicalOperation": 0,
+          "filters": [
+            {
+              "logicalOperator": 0,
+              "left": {
+                "kind": "field",
+                "field": "ManagerId"
+              },
+              "operation": 0,
+              "right": {
+                "kind": "field",
+                "field": "Id"
+              },
+              "parameterized": false
+            }
+          ]
+        },
+        "JoinType": "Left"
+      }
+    ]
+  },
+  "Contexts": [
+    {
+      "Name": "User Context",
+      "Entity": "User",
+      "Projection": [
+        {
+          "Fields": [
+            {
+              "kind": "field",
+              "field": "Id"
+            }
+          ],
+          "Alias": null
+        },
+        {
+          "Fields": [
+            {
+              "kind": "field",
+              "field": "Name"
+            }
+          ],
+          "Alias": null
+        },
+        {
+          "Fields": [
+            {
+              "kind": "field",
+              "field": "Age"
+            }
+          ],
+          "Alias": null
+        }
+      ],
+      "Filters": null,
+      "Sorts": null,
+      "Page": null,
+      "PageSize": null,
+      "Id": "context-04364f3b-b860-4c94-9d6f-b14238ac60d7",
+      "ExtraRelations": null
+    },
+    {
+      "Name": "Context 2",
+      "Entity": "User",
+      "Projection": [
+        {
+          "Fields": [
+            {
+              "kind": "field",
+              "field": "Id"
+            }
+          ],
+          "Alias": null
+        },
+        {
+          "Fields": [
+            {
+              "kind": "field",
+              "field": "Birthday"
+            }
+          ],
+          "Alias": null
+        }
+      ],
+      "Filters": null,
+      "Sorts": null,
+      "Page": 1,
+      "PageSize": 50,
+      "Id": "context-9d796b6a-d8cc-42f0-aaa0-43fa4b75a392",
+      "ExtraRelations": null
+    }
+  ],
+  "IsBuiltin": false
+}

@@ -1,0 +1,17 @@
+Entity: Policies
+Projection:
+  - 'Id | PolicyId'
+  - 'Concat(User.FirstName, < >, User.LastName) | Member'
+  - 'Coalesce(RevenueSinceStart.PremiumRevenue, <0>) | RevenueSinceSignup'
+Sorts: PolicyId ASC
+Contexts:
+  - Name: RevenueSinceStart
+    Alias: RevenueSinceStart
+    JoinType: Left
+    Query:
+      Entity: PremiumPayments
+      Projection:
+        - 'PolicyId | PolicyId'
+        - 'SUM(Amount) | PremiumRevenue'
+      Filter: Status = <Paid> AND PaymentDate >= Policy.StartDate
+    Condition: Id = RevenueSinceStart.PolicyId

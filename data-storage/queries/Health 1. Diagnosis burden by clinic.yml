@@ -1,0 +1,24 @@
+Entity: Visits
+Projection:
+  - 'Diagnosis.Name | Diagnosis'
+  - 'Diagnosis.Category | DiagnosisCategory'
+  - 'Location.City | ClinicCity'
+  - 'CountDistinct(Id) | VisitCount'
+  - 'CountDistinct(UserId) | UniquePatients'
+  - 'ROUND(AVG(Charge), <2>) | AverageCharge'
+  - 'ROUND((<100.0> * SUM(Coalesce(VisitLabs.AbnormalCount, <0>)) / NULLIF(SUM(Coalesce(VisitLabs.LabCount, <0>)), <0>)), <2>) | AbnormalLabPercent'
+Filter: Status = <Completed>
+Sorts: VisitCount DESC, AbnormalLabPercent DESC, Diagnosis.Name ASC, Location.City ASC
+Page: 1
+PageSize: 10
+Contexts:
+  - Name: VisitLabs
+    Alias: VisitLabs
+    JoinType: Left
+    Query:
+      Entity: LabResults
+      Projection:
+        - 'VisitId | VisitId'
+        - 'COUNT(Id) | LabCount'
+        - 'CountIf(IsAbnormal = <True>) | AbnormalCount'
+    Condition: Id = VisitLabs.VisitId

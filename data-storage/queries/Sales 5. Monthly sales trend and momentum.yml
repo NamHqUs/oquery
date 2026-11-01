@@ -1,0 +1,22 @@
+Entity: MonthlySales
+Projection:
+  - SalesMonth
+  - 'ROUND(Revenue, <2>) | Revenue'
+  - OrderCount
+  - 'ROUND(Lag(Revenue, <1>, SalesMonth), <2>) | PriorMonthRevenue'
+  - 'ROUND(Difference(Revenue, Lag(Revenue, <1>, SalesMonth)), <2>) | RevenueChange'
+  - 'ROUND(WindowSum(Revenue, SalesMonth), <2>) | RunningRevenue'
+Sorts: SalesMonth DESC
+Page: 1
+PageSize: 10
+Contexts:
+  - Name: MonthlySales
+    Alias: MonthlySales
+    JoinType: Inner
+    Query:
+      Entity: Orders
+      Projection:
+        - 'MonthKey(OrderDate) | SalesMonth'
+        - 'SUM((Items.Quantity * Items.UnitPrice - Items.DiscountAmount)) | Revenue'
+        - 'CountDistinct(Id) | OrderCount'
+      Filter: Status = <Completed>

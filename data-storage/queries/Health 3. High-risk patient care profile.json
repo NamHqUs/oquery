@@ -1,0 +1,392 @@
+{
+  "MainQuery": {
+    "Name": "Health 3. High-risk patient care profile",
+    "Entity": "Users",
+    "Projection": [
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ],
+        "Alias": "PatientId"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "Concat",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "FirstName"
+              },
+              {
+                "kind": "value",
+                "value": " "
+              },
+              {
+                "kind": "field",
+                "field": "LastName"
+              }
+            ]
+          }
+        ],
+        "Alias": "Patient"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "AgeOn",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "BirthDate"
+              },
+              {
+                "kind": "value",
+                "value": "2025-10-31"
+              }
+            ]
+          }
+        ],
+        "Alias": "Age"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "PatientVisits.ChronicVisits"
+          }
+        ],
+        "Alias": "ChronicVisits"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "PatientVisits.CompletedVisits"
+          }
+        ],
+        "Alias": "CompletedVisits"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "PatientLabs.AbnormalResults"
+          }
+        ],
+        "Alias": "AbnormalResults"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "PatientVisits.TotalCharges"
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "TotalCharges"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "PatientVisits.LastVisitDate"
+          }
+        ],
+        "Alias": "LastVisitDate"
+      }
+    ],
+    "Filters": {
+      "logicalOperation": 0,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "PatientVisits.ChronicVisits"
+          },
+          "operation": 4,
+          "right": {
+            "kind": "value",
+            "value": 0
+          },
+          "parameterized": true
+        },
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "PatientLabs.AbnormalResults"
+          },
+          "operation": 4,
+          "right": {
+            "kind": "value",
+            "value": 0
+          },
+          "parameterized": true
+        }
+      ]
+    },
+    "Sorts": [
+      [
+        {
+          "Field": {
+            "kind": "field",
+            "field": "AbnormalResults"
+          },
+          "Direction": "Descending"
+        },
+        {
+          "Field": {
+            "kind": "field",
+            "field": "ChronicVisits"
+          },
+          "Direction": "Descending"
+        },
+        {
+          "Field": {
+            "kind": "field",
+            "field": "TotalCharges"
+          },
+          "Direction": "Descending"
+        }
+      ]
+    ],
+    "Page": 1,
+    "PageSize": 10,
+    "Id": "Health 3. High-risk patient care profile",
+    "ExtraRelations": [
+      {
+        "RefContextId": "legacy-PatientVisits",
+        "Alias": "PatientVisits",
+        "Condition": {
+          "logicalOperation": 0,
+          "filters": [
+            {
+              "logicalOperator": 0,
+              "left": {
+                "kind": "field",
+                "field": "Id"
+              },
+              "operation": 0,
+              "right": {
+                "kind": "field",
+                "field": "PatientVisits.UserId"
+              },
+              "parameterized": true
+            }
+          ]
+        },
+        "JoinType": "Inner"
+      },
+      {
+        "RefContextId": "legacy-PatientLabs",
+        "Alias": "PatientLabs",
+        "Condition": {
+          "logicalOperation": 0,
+          "filters": [
+            {
+              "logicalOperator": 0,
+              "left": {
+                "kind": "field",
+                "field": "Id"
+              },
+              "operation": 0,
+              "right": {
+                "kind": "field",
+                "field": "PatientLabs.UserId"
+              },
+              "parameterized": true
+            }
+          ]
+        },
+        "JoinType": "Inner"
+      }
+    ]
+  },
+  "Contexts": [
+    {
+      "Name": "PatientVisits",
+      "Entity": "Visits",
+      "Projection": [
+        {
+          "Fields": [
+            {
+              "kind": "field",
+              "field": "UserId"
+            }
+          ],
+          "Alias": "UserId"
+        },
+        {
+          "Fields": [
+            {
+              "kind": "function",
+              "function": "CountIf",
+              "arguments": [
+                {
+                  "kind": "condition",
+                  "condition": {
+                    "logicalOperation": 0,
+                    "filters": [
+                      {
+                        "logicalOperator": 0,
+                        "left": {
+                          "kind": "field",
+                          "field": "Diagnosis.IsChronic"
+                        },
+                        "operation": 0,
+                        "right": {
+                          "kind": "value",
+                          "value": true
+                        },
+                        "parameterized": true
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "Alias": "ChronicVisits"
+        },
+        {
+          "Fields": [
+            {
+              "kind": "function",
+              "function": "COUNT",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Id"
+                }
+              ]
+            }
+          ],
+          "Alias": "CompletedVisits"
+        },
+        {
+          "Fields": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Charge"
+                }
+              ]
+            }
+          ],
+          "Alias": "TotalCharges"
+        },
+        {
+          "Fields": [
+            {
+              "kind": "function",
+              "function": "MAX",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "VisitDate"
+                }
+              ]
+            }
+          ],
+          "Alias": "LastVisitDate"
+        }
+      ],
+      "Filters": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Status"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "value",
+              "value": "Completed"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "Sorts": null,
+      "Page": null,
+      "PageSize": null,
+      "Id": "legacy-PatientVisits",
+      "ExtraRelations": null
+    },
+    {
+      "Name": "PatientLabs",
+      "Entity": "LabResults",
+      "Projection": [
+        {
+          "Fields": [
+            {
+              "kind": "field",
+              "field": "Visit.UserId"
+            }
+          ],
+          "Alias": "UserId"
+        },
+        {
+          "Fields": [
+            {
+              "kind": "function",
+              "function": "CountIf",
+              "arguments": [
+                {
+                  "kind": "condition",
+                  "condition": {
+                    "logicalOperation": 0,
+                    "filters": [
+                      {
+                        "logicalOperator": 0,
+                        "left": {
+                          "kind": "field",
+                          "field": "IsAbnormal"
+                        },
+                        "operation": 0,
+                        "right": {
+                          "kind": "value",
+                          "value": true
+                        },
+                        "parameterized": true
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "Alias": "AbnormalResults"
+        }
+      ],
+      "Filters": null,
+      "Sorts": null,
+      "Page": null,
+      "PageSize": null,
+      "Id": "legacy-PatientLabs",
+      "ExtraRelations": null
+    }
+  ],
+  "IsBuiltin": false
+}

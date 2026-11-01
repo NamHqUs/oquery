@@ -1,0 +1,37 @@
+Entity: Users
+Projection:
+  - 'Id | PatientId'
+  - 'Concat(FirstName, < >, LastName) | Patient'
+  - 'AgeOn(BirthDate, <2025-10-31>) | Age'
+  - 'PatientVisits.ChronicVisits | ChronicVisits'
+  - 'PatientVisits.CompletedVisits | CompletedVisits'
+  - 'PatientLabs.AbnormalResults | AbnormalResults'
+  - 'ROUND(PatientVisits.TotalCharges, <2>) | TotalCharges'
+  - 'PatientVisits.LastVisitDate | LastVisitDate'
+Filter: PatientVisits.ChronicVisits > <0> AND PatientLabs.AbnormalResults > <0>
+Sorts: AbnormalResults DESC, ChronicVisits DESC, TotalCharges DESC
+Page: 1
+PageSize: 10
+Contexts:
+  - Name: PatientVisits
+    Alias: PatientVisits
+    JoinType: Inner
+    Query:
+      Entity: Visits
+      Projection:
+        - 'UserId | UserId'
+        - 'CountIf(Diagnosis.IsChronic = <True>) | ChronicVisits'
+        - 'COUNT(Id) | CompletedVisits'
+        - 'SUM(Charge) | TotalCharges'
+        - 'MAX(VisitDate) | LastVisitDate'
+      Filter: Status = <Completed>
+    Condition: Id = PatientVisits.UserId
+  - Name: PatientLabs
+    Alias: PatientLabs
+    JoinType: Inner
+    Query:
+      Entity: LabResults
+      Projection:
+        - 'Visit.UserId | UserId'
+        - 'CountIf(IsAbnormal = <True>) | AbnormalResults'
+    Condition: Id = PatientLabs.UserId

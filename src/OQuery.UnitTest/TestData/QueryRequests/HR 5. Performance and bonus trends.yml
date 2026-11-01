@@ -1,0 +1,13 @@
+Entity: PerformanceReviews
+Projection:
+  - 'Employee.Department.Name | Department'
+  - ReviewYear
+  - 'COUNT(Id) | Reviews'
+  - 'ROUND(AVG(Rating), <2>) | AverageRating'
+  - 'CountIf(Rating >= <4>) | HighRatings'
+  - 'ROUND((<100.0> * CountIf(Rating >= <4>) / COUNT(Id)), <2>) | HighRatingPercent'
+  - 'ROUND(AVG(Employee.Salary), <2>) | AverageSalary'
+  - 'ROUND(SUM(BonusAmount), <2>) | TotalBonus'
+Sorts: ReviewYear DESC, AverageRating DESC, TotalBonus DESC, Department ASC
+Page: 1
+PageSize: 10

@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="../README.md" />
+    <File Path="Directory.Build.props" />
+  </Folder>
+  <Project Path="OQuery.UnitTest/OQuery.UnitTest.csproj" Id="f65d7da3-d0b0-49c3-b963-a0ee3519366c" />
+  <Project Path="OQuery/OQuery.csproj" />
+</Solution>

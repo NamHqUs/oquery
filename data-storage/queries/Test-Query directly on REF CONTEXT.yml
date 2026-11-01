@@ -1,0 +1,14 @@
+Entity: User Context
+Projection:
+  - Id
+  - Name
+Page: 1
+Contexts:
+  - Name: User Context
+    Query:
+      Entity: User
+      Projection:
+        - Id
+        - Name
+        - 'COUNT(Members.Id) | Total Members'
+      Page: 1

@@ -1,0 +1,286 @@
+{
+  "MainQuery": {
+    "Name": "Sales 4. Best-selling products and margin",
+    "Entity": "NorthStarProducts",
+    "Projection": [
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ],
+        "Alias": "ProductId"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Name"
+          }
+        ],
+        "Alias": "Product"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Category"
+          }
+        ],
+        "Alias": null
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "OrderItems.Quantity"
+              }
+            ]
+          }
+        ],
+        "Alias": "UnitsSold"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "CountDistinct",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "OrderItems.Order.Id"
+              }
+            ]
+          }
+        ],
+        "Alias": "OrderCount"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "SUM",
+                "arguments": [
+                  {
+                    "kind": "group",
+                    "fields": [
+                      {
+                        "kind": "field",
+                        "field": "OrderItems.Quantity"
+                      },
+                      {
+                        "oper": "*",
+                        "kind": "field",
+                        "field": "OrderItems.UnitPrice"
+                      },
+                      {
+                        "oper": "-",
+                        "kind": "field",
+                        "field": "OrderItems.DiscountAmount"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "NetRevenue"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "SUM",
+                "arguments": [
+                  {
+                    "kind": "group",
+                    "fields": [
+                      {
+                        "kind": "field",
+                        "field": "OrderItems.Quantity"
+                      },
+                      {
+                        "oper": "*",
+                        "kind": "group",
+                        "fields": [
+                          {
+                            "kind": "field",
+                            "field": "OrderItems.UnitPrice"
+                          },
+                          {
+                            "oper": "-",
+                            "kind": "field",
+                            "field": "OrderItems.Product.CostPrice"
+                          }
+                        ]
+                      },
+                      {
+                        "oper": "-",
+                        "kind": "field",
+                        "field": "OrderItems.DiscountAmount"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "GrossProfit"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "group",
+                "fields": [
+                  {
+                    "kind": "value",
+                    "value": 100.0
+                  },
+                  {
+                    "oper": "*",
+                    "kind": "function",
+                    "function": "SUM",
+                    "arguments": [
+                      {
+                        "kind": "group",
+                        "fields": [
+                          {
+                            "kind": "field",
+                            "field": "OrderItems.Quantity"
+                          },
+                          {
+                            "oper": "*",
+                            "kind": "group",
+                            "fields": [
+                              {
+                                "kind": "field",
+                                "field": "OrderItems.UnitPrice"
+                              },
+                              {
+                                "oper": "-",
+                                "kind": "field",
+                                "field": "OrderItems.Product.CostPrice"
+                              }
+                            ]
+                          },
+                          {
+                            "oper": "-",
+                            "kind": "field",
+                            "field": "OrderItems.DiscountAmount"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "oper": "/",
+                    "kind": "function",
+                    "function": "NULLIF",
+                    "arguments": [
+                      {
+                        "kind": "function",
+                        "function": "SUM",
+                        "arguments": [
+                          {
+                            "kind": "group",
+                            "fields": [
+                              {
+                                "kind": "field",
+                                "field": "OrderItems.Quantity"
+                              },
+                              {
+                                "oper": "*",
+                                "kind": "field",
+                                "field": "OrderItems.UnitPrice"
+                              },
+                              {
+                                "oper": "-",
+                                "kind": "field",
+                                "field": "OrderItems.DiscountAmount"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "kind": "value",
+                        "value": 0
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "MarginPercent"
+      }
+    ],
+    "Filters": {
+      "logicalOperation": 0,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "OrderItems.Order.Status"
+          },
+          "operation": 0,
+          "right": {
+            "kind": "value",
+            "value": "Completed"
+          },
+          "parameterized": true
+        }
+      ]
+    },
+    "Sorts": [
+      [
+        {
+          "Field": {
+            "kind": "field",
+            "field": "GrossProfit"
+          },
+          "Direction": "Descending"
+        }
+      ]
+    ],
+    "Page": 1,
+    "PageSize": 10,
+    "Id": "Sales 4. Best-selling products and margin",
+    "ExtraRelations": null
+  },
+  "Contexts": [],
+  "IsBuiltin": false
+}

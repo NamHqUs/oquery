@@ -1,0 +1,45 @@
+Entity: Employees
+Projection:
+  - 'Id | AgentId'
+  - 'Concat(FirstName, < >, LastName) | Agent'
+  - 'Location.City | OfficeCity'
+  - 'CountDistinct(AgentPolicies.Id) | PoliciesSold'
+  - 'CountIf(AgentPolicies.Status = <Active>) | ActivePolicies'
+  - 'ROUND(Coalesce(PaidPayments.PaidPremiums, <0>), <2>) | PaidPremiums'
+  - 'Coalesce(LatePayments.LatePayments, <0>) | LatePayments'
+  - 'Coalesce(MissedPayments.MissedPayments, <0>) | MissedPayments'
+Filter: Department.Name = <Insurance Agency>
+Sorts: PaidPremiums DESC
+Page: 1
+PageSize: 10
+Contexts:
+  - Name: PaidPayments
+    Alias: PaidPayments
+    JoinType: Left
+    Query:
+      Entity: PremiumPayments
+      Projection:
+        - 'Policy.AgentId | AgentId'
+        - 'SUM(Amount) | PaidPremiums'
+      Filter: Status = <Paid>
+    Condition: Id = PaidPayments.AgentId
+  - Name: LatePayments
+    Alias: LatePayments
+    JoinType: Left
+    Query:
+      Entity: PremiumPayments
+      Projection:
+        - 'Policy.AgentId | AgentId'
+        - 'COUNT(Id) | LatePayments'
+      Filter: Status = <Late>
+    Condition: Id = LatePayments.AgentId
+  - Name: MissedPayments
+    Alias: MissedPayments
+    JoinType: Left
+    Query:
+      Entity: PremiumPayments
+      Projection:
+        - 'Policy.AgentId | AgentId'
+        - 'COUNT(Id) | MissedPayments'
+      Filter: Status = <Missed>
+    Condition: Id = MissedPayments.AgentId

@@ -1,0 +1,250 @@
+{
+  "MainQuery": {
+    "Name": "HR 5. Performance and bonus trends",
+    "Entity": "PerformanceReviews",
+    "Projection": [
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Employee.Department.Name"
+          }
+        ],
+        "Alias": "Department"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "ReviewYear"
+          }
+        ],
+        "Alias": null
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "COUNT",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ]
+          }
+        ],
+        "Alias": "Reviews"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "AVG",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "Rating"
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "AverageRating"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "CountIf",
+            "arguments": [
+              {
+                "kind": "condition",
+                "condition": {
+                  "logicalOperation": 0,
+                  "filters": [
+                    {
+                      "logicalOperator": 0,
+                      "left": {
+                        "kind": "field",
+                        "field": "Rating"
+                      },
+                      "operation": 6,
+                      "right": {
+                        "kind": "value",
+                        "value": 4
+                      },
+                      "parameterized": true
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "Alias": "HighRatings"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "group",
+                "fields": [
+                  {
+                    "kind": "value",
+                    "value": 100.0
+                  },
+                  {
+                    "oper": "*",
+                    "kind": "function",
+                    "function": "CountIf",
+                    "arguments": [
+                      {
+                        "kind": "condition",
+                        "condition": {
+                          "logicalOperation": 0,
+                          "filters": [
+                            {
+                              "logicalOperator": 0,
+                              "left": {
+                                "kind": "field",
+                                "field": "Rating"
+                              },
+                              "operation": 6,
+                              "right": {
+                                "kind": "value",
+                                "value": 4
+                              },
+                              "parameterized": true
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "oper": "/",
+                    "kind": "function",
+                    "function": "COUNT",
+                    "arguments": [
+                      {
+                        "kind": "field",
+                        "field": "Id"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "HighRatingPercent"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "AVG",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "Employee.Salary"
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "AverageSalary"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "SUM",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "BonusAmount"
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "TotalBonus"
+      }
+    ],
+    "Filters": null,
+    "Sorts": [
+      [
+        {
+          "Field": {
+            "kind": "field",
+            "field": "ReviewYear"
+          },
+          "Direction": "Descending"
+        },
+        {
+          "Field": {
+            "kind": "field",
+            "field": "AverageRating"
+          },
+          "Direction": "Descending"
+        },
+        {
+          "Field": {
+            "kind": "field",
+            "field": "TotalBonus"
+          },
+          "Direction": "Descending"
+        },
+        {
+          "Field": {
+            "kind": "field",
+            "field": "Department"
+          },
+          "Direction": "Ascending"
+        }
+      ]
+    ],
+    "Page": 1,
+    "PageSize": 10,
+    "Id": "HR 5. Performance and bonus trends",
+    "ExtraRelations": null
+  },
+  "Contexts": [],
+  "IsBuiltin": false
+}

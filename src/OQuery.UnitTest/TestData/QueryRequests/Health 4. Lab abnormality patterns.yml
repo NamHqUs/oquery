@@ -1,0 +1,13 @@
+Entity: LabResults
+Projection:
+  - TestName
+  - 'Visit.Diagnosis.Category | DiagnosisCategory'
+  - 'COUNT(Id) | TestCount'
+  - 'CountIf(IsAbnormal = <True>) | AbnormalCount'
+  - 'ROUND((<100.0> * CountIf(IsAbnormal = <True>) / COUNT(Id)), <2>) | AbnormalPercent'
+  - 'ROUND(AVG(ResultValue), <2>) | AverageResult'
+  - 'ROUND(AVG(ReferenceMax), <2>) | AverageReferenceMaximum'
+Filter: Visit.Status = <Completed> AND COUNT(*) >= <5>
+Sorts: AbnormalPercent DESC, TestCount DESC
+Page: 1
+PageSize: 10

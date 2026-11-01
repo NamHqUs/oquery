@@ -1,0 +1,13 @@
+Entity: Claims
+Projection:
+  - 'Policy.Plan.Name | Plan'
+  - 'Policy.Plan.Tier | Tier'
+  - 'COUNT(Id) | ClaimsReceived'
+  - 'CountIf(Status = <Paid>) | PaidClaims'
+  - 'CountIf(Status = <Denied>) | DeniedClaims'
+  - 'ROUND((<100.0> * CountIf(Status = <Denied>) / COUNT(Id)), <2>) | DenialPercent'
+  - 'ROUND(AvgIf(DateSub(ClaimDate, ProcessedDate), ProcessedDate IS NOT NULL), <1>) | AverageProcessingDays'
+  - 'ROUND(SUM(PaidAmount), <2>) | TotalPaid'
+Sorts: ClaimsReceived DESC
+Page: 1
+PageSize: 10

@@ -1,0 +1,410 @@
+{
+  "MainQuery": {
+    "Name": "Insurance 5. Member utilization versus premium",
+    "Entity": "Policies",
+    "Projection": [
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "User.Id"
+          }
+        ],
+        "Alias": "MemberId"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "Concat",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "User.FirstName"
+              },
+              {
+                "kind": "value",
+                "value": " "
+              },
+              {
+                "kind": "field",
+                "field": "User.LastName"
+              }
+            ]
+          }
+        ],
+        "Alias": "Member"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Plan.Name"
+          }
+        ],
+        "Alias": "Plan"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Status"
+          }
+        ],
+        "Alias": "PolicyStatus"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "Coalesce",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "MemberClaims.Claims"
+              },
+              {
+                "kind": "value",
+                "value": 0
+              }
+            ]
+          }
+        ],
+        "Alias": "Claims"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "Coalesce",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "MemberPremiums.PremiumsCollected"
+                  },
+                  {
+                    "kind": "value",
+                    "value": 0
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "PremiumsCollected"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "Coalesce",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "MemberClaims.AllowedAmount"
+                  },
+                  {
+                    "kind": "value",
+                    "value": 0
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "AllowedAmount"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "Coalesce",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "MemberClaims.InsurerPaid"
+                  },
+                  {
+                    "kind": "value",
+                    "value": 0
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "InsurerPaid"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "group",
+                "fields": [
+                  {
+                    "kind": "value",
+                    "value": 100.0
+                  },
+                  {
+                    "oper": "*",
+                    "kind": "function",
+                    "function": "Coalesce",
+                    "arguments": [
+                      {
+                        "kind": "field",
+                        "field": "MemberClaims.InsurerPaid"
+                      },
+                      {
+                        "kind": "value",
+                        "value": 0
+                      }
+                    ]
+                  },
+                  {
+                    "oper": "/",
+                    "kind": "function",
+                    "function": "NULLIF",
+                    "arguments": [
+                      {
+                        "kind": "field",
+                        "field": "MemberPremiums.PremiumsCollected"
+                      },
+                      {
+                        "kind": "value",
+                        "value": 0
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "MemberLossRatioPercent"
+      }
+    ],
+    "Filters": null,
+    "Sorts": [
+      [
+        {
+          "Field": {
+            "kind": "field",
+            "field": "MemberLossRatioPercent"
+          },
+          "Direction": "Descending"
+        },
+        {
+          "Field": {
+            "kind": "field",
+            "field": "Claims"
+          },
+          "Direction": "Descending"
+        }
+      ]
+    ],
+    "Page": 1,
+    "PageSize": 10,
+    "Id": "Insurance 5. Member utilization versus premium",
+    "ExtraRelations": [
+      {
+        "RefContextId": "legacy-MemberPremiums",
+        "Alias": "MemberPremiums",
+        "Condition": {
+          "logicalOperation": 0,
+          "filters": [
+            {
+              "logicalOperator": 0,
+              "left": {
+                "kind": "field",
+                "field": "UserId"
+              },
+              "operation": 0,
+              "right": {
+                "kind": "field",
+                "field": "MemberPremiums.UserId"
+              },
+              "parameterized": true
+            }
+          ]
+        },
+        "JoinType": "Left"
+      },
+      {
+        "RefContextId": "legacy-MemberClaims",
+        "Alias": "MemberClaims",
+        "Condition": {
+          "logicalOperation": 0,
+          "filters": [
+            {
+              "logicalOperator": 0,
+              "left": {
+                "kind": "field",
+                "field": "UserId"
+              },
+              "operation": 0,
+              "right": {
+                "kind": "field",
+                "field": "MemberClaims.UserId"
+              },
+              "parameterized": true
+            }
+          ]
+        },
+        "JoinType": "Left"
+      }
+    ]
+  },
+  "Contexts": [
+    {
+      "Name": "MemberPremiums",
+      "Entity": "PremiumPayments",
+      "Projection": [
+        {
+          "Fields": [
+            {
+              "kind": "field",
+              "field": "Policy.UserId"
+            }
+          ],
+          "Alias": "UserId"
+        },
+        {
+          "Fields": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Amount"
+                }
+              ]
+            }
+          ],
+          "Alias": "PremiumsCollected"
+        }
+      ],
+      "Filters": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Status"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "value",
+              "value": "Paid"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "Sorts": null,
+      "Page": null,
+      "PageSize": null,
+      "Id": "legacy-MemberPremiums",
+      "ExtraRelations": null
+    },
+    {
+      "Name": "MemberClaims",
+      "Entity": "Claims",
+      "Projection": [
+        {
+          "Fields": [
+            {
+              "kind": "field",
+              "field": "Policy.UserId"
+            }
+          ],
+          "Alias": "UserId"
+        },
+        {
+          "Fields": [
+            {
+              "kind": "function",
+              "function": "COUNT",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Id"
+                }
+              ]
+            }
+          ],
+          "Alias": "Claims"
+        },
+        {
+          "Fields": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "AllowedAmount"
+                }
+              ]
+            }
+          ],
+          "Alias": "AllowedAmount"
+        },
+        {
+          "Fields": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "PaidAmount"
+                }
+              ]
+            }
+          ],
+          "Alias": "InsurerPaid"
+        }
+      ],
+      "Filters": null,
+      "Sorts": null,
+      "Page": null,
+      "PageSize": null,
+      "Id": "legacy-MemberClaims",
+      "ExtraRelations": null
+    }
+  ],
+  "IsBuiltin": false
+}

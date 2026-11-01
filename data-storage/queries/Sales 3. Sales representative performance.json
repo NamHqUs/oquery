@@ -1,0 +1,226 @@
+{
+  "MainQuery": {
+    "Name": "Sales 3. Sales representative performance",
+    "Entity": "Employees",
+    "Projection": [
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ],
+        "Alias": "SalesRepId"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "Concat",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "FirstName"
+              },
+              {
+                "kind": "value",
+                "value": " "
+              },
+              {
+                "kind": "field",
+                "field": "LastName"
+              }
+            ]
+          }
+        ],
+        "Alias": "SalesRep"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Location.City"
+          }
+        ],
+        "Alias": "HomeCity"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Department.Name"
+          }
+        ],
+        "Alias": "Department"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "CountDistinct",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "SalesOrders.Id"
+              }
+            ]
+          }
+        ],
+        "Alias": "CompletedOrders"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "SalesOrders.Items.Quantity"
+              }
+            ]
+          }
+        ],
+        "Alias": "UnitsSold"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "SUM",
+                "arguments": [
+                  {
+                    "kind": "group",
+                    "fields": [
+                      {
+                        "kind": "field",
+                        "field": "SalesOrders.Items.Quantity"
+                      },
+                      {
+                        "oper": "*",
+                        "kind": "field",
+                        "field": "SalesOrders.Items.UnitPrice"
+                      },
+                      {
+                        "oper": "-",
+                        "kind": "field",
+                        "field": "SalesOrders.Items.DiscountAmount"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "NetSales"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "SUM",
+                "arguments": [
+                  {
+                    "kind": "group",
+                    "fields": [
+                      {
+                        "kind": "field",
+                        "field": "SalesOrders.Items.Quantity"
+                      },
+                      {
+                        "oper": "*",
+                        "kind": "group",
+                        "fields": [
+                          {
+                            "kind": "field",
+                            "field": "SalesOrders.Items.UnitPrice"
+                          },
+                          {
+                            "oper": "-",
+                            "kind": "field",
+                            "field": "SalesOrders.Items.Product.CostPrice"
+                          }
+                        ]
+                      },
+                      {
+                        "oper": "-",
+                        "kind": "field",
+                        "field": "SalesOrders.Items.DiscountAmount"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "GrossProfit"
+      }
+    ],
+    "Filters": {
+      "logicalOperation": 0,
+      "filters": [
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "Department.Name"
+          },
+          "operation": 0,
+          "right": {
+            "kind": "value",
+            "value": "Retail Sales"
+          },
+          "parameterized": true
+        },
+        {
+          "logicalOperator": 0,
+          "left": {
+            "kind": "field",
+            "field": "SalesOrders.Status"
+          },
+          "operation": 0,
+          "right": {
+            "kind": "value",
+            "value": "Completed"
+          },
+          "parameterized": true
+        }
+      ]
+    },
+    "Sorts": [
+      [
+        {
+          "Field": {
+            "kind": "field",
+            "field": "NetSales"
+          },
+          "Direction": "Descending"
+        }
+      ]
+    ],
+    "Page": 1,
+    "PageSize": 10,
+    "Id": "Sales 3. Sales representative performance",
+    "ExtraRelations": null
+  },
+  "Contexts": [],
+  "IsBuiltin": false
+}

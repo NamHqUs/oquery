@@ -1,0 +1,28 @@
+Entity: OrderCategory
+Projection:
+  - Category
+  - Channel
+  - 'COUNT(OrderId) | OrdersContainingCategory'
+  - 'SUM(UnitsSold) | UnitsSold'
+  - 'SUM(NetRevenue) | NetRevenue'
+  - 'SUM(Discounts) | Discounts'
+  - 'SUM(GrossProfit) | GrossProfit'
+  - 'AVG(NetRevenue) | AverageCategoryRevenuePerOrder'
+Sorts: GrossProfit DESC
+Page: 1
+PageSize: 10
+Contexts:
+  - Name: OrderCategory
+    Alias: OrderCategory
+    JoinType: Inner
+    Query:
+      Entity: OrderItems
+      Projection:
+        - 'OrderId | OrderId'
+        - 'Product.Category | Category'
+        - 'Order.Channel | Channel'
+        - 'SUM(Quantity) | UnitsSold'
+        - 'SUM((Quantity * UnitPrice - DiscountAmount)) | NetRevenue'
+        - 'SUM(DiscountAmount) | Discounts'
+        - 'SUM((Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount)) | GrossProfit'
+      Filter: Order.Status = <Completed>

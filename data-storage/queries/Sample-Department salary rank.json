@@ -1,0 +1,86 @@
+{
+  "MainQuery": {
+    "Name": "Sample-Department salary rank",
+    "Entity": "Employees",
+    "Projection": [
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "DepartmentId"
+          }
+        ],
+        "Alias": null
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ],
+        "Alias": "EmployeeId"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Salary"
+          }
+        ],
+        "Alias": null
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "Rank",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "DepartmentId"
+              },
+              {
+                "kind": "field",
+                "field": "Salary"
+              }
+            ]
+          }
+        ],
+        "Alias": "DepartmentRank"
+      }
+    ],
+    "Filters": null,
+    "Sorts": [
+      [
+        {
+          "Field": {
+            "kind": "field",
+            "field": "DepartmentId"
+          },
+          "Direction": "Ascending"
+        },
+        {
+          "Field": {
+            "kind": "field",
+            "field": "DepartmentRank"
+          },
+          "Direction": "Ascending"
+        },
+        {
+          "Field": {
+            "kind": "field",
+            "field": "EmployeeId"
+          },
+          "Direction": "Ascending"
+        }
+      ]
+    ],
+    "Page": null,
+    "PageSize": null,
+    "Id": "Sample-Department salary rank",
+    "ExtraRelations": null
+  },
+  "Contexts": [],
+  "IsBuiltin": false
+}

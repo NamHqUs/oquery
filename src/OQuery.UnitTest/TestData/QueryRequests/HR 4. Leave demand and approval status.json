@@ -1,0 +1,151 @@
+{
+  "MainQuery": {
+    "Name": "HR 4. Leave demand and approval status",
+    "Entity": "LeaveRequests",
+    "Projection": [
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Employee.Department.Name"
+          }
+        ],
+        "Alias": "Department"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "LeaveType"
+          }
+        ],
+        "Alias": null
+      },
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Status"
+          }
+        ],
+        "Alias": null
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "COUNT",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ]
+          }
+        ],
+        "Alias": "Requests"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Days"
+              }
+            ]
+          }
+        ],
+        "Alias": "DaysRequested"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "AVG",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "Days"
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 1
+              }
+            ]
+          }
+        ],
+        "Alias": "AverageRequestDays"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "CountDistinct",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Employee.Id"
+              }
+            ]
+          }
+        ],
+        "Alias": "EmployeesRequesting"
+      }
+    ],
+    "Filters": null,
+    "Sorts": [
+      [
+        {
+          "Field": {
+            "kind": "field",
+            "field": "DaysRequested"
+          },
+          "Direction": "Descending"
+        },
+        {
+          "Field": {
+            "kind": "field",
+            "field": "Requests"
+          },
+          "Direction": "Descending"
+        },
+        {
+          "Field": {
+            "kind": "field",
+            "field": "Department"
+          },
+          "Direction": "Ascending"
+        },
+        {
+          "Field": {
+            "kind": "field",
+            "field": "LeaveType"
+          },
+          "Direction": "Ascending"
+        },
+        {
+          "Field": {
+            "kind": "field",
+            "field": "Status"
+          },
+          "Direction": "Ascending"
+        }
+      ]
+    ],
+    "Page": 1,
+    "PageSize": 10,
+    "Id": "HR 4. Leave demand and approval status",
+    "ExtraRelations": null
+  },
+  "Contexts": [],
+  "IsBuiltin": false
+}

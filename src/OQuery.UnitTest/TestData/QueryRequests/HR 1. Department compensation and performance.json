@@ -1,0 +1,253 @@
+{
+  "MainQuery": {
+    "Name": "HR 1. Department compensation and performance",
+    "Entity": "Employees",
+    "Projection": [
+      {
+        "Fields": [
+          {
+            "kind": "field",
+            "field": "Department.Name"
+          }
+        ],
+        "Alias": "Department"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "COUNT",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ]
+          }
+        ],
+        "Alias": "Headcount"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "AVG",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "Salary"
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "AverageSalary"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "SUM",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "Salary"
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "AnnualPayroll"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "AVG",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "ReviewSummary.AverageRating"
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "AverageRating"
+      },
+      {
+        "Fields": [
+          {
+            "kind": "function",
+            "function": "ROUND",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "SUM",
+                "arguments": [
+                  {
+                    "kind": "function",
+                    "function": "Coalesce",
+                    "arguments": [
+                      {
+                        "kind": "field",
+                        "field": "ReviewSummary.Bonuses"
+                      },
+                      {
+                        "kind": "value",
+                        "value": 0
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "Alias": "TotalBonuses"
+      }
+    ],
+    "Filters": null,
+    "Sorts": [
+      [
+        {
+          "Field": {
+            "kind": "field",
+            "field": "AnnualPayroll"
+          },
+          "Direction": "Descending"
+        }
+      ]
+    ],
+    "Page": 1,
+    "PageSize": 10,
+    "Id": "HR 1. Department compensation and performance",
+    "ExtraRelations": [
+      {
+        "RefContextId": "legacy-ReviewSummary",
+        "Alias": "ReviewSummary",
+        "Condition": {
+          "logicalOperation": 0,
+          "filters": [
+            {
+              "logicalOperator": 0,
+              "left": {
+                "kind": "field",
+                "field": "Id"
+              },
+              "operation": 0,
+              "right": {
+                "kind": "field",
+                "field": "ReviewSummary.EmployeeId"
+              },
+              "parameterized": true
+            }
+          ]
+        },
+        "JoinType": "Left"
+      }
+    ]
+  },
+  "Contexts": [
+    {
+      "Name": "ReviewSummary",
+      "Entity": "PerformanceReviews",
+      "Projection": [
+        {
+          "Fields": [
+            {
+              "kind": "field",
+              "field": "EmployeeId"
+            }
+          ],
+          "Alias": "EmployeeId"
+        },
+        {
+          "Fields": [
+            {
+              "kind": "function",
+              "function": "AVG",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Rating"
+                }
+              ]
+            }
+          ],
+          "Alias": "AverageRating"
+        },
+        {
+          "Fields": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "BonusAmount"
+                }
+              ]
+            }
+          ],
+          "Alias": "Bonuses"
+        }
+      ],
+      "Filters": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "ReviewYear"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "value",
+              "value": 2025
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "Sorts": null,
+      "Page": null,
+      "PageSize": null,
+      "Id": "legacy-ReviewSummary",
+      "ExtraRelations": null
+    }
+  ],
+  "IsBuiltin": false
+}
