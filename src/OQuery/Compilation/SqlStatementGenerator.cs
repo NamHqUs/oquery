@@ -351,18 +351,28 @@ internal sealed class SqlStatementGenerator(
         {
             [table.Alias] = table.Entity
         };
-        AddJoinedEntities(table, entities);
+        AddJoinedEntities(table, entities, new HashSet<TableExpression>());
         return entities;
     }
 
     private static void AddJoinedEntities(
         TableExpression table,
-        IDictionary<string, Entity> entities)
+        IDictionary<string, Entity> entities,
+        ISet<TableExpression> visited)
     {
+        if (!visited.Add(table))
+            return;
+
         foreach (var joinedTable in table.JoinedTables.Values)
         {
             entities[joinedTable.Alias] = joinedTable.Entity;
-            AddJoinedEntities(joinedTable, entities);
+            AddJoinedEntities(joinedTable, entities, visited);
+        }
+
+        foreach (var join in table.Joins)
+        {
+            entities[join.Table.Alias] = join.Table.Entity;
+            AddJoinedEntities(join.Table, entities, visited);
         }
     }
 

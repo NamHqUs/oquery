@@ -153,6 +153,21 @@ stored in one case-insensitive hash set; the wildcard is checked before the
 field-specific key. Relations are used to resolve field paths but are not
 permission-checked.
 
+Permissions can also be loaded from YAML:
+
+```csharp
+var permissions = PermissionManagement.FromYml("""
+    - entityName: User
+      fields:
+      - Id
+      - DisplayName
+    - entityName: AuditLog
+    """);
+```
+
+Use `PermissionManagement.FromYmlFile(filePath)` when loading permissions
+from a file.
+
 ### Fields
 
 Fields can be:

@@ -23,7 +23,7 @@ public class MetadataProvider : IMetadataProvider
         ArgumentNullException.ThrowIfNull(entities);
 
         _entities = entities.ToDictionary(e => e.Name, StringComparer.OrdinalIgnoreCase);
-        Permission = permission ?? new PermissionManagement([], IsDenied: false);
+        Permission = permission ?? new PermissionManagement(IsDenied: false);
     }
 
     public IMetadataPermission Permission { get; }
