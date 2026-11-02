@@ -26,6 +26,28 @@ public sealed class _17_FieldMetadataTests
     }
 
     [Test]
+    public void RawSqlFieldRequiresPermissionForItsLogicalField()
+    {
+        var metadata = new MetadataProvider(
+        [
+            new Entity(
+                "OrderLine",
+                [
+                    new Field("Quantity", "Quantity"),
+                    new Field("LineTotal", "@Quantity", IsRawSql: true)
+                ])
+        ],
+        new PermissionManagement(
+            [new MetadataPermission("OrderLine", ["Quantity"])],
+            IsDenied: false));
+        using var db = new OQueryEngine(new SqliteConnection(), metadata, new SqliteDialect());
+
+        Assert.That(
+            () => db.Query("OrderLine").Select("LineTotal").ToSql(),
+            Throws.TypeOf<UnauthorizedAccessException>());
+    }
+
+    [Test]
     public void DbFieldRendersItsPhysicalColumnName()
     {
         var metadata = new MetadataProvider(

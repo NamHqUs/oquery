@@ -9,7 +9,7 @@ namespace OQuery;
 public interface IMetadataProvider
 {
     IMetadataPermission Permission { get; }
-    Entity GetEntity(string entityName);
+    IEntity GetEntity(string entityName);
     IReadOnlyList<Field> GetFields(IEntity entity);
     Field GetField(IEntity entity, string fieldName);
 }
@@ -31,7 +31,7 @@ public class MetadataProvider : IMetadataProvider
     public IMetadataPermission Permission { get; }
     public IReadOnlyCollection<Entity> Entities => _entities.Values;
 
-    public Entity GetEntity(string entityName)
+    public IEntity GetEntity(string entityName)
     {
         if (_entities.TryGetValue(entityName, out Entity? entity))
             return entity;

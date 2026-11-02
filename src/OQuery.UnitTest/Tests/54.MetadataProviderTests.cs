@@ -15,13 +15,14 @@ public sealed class _54_MetadataProviderTests
             """);
 
         var entity = provider.GetEntity("customer");
+        var fields = provider.GetFields(entity);
 
         Assert.Multiple(() =>
         {
             Assert.That(entity.Name, Is.EqualTo("Customer"));
             Assert.That(entity.DbTable, Is.EqualTo("customers"));
-            Assert.That(entity.Fields, Has.Count.EqualTo(1));
-            Assert.That(entity.Fields[0], Is.EqualTo(new Field("Id", DataType: DataType.Number)));
+            Assert.That(fields, Has.Count.EqualTo(1));
+            Assert.That(fields[0], Is.EqualTo(new Field("Id", DataType: DataType.Number)));
         });
     }
 

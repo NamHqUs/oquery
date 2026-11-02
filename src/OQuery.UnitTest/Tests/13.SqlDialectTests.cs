@@ -18,7 +18,9 @@ public class _13_SqlDialectTests
         using var connection = new Microsoft.Data.SqlClient.SqlConnection();
         using var db = new OQueryEngine(connection, Metadata, new SqlServerDialect());
 
-        Assert.That(new SqlServerDialect().RenderTable(Metadata.GetEntity("User")), Is.EqualTo("[dbo].[User]"));
+        Assert.That(
+            new SqlServerDialect().RenderTable((Entity)Metadata.GetEntity("User")),
+            Is.EqualTo("[dbo].[User]"));
 
         var sql = db.Query("User").Select("Id").ToString();
 

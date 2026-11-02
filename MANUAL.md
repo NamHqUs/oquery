@@ -130,10 +130,17 @@ trusted and use read-only database permissions where applicable.
 ### Metadata permissions
 
 Field access can be configured with `PermissionManagement` and supplied to the
-metadata provider. Permissions are checked when the SQL generator renders each
-resolved field, before the field becomes part of the SQL statement. This
-covers fields in projections, filters, sorting, grouping, joins, CTEs, and
-subqueries without adding permission work to every visitor operation.
+metadata provider. Permissions are checked when visitors resolve fields, before
+the field becomes part of the query model. This covers fields in projections,
+filters, sorting, grouping, joins, CTEs, and subqueries without adding
+permission work to every renderer operation.
+
+When no permission provider is supplied, `MetadataProvider` intentionally
+defaults to allow-all behavior. Applications that require metadata
+authorization should always provide an explicit `IMetadataPermission`.
+This default applies to `new MetadataProvider(entities)` and to metadata
+loaded through `MetadataProvider.FromYml` or `FromYmlFile` without an
+explicit permission provider.
 
 ```csharp
 var permissions = new PermissionManagement(
@@ -150,8 +157,9 @@ var metadataProvider = new MetadataProvider(metadata, permissions);
 makes them a deny-list. A null `Fields` list creates an `EntityName\0*`
 wildcard, which applies to every field of that entity. Permission keys are
 stored in one case-insensitive hash set; the wildcard is checked before the
-field-specific key. Relations are used to resolve field paths but are not
-permission-checked.
+field-specific key. Relation fields are checked after relation paths are
+resolved. Raw SQL and calculated fields are authorized by their logical
+metadata field name before their trusted SQL expression is rendered.
 
 Permissions can also be loaded from YAML:
 
