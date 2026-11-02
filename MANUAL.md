@@ -129,7 +129,7 @@ trusted and use read-only database permissions where applicable.
 
 ### Metadata permissions
 
-Field access can be configured with `PermissionManagement` and supplied to the
+Field access can be configured with `MetadataFieldAuthorizer` and supplied to the
 metadata provider. Permissions are checked when visitors resolve fields, before
 the field becomes part of the query model. This covers fields in projections,
 filters, sorting, grouping, joins, CTEs, and subqueries without adding
@@ -137,24 +137,24 @@ permission work to every renderer operation.
 
 When no permission provider is supplied, `MetadataProvider` intentionally
 defaults to allow-all behavior. Applications that require metadata
-authorization should always provide an explicit `IMetadataPermission`.
+authorization should always provide an explicit `IMetadataFieldAuthorizer`.
 This default applies to `new MetadataProvider(entities)` and to metadata
 loaded through `MetadataProvider.FromYml` or `FromYmlFile` without an
 explicit permission provider.
 
 ```csharp
-var permissions = new PermissionManagement(
+var authorizer = new MetadataFieldAuthorizer(
     [
-        new MetadataPermission("User", ["Id", "DisplayName"]),
-        new MetadataPermission("AuditLog", null),
+        new MetadataFieldPermission("User", ["Id", "DisplayName"]),
+        new MetadataFieldPermission("AuditLog", null),
     ],
-    IsDenied: false);
+    accessMode: AccessMode.Allow);
 
-var metadataProvider = new MetadataProvider(metadata, permissions);
+var metadataProvider = new MetadataProvider(metadata, authorizer);
 ```
 
-`IsDenied: false` makes the configured fields an allow-list. `IsDenied: true`
-makes them a deny-list. A null `Fields` list creates an `EntityName\0*`
+`AccessMode.Allow` allows only configured fields. `AccessMode.Deny`
+denies configured fields. A null `Fields` list creates an `EntityName\0*`
 wildcard, which applies to every field of that entity. Permission keys are
 stored in one case-insensitive hash set; the wildcard is checked before the
 field-specific key. Relation fields are checked after relation paths are
@@ -164,7 +164,7 @@ metadata field name before their trusted SQL expression is rendered.
 Permissions can also be loaded from YAML:
 
 ```csharp
-var permissions = PermissionManagement.FromYml("""
+var authorizer = MetadataFieldAuthorizer.FromYml("""
     - entityName: User
       fields:
       - Id
@@ -173,7 +173,7 @@ var permissions = PermissionManagement.FromYml("""
     """);
 ```
 
-Use `PermissionManagement.FromYmlFile(filePath)` when loading permissions
+Use `MetadataFieldAuthorizer.FromYmlFile(filePath)` when loading permissions
 from a file.
 
 ### Fields

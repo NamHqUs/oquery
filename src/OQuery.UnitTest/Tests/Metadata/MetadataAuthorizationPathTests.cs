@@ -33,9 +33,9 @@ public sealed class MetadataAuthorizationPathTests
         [
             new Entity("User", [new Field("Id"), new Field("Secret")])
         ],
-        new PermissionManagement(
-            [new MetadataPermission("User", ["Id"])],
-            IsDenied: false));
+        new MetadataFieldAuthorizer(
+            [new MetadataFieldPermission("User", ["Id"])],
+            accessMode: AccessMode.Allow));
         using var db = new OQueryEngine(new SqliteConnection(), metadata, new SqliteDialect());
 
         var sql = db.Query("User")
@@ -94,9 +94,9 @@ public sealed class MetadataAuthorizationPathTests
         [
             new Entity("User", [new Field("Id"), new Field("Name"), new Field("Secret")])
         ],
-        new PermissionManagement(
-            [new MetadataPermission("User", ["Id", "Name"])],
-            IsDenied: false));
+        new MetadataFieldAuthorizer(
+            [new MetadataFieldPermission("User", ["Id", "Name"])],
+            accessMode: AccessMode.Allow));
         using var db = new OQueryEngine(new SqliteConnection(), metadata, new SqliteDialect());
         var query = new QueryDefinition
         {
@@ -188,9 +188,9 @@ public sealed class MetadataAuthorizationPathTests
         [
             new Entity("User", [new Field("Id"), new Field("Secret")])
         ],
-        new PermissionManagement(
-            [new MetadataPermission("User", ["Id"])],
-            IsDenied: false));
+        new MetadataFieldAuthorizer(
+            [new MetadataFieldPermission("User", ["Id"])],
+            accessMode: AccessMode.Allow));
         using var db = new OQueryEngine(new SqliteConnection(), metadata, new SqliteDialect());
         var query = new QueryDefinition
         {
@@ -309,13 +309,13 @@ public sealed class MetadataAuthorizationPathTests
                 ]),
             new Entity("Tag", [new Field("Id"), new Field("MemberId"), new Field("Secret")])
         ],
-        new PermissionManagement(
+        new MetadataFieldAuthorizer(
         [
-            new MetadataPermission("User", ["Id"]),
-            new MetadataPermission("Member", ["Id"]),
-            new MetadataPermission("Tag", ["Id", "MemberId"])
+            new MetadataFieldPermission("User", ["Id"]),
+            new MetadataFieldPermission("Member", ["Id"]),
+            new MetadataFieldPermission("Tag", ["Id", "MemberId"])
         ],
-        IsDenied: false));
+        accessMode: AccessMode.Allow));
         using var db = new OQueryEngine(new SqliteConnection(), metadata, new SqliteDialect());
 
         Assert.That(
@@ -445,7 +445,7 @@ public sealed class MetadataAuthorizationPathTests
     {
         var entity = new Entity("User", [new Field("Id")]);
         var allowAll = new MetadataProvider([entity]);
-        var defaultDeny = new MetadataProvider([entity], new PermissionManagement());
+        var defaultDeny = new MetadataProvider([entity], new MetadataFieldAuthorizer());
 
         Assert.Multiple(() =>
         {
@@ -500,12 +500,12 @@ public sealed class MetadataAuthorizationPathTests
                 ]),
             new Entity("Member", [new Field("Id"), new Field("UserId"), new Field("Secret")])
         ],
-        new PermissionManagement(
+        new MetadataFieldAuthorizer(
         [
-            new MetadataPermission("User", ["Id", "Name"]),
-            new MetadataPermission("Member", ["Id"])
+            new MetadataFieldPermission("User", ["Id", "Name"]),
+            new MetadataFieldPermission("Member", ["Id"])
         ],
-        IsDenied: false));
+        accessMode: AccessMode.Allow));
 
         return new OQueryEngine(new SqliteConnection(), metadata, new SqliteDialect());
     }
@@ -515,9 +515,9 @@ public sealed class MetadataAuthorizationPathTests
         [
             new Entity("User", [new Field("Id"), new Field("Name"), new Field("Secret")])
         ],
-        new PermissionManagement(
-            [new MetadataPermission("User", ["Id", "Name"])],
-            IsDenied: false));
+        new MetadataFieldAuthorizer(
+            [new MetadataFieldPermission("User", ["Id", "Name"])],
+            accessMode: AccessMode.Allow));
 
     private static MetadataProvider RestrictedRelationMetadata()
         => new(
@@ -525,10 +525,10 @@ public sealed class MetadataAuthorizationPathTests
             new Entity("User", [new Field("Id"), new Field("Secret")]),
             new Entity("Member", [new Field("Id"), new Field("Secret")])
         ],
-        new PermissionManagement(
+        new MetadataFieldAuthorizer(
         [
-            new MetadataPermission("User", ["Id"]),
-            new MetadataPermission("Member", ["Id"])
+            new MetadataFieldPermission("User", ["Id"]),
+            new MetadataFieldPermission("Member", ["Id"])
         ],
-        IsDenied: false));
+        accessMode: AccessMode.Allow));
 }

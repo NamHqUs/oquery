@@ -1,5 +1,4 @@
 using Microsoft.Data.Sqlite;
-
 namespace OQuery.UnitTest.Tests.Metadata;
 
 [TestFixture]
@@ -37,9 +36,9 @@ public sealed class FieldMetadataTests
                     new Field("LineTotal", "@Quantity", IsRawSql: true)
                 ])
         ],
-        new PermissionManagement(
-            [new MetadataPermission("OrderLine", ["Quantity"])],
-            IsDenied: false));
+        new MetadataFieldAuthorizer(
+            [new MetadataFieldPermission("OrderLine", ["Quantity"])],
+            accessMode: AccessMode.Allow));
         using var db = new OQueryEngine(new SqliteConnection(), metadata, new SqliteDialect());
 
         Assert.That(

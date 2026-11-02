@@ -1,12 +1,12 @@
 namespace OQuery.UnitTest.Tests.Metadata;
 
 [TestFixture]
-public sealed class MetadataPermissionTests
+public sealed class MetadataFieldPermissionTests
 {
     [Test]
-    public void FromYmlCreatesPermissionManagement()
+    public void FromYmlCreatesMetadataFieldAuthorizer()
     {
-        var permissions = PermissionManagement.FromYml("""
+        var permissions = MetadataFieldAuthorizer.FromYml("""
             - entityName: User
               fields:
               - Id
@@ -24,15 +24,15 @@ public sealed class MetadataPermissionTests
     }
 
     [Test]
-    public void ConstructorWithYmlUsesAllowListWhenRequested()
+    public void ConstructorWithYmlUsesAllowModeWhenRequested()
     {
-        var permissions = new PermissionManagement(
+        var permissions = new MetadataFieldAuthorizer(
             """
             - entityName: User
               fields:
               - Id
             """,
-            IsDenied: false);
+            accessMode: AccessMode.Allow);
 
         Assert.Multiple(() =>
         {
@@ -45,12 +45,12 @@ public sealed class MetadataPermissionTests
     public void FromYmlRejectsNullYaml()
     {
         Assert.That(
-            () => PermissionManagement.FromYml(null!),
+            () => MetadataFieldAuthorizer.FromYml(null!),
             Throws.TypeOf<ArgumentNullException>());
     }
 
     [Test]
-    public void FromYmlFileCreatesPermissionManagement()
+    public void FromYmlFileCreatesMetadataFieldAuthorizer()
     {
         var path = Path.Combine(
             Path.GetTempPath(),
@@ -64,7 +64,7 @@ public sealed class MetadataPermissionTests
                   - Id
                 """);
 
-            var permissions = PermissionManagement.FromYmlFile(path);
+            var permissions = MetadataFieldAuthorizer.FromYmlFile(path);
 
             Assert.That(permissions.CanReadField("User", "Id"), Is.False);
         }
@@ -78,7 +78,7 @@ public sealed class MetadataPermissionTests
     public void FromYmlFileRejectsNullPath()
     {
         Assert.That(
-            () => PermissionManagement.FromYmlFile(null!),
+            () => MetadataFieldAuthorizer.FromYmlFile(null!),
             Throws.TypeOf<ArgumentNullException>());
     }
 
@@ -86,7 +86,7 @@ public sealed class MetadataPermissionTests
     public void FromYmlReportsYamlError()
     {
         var exception = Assert.Throws<FormatException>(() =>
-            PermissionManagement.FromYml("""
+            MetadataFieldAuthorizer.FromYml("""
                 - entityName: User
                   fields: [}
                 """));

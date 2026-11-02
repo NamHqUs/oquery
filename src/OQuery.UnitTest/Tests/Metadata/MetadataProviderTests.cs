@@ -34,9 +34,9 @@ public sealed class MetadataProviderTests
             [new Field("Id"), new Field("Name")]);
         var provider = new MetadataProvider(
             [entity],
-            new PermissionManagement(
-                [new MetadataPermission("Customer", ["Id"])],
-                IsDenied: false));
+            new MetadataFieldAuthorizer(
+                [new MetadataFieldPermission("Customer", ["Id"])],
+                accessMode: AccessMode.Allow));
 
         Assert.Multiple(() =>
         {

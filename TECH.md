@@ -54,7 +54,7 @@ wheel to zoom, drag to pan).
    and collects parameters.
 4. **Authorize and render the SQL statement** passes the resulting IR to
    `SqlStatementGenerator`. The generator checks each `FieldExpression` through
-   `IMetadataPermission` immediately before rendering its column. This avoids
+   `IMetadataFieldAuthorizer` immediately before rendering its column. This avoids
    permission checks during every visitor operation while ensuring fields used
    in projections, filters, ordering, grouping, joins, CTEs, and subqueries are
    checked before SQL is emitted. `ISqlDialect` owns quoting, table rendering,

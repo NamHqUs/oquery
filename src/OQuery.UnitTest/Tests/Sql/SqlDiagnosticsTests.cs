@@ -1,5 +1,4 @@
 using Microsoft.Data.SqlClient;
-
 namespace OQuery.UnitTest.Tests.Sql;
 
 [TestFixture]
@@ -52,9 +51,9 @@ public sealed class SqlDiagnosticsTests
         [
             new Entity("User", [new Field("Id", "Id"), new Field("Secret", "Secret")])
         ],
-        new PermissionManagement(
-            [new MetadataPermission("User", ["Id"])],
-            IsDenied: false));
+        new MetadataFieldAuthorizer(
+            [new MetadataFieldPermission("User", ["Id"])],
+            accessMode: AccessMode.Allow));
 
         using var connection = new SqlConnection();
         using var db = new OQueryEngine(connection, metadata, new SqlServerDialect());

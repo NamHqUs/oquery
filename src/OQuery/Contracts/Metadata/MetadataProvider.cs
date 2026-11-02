@@ -8,7 +8,7 @@ namespace OQuery;
 
 public interface IMetadataProvider
 {
-    IMetadataPermission Permission { get; }
+    IMetadataFieldAuthorizer Authorizer { get; }
     IEntity GetEntity(string entityName);
     IReadOnlyList<Field> GetFields(IEntity entity);
     Field GetField(IEntity entity, string fieldName);
@@ -20,15 +20,16 @@ public class MetadataProvider : IMetadataProvider
 
     public MetadataProvider(
         IEnumerable<Entity> entities,
-        IMetadataPermission? permission = null)
+        IMetadataFieldAuthorizer? authorizer = null)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
         _entities = entities.ToDictionary(e => e.Name, StringComparer.OrdinalIgnoreCase);
-        Permission = permission ?? new PermissionManagement(IsDenied: false);
+        Authorizer = authorizer
+            ?? new MetadataFieldAuthorizer(accessMode: AccessMode.Allow);
     }
 
-    public IMetadataPermission Permission { get; }
+    public IMetadataFieldAuthorizer Authorizer { get; }
     public IReadOnlyCollection<Entity> Entities => _entities.Values;
 
     public IEntity GetEntity(string entityName)
@@ -47,7 +48,7 @@ public class MetadataProvider : IMetadataProvider
             throw new EntityNotFoundException(entity.Name);
 
         var fields = metadataEntity.Fields
-            .Where(field => Permission.CanReadField(entity.Name, field.Name))
+            .Where(field => Authorizer.CanReadField(entity.Name, field.Name))
             .ToArray();
 
         if (fields.Length == 0 && metadataEntity.Fields.Count != 0)
@@ -66,7 +67,7 @@ public class MetadataProvider : IMetadataProvider
             throw new FieldNotFoundException(entity.Name, fieldName);
 
         var field = metadataEntity.GetField(fieldName);
-        if (!Permission.CanReadField(entity.Name, field.Name))
+        if (!Authorizer.CanReadField(entity.Name, field.Name))
             throw new UnauthorizedAccessException(
                 $"Field [{field.Name}] is not allowed in entity [{entity.Name}].");
 
