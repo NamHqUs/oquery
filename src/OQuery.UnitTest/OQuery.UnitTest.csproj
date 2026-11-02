@@ -6,11 +6,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Compile Remove="Tests\ComputedTest.cs" />
-		<Compile Remove="Tests\TakeTest.cs" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<Content Remove="C:\Users\namhq\.nuget\packages\microsoft.testplatform.testhost\18.10.1\build\net8.0\x64\testhost.dll" />
 		<Content Remove="C:\Users\namhq\.nuget\packages\microsoft.testplatform.testhost\18.10.1\build\net8.0\x64\testhost.exe" />
 	</ItemGroup>
