@@ -1,0 +1,69 @@
+- name: Customers
+  dbSchema: sa
+  dbTable: Customers
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: Name }
+  - { name: Email }
+  - { name: Phone }
+  - { name: Address }
+  - { name: Segment }
+  - { name: Region }
+  - { name: CustomerSince, dataType: Datetime }
+  - { name: CreatedOn, dataType: Datetime }
+  - { name: UpdatedOn, dataType: Datetime }
+  relations:
+  - { name: Invoices, refEntity: Invoices, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: CustomerId }] }
+- name: Products
+  dbSchema: sa
+  dbTable: Products
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: Name }
+  - { name: Description }
+  - { name: Category }
+  - { name: UnitPrice, dataType: Number }
+  - { name: CostPrice, dataType: Number }
+  - { name: StockQuantity, dataType: Number }
+  - { name: ReorderLevel, dataType: Number }
+  - { name: CreatedOn, dataType: Datetime }
+  - { name: UpdatedOn, dataType: Datetime }
+  relations:
+  - { name: InvoiceItems, refEntity: InvoiceItems, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: ProductId }] }
+- name: Invoices
+  dbSchema: sa
+  dbTable: Invoices
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: CustomerId, dataType: Number }
+  - { name: InvoiceNumber }
+  - { name: InvoiceDate, dataType: Datetime }
+  - { name: DueDate, dataType: Datetime }
+  - { name: Status }
+  - { name: SalesChannel }
+  - { name: PaymentMethod }
+  - { name: PaidOn, dataType: Datetime }
+  - { name: DiscountAmount, dataType: Number }
+  - { name: TaxAmount, dataType: Number }
+  - { name: TotalAmount, dataType: Number }
+  - { name: CreatedOn, dataType: Datetime }
+  - { name: UpdatedOn, dataType: Datetime }
+  relations:
+  - { name: Customer, refEntity: Customers, type: Lookup, refKeys: [{ dbColumn: CustomerId, refDbColumn: Id }] }
+  - { name: Items, refEntity: InvoiceItems, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: InvoiceId }] }
+- name: InvoiceItems
+  dbSchema: sa
+  dbTable: InvoiceItems
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: InvoiceId, dataType: Number }
+  - { name: ProductId, dataType: Number }
+  - { name: Quantity, dataType: Number }
+  - { name: UnitPrice, dataType: Number }
+  - { name: DiscountAmount, dataType: Number }
+  - { name: LineTotal, dataType: Number }
+  - { name: CreatedOn, dataType: Datetime }
+  - { name: UpdatedOn, dataType: Datetime }
+  relations:
+  - { name: Invoice, refEntity: Invoices, type: Lookup, refKeys: [{ dbColumn: InvoiceId, refDbColumn: Id }] }
+  - { name: Product, refEntity: Products, type: Lookup, refKeys: [{ dbColumn: ProductId, refDbColumn: Id }] }

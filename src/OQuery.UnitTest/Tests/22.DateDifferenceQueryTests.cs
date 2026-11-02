@@ -28,9 +28,9 @@ internal sealed class _22_DateDifferenceQueryTests
             [
                 new(
                     Name: "Customer",
-                    RelatedEntity: "Customers",
+                    RefEntity: "Customers",
                     Type: RelationType.Lookup,
-                    RelatedKeys: [new("CustomerId", "Id")])
+                    RefKeys: [new("CustomerId", "Id")])
             ])
     ];
 

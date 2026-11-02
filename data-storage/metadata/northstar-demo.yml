@@ -1,0 +1,221 @@
+- name: Locations
+  dbSchema: Main
+  dbTable: Locations
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: Name }
+  - { name: City }
+  - { name: State }
+  relations:
+  - { name: Employees, refEntity: Employees, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: LocationId }] }
+  - { name: Visits, refEntity: Visits, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: LocationId }] }
+- name: Users
+  dbSchema: Main
+  dbTable: Users
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: FirstName }
+  - { name: LastName }
+  - { name: BirthDate, dataType: Datetime }
+  - { name: Gender }
+  - { name: City }
+  - { name: State }
+  relations:
+  - { name: Orders, refEntity: Orders, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: UserId }] }
+  - { name: PatientVisits, refEntity: Visits, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: UserId }] }
+  - { name: MemberPolicies, refEntity: Policies, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: UserId }] }
+- name: Departments
+  dbSchema: hr
+  dbTable: Departments
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: Name }
+  relations:
+  - { name: Employees, refEntity: Employees, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: DepartmentId }] }
+- name: Employees
+  dbSchema: Main
+  dbTable: Employees
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: FirstName }
+  - { name: LastName }
+  - { name: DepartmentId, dataType: Number }
+  - { name: LocationId, dataType: Number }
+  - { name: ManagerId, dataType: Number }
+  - { name: JobTitle }
+  - { name: HireDate, dataType: Datetime }
+  - { name: Salary, dataType: Number }
+  - { name: EmploymentType }
+  relations:
+  - { name: Department, refEntity: Departments, type: Lookup, refKeys: [{ dbColumn: DepartmentId, refDbColumn: Id }] }
+  - { name: Location, refEntity: Locations, type: Lookup, refKeys: [{ dbColumn: LocationId, refDbColumn: Id }] }
+  - { name: Manager, refEntity: Employees, type: Lookup, refKeys: [{ dbColumn: ManagerId, refDbColumn: Id }] }
+  - { name: DirectReports, refEntity: Employees, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: ManagerId }] }
+  - { name: SalesOrders, refEntity: Orders, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: SalesRepId }] }
+  - { name: PhysicianVisits, refEntity: Visits, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: DoctorId }] }
+  - { name: AgentPolicies, refEntity: Policies, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: AgentId }] }
+  - { name: PerformanceReviews, refEntity: PerformanceReviews, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: EmployeeId }] }
+  - { name: LeaveRequests, refEntity: LeaveRequests, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: EmployeeId }] }
+- name: PerformanceReviews
+  dbSchema: hr
+  dbTable: PerformanceReviews
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: EmployeeId, dataType: Number }
+  - { name: ReviewYear, dataType: Number }
+  - { name: Rating, dataType: Number }
+  - { name: BonusAmount, dataType: Number }
+  relations:
+  - { name: Employee, refEntity: Employees, type: Lookup, refKeys: [{ dbColumn: EmployeeId, refDbColumn: Id }] }
+- name: LeaveRequests
+  dbSchema: hr
+  dbTable: LeaveRequests
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: EmployeeId, dataType: Number }
+  - { name: LeaveType }
+  - { name: StartDate, dataType: Datetime }
+  - { name: Days, dataType: Number }
+  - { name: Status }
+  relations:
+  - { name: Employee, refEntity: Employees, type: Lookup, refKeys: [{ dbColumn: EmployeeId, refDbColumn: Id }] }
+- name: NorthStarProducts
+  dbSchema: sa
+  dbTable: Products
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: Name }
+  - { name: Category }
+  - { name: UnitPrice, dataType: Number }
+  - { name: CostPrice, dataType: Number }
+  relations:
+  - { name: OrderItems, refEntity: OrderItems, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: ProductId }] }
+- name: Orders
+  dbSchema: sa
+  dbTable: Orders
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: UserId, dataType: Number }
+  - { name: SalesRepId, dataType: Number }
+  - { name: OrderDate, dataType: Datetime }
+  - { name: Channel }
+  - { name: Status }
+  relations:
+  - { name: User, refEntity: Users, type: Lookup, refKeys: [{ dbColumn: UserId, refDbColumn: Id }] }
+  - { name: SalesRep, refEntity: Employees, type: Lookup, refKeys: [{ dbColumn: SalesRepId, refDbColumn: Id }] }
+  - { name: Items, refEntity: OrderItems, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: OrderId }] }
+- name: OrderItems
+  dbSchema: sa
+  dbTable: OrderItems
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: OrderId, dataType: Number }
+  - { name: ProductId, dataType: Number }
+  - { name: Quantity, dataType: Number }
+  - { name: UnitPrice, dataType: Number }
+  - { name: DiscountAmount, dataType: Number }
+  relations:
+  - { name: Order, refEntity: Orders, type: Lookup, refKeys: [{ dbColumn: OrderId, refDbColumn: Id }] }
+  - { name: Product, refEntity: NorthStarProducts, type: Lookup, refKeys: [{ dbColumn: ProductId, refDbColumn: Id }] }
+- name: Diagnoses
+  dbSchema: he
+  dbTable: Diagnoses
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: Code }
+  - { name: Name }
+  - { name: Category }
+  - { name: IsChronic, dataType: Boolean }
+  relations:
+  - { name: Visits, refEntity: Visits, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: DiagnosisId }] }
+- name: Visits
+  dbSchema: he
+  dbTable: Visits
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: UserId, dataType: Number }
+  - { name: DoctorId, dataType: Number }
+  - { name: LocationId, dataType: Number }
+  - { name: VisitDate, dataType: Datetime }
+  - { name: VisitType }
+  - { name: DiagnosisId, dataType: Number }
+  - { name: DurationMinutes, dataType: Number }
+  - { name: Charge, dataType: Number }
+  - { name: Status }
+  relations:
+  - { name: Patient, refEntity: Users, type: Lookup, refKeys: [{ dbColumn: UserId, refDbColumn: Id }] }
+  - { name: Doctor, refEntity: Employees, type: Lookup, refKeys: [{ dbColumn: DoctorId, refDbColumn: Id }] }
+  - { name: Location, refEntity: Locations, type: Lookup, refKeys: [{ dbColumn: LocationId, refDbColumn: Id }] }
+  - { name: Diagnosis, refEntity: Diagnoses, type: Lookup, refKeys: [{ dbColumn: DiagnosisId, refDbColumn: Id }] }
+  - { name: LabResults, refEntity: LabResults, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: VisitId }] }
+  - { name: Claims, refEntity: Claims, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: VisitId }] }
+- name: LabResults
+  dbSchema: he
+  dbTable: LabResults
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: VisitId, dataType: Number }
+  - { name: TestName }
+  - { name: ResultValue, dataType: Number }
+  - { name: ReferenceMax, dataType: Number }
+  - { name: IsAbnormal, dataType: Boolean }
+  relations:
+  - { name: Visit, refEntity: Visits, type: Lookup, refKeys: [{ dbColumn: VisitId, refDbColumn: Id }] }
+- name: InsurancePlans
+  dbSchema: in
+  dbTable: InsurancePlans
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: Name }
+  - { name: Tier }
+  - { name: MonthlyPremium, dataType: Number }
+  - { name: Deductible, dataType: Number }
+  - { name: OutOfPocketMax, dataType: Number }
+  - { name: CoinsuranceRate, dataType: Number }
+  relations:
+  - { name: Policies, refEntity: Policies, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: PlanId }] }
+- name: Policies
+  dbSchema: in
+  dbTable: Policies
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: UserId, dataType: Number }
+  - { name: PlanId, dataType: Number }
+  - { name: AgentId, dataType: Number }
+  - { name: StartDate, dataType: Datetime }
+  - { name: EndDate, dataType: Datetime }
+  - { name: Status }
+  relations:
+  - { name: User, refEntity: Users, type: Lookup, refKeys: [{ dbColumn: UserId, refDbColumn: Id }] }
+  - { name: Plan, refEntity: InsurancePlans, type: Lookup, refKeys: [{ dbColumn: PlanId, refDbColumn: Id }] }
+  - { name: Agent, refEntity: Employees, type: Lookup, refKeys: [{ dbColumn: AgentId, refDbColumn: Id }] }
+  - { name: PremiumPayments, refEntity: PremiumPayments, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: PolicyId }] }
+  - { name: Claims, refEntity: Claims, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: PolicyId }] }
+- name: PremiumPayments
+  dbSchema: in
+  dbTable: PremiumPayments
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: PolicyId, dataType: Number }
+  - { name: PaymentDate, dataType: Datetime }
+  - { name: Amount, dataType: Number }
+  - { name: Status }
+  relations:
+  - { name: Policy, refEntity: Policies, type: Lookup, refKeys: [{ dbColumn: PolicyId, refDbColumn: Id }] }
+- name: Claims
+  dbSchema: in
+  dbTable: Claims
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: PolicyId, dataType: Number }
+  - { name: VisitId, dataType: Number }
+  - { name: ClaimDate, dataType: Datetime }
+  - { name: BilledAmount, dataType: Number }
+  - { name: AllowedAmount, dataType: Number }
+  - { name: PaidAmount, dataType: Number }
+  - { name: Status }
+  - { name: DenialReason }
+  - { name: ProcessedDate, dataType: Datetime }
+  relations:
+  - { name: Policy, refEntity: Policies, type: Lookup, refKeys: [{ dbColumn: PolicyId, refDbColumn: Id }] }
+  - { name: Visit, refEntity: Visits, type: Lookup, refKeys: [{ dbColumn: VisitId, refDbColumn: Id }] }

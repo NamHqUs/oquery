@@ -21,9 +21,9 @@ public sealed class _16_QueryExpressionTests
             [
                 new(
                     Name: "InvoiceItems",
-                    RelatedEntity: "InvoiceItems",
+                    RefEntity: "InvoiceItems",
                     Type: RelationType.Collection,
-                    RelatedKeys: [new("Id", "ProductId")])
+                    RefKeys: [new("Id", "ProductId")])
             ]),
         new(
             Name: "InvoiceItems",
@@ -39,9 +39,9 @@ public sealed class _16_QueryExpressionTests
             [
                 new(
                     Name: "Invoice",
-                    RelatedEntity: "Invoices",
+                    RefEntity: "Invoices",
                     Type: RelationType.Lookup,
-                    RelatedKeys: [new("InvoiceId", "Id")])
+                    RefKeys: [new("InvoiceId", "Id")])
             ]),
         new(
             Name: "Invoices",

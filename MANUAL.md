@@ -66,18 +66,25 @@ var metadata = new[]
         [
             new(
                 Name: "Manager",
-                RelatedEntity: "User",
+                RefEntity: "User",
                 Type: RelationType.Lookup,
-                RelatedKeys: [new("ManagerId", "Id")]),
+                RefKeys: [new("ManagerId", "Id")]),
             new(
                 Name: "Members",
-                RelatedEntity: "User",
+                RefEntity: "User",
                 Type: RelationType.Collection,
-                RelatedKeys: [new("Id", "ManagerId")]),
+                RefKeys: [new("Id", "ManagerId")]),
         ])
 };
 
-var metaProvider = new MetaProvider(metadata);
+var metadataProvider = new MetadataProvider(metadata);
+```
+
+Metadata can also be loaded from the YAML array format used by the demo
+metadata files:
+
+```csharp
+var metadataProvider = MetadataProvider.FromYmlFile("metadata.yml");
 ```
 
 ### Entities
@@ -150,9 +157,9 @@ Use `RelationType.Lookup` for one related row and
 ```csharp
 new Relation(
     Name: "School",
-    RelatedEntity: "School",
+    RefEntity: "School",
     Type: RelationType.Lookup,
-    RelatedKeys: [new("SchoolId", "Id")]);
+    RefKeys: [new("SchoolId", "Id")]);
 ```
 
 ## Create a context
@@ -525,7 +532,7 @@ var toDate = new FunctionDefinition(
         ["Oracle"] = "TO_DATE({1}, 'YYYY-MM-DD')"
     });
 
-var metadata = new MetaProvider(entities);
+var metadata = new MetadataProvider(entities);
 var functionProvider = new FunctionProvider(new SqlServerDialect(), [toDate]);
 ```
 
@@ -546,7 +553,7 @@ var today = new FunctionDefinition(
         ["Cockroach"] = "CAST({1} AS DATE)"
     });
 
-var metadata = new MetaProvider(entities);
+var metadata = new MetadataProvider(entities);
 var functionProvider = new FunctionProvider(new SqlServerDialect(), [today]);
 using var context = new OQueryEngine(connection, metadata, functionProvider, dialect);
 ```

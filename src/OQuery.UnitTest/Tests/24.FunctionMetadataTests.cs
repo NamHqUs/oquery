@@ -229,7 +229,7 @@ public sealed class _24_FunctionMetadataTests
     }
 
     [Test]
-    public void MetaProviderExposesBuiltInAndCustomFunctionMetadata()
+    public void MetadataProviderExposesBuiltInAndCustomFunctionMetadata()
     {
         var customFunction = new SqlFunctionDefintion(
             name: "TODAY",

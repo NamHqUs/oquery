@@ -424,7 +424,7 @@ class QueryContext(
                 .Select(e =>
                 {
                     var rel = next.GetRelation(e);
-                    next = metaProvider.GetEntity(rel.RelatedEntity);
+                    next = metaProvider.GetEntity(rel.RefEntity);
                     return (rel, next);
                 })
                 .ToList();
@@ -488,11 +488,11 @@ class QueryContext(
     private List<SqlExpression> BuildJoinKeys(TableExpression table, TableExpression joinedTable, Relation relation)
     {
         var predicates = new List<SqlExpression>();
-        foreach (var e in relation.RelatedKeys)
+        foreach (var e in relation.RefKeys)
             predicates.Add(new BinarySqlExpression(
-                new FieldExpression(joinedTable.Alias, new Field(e.ToDbColumn, e.ToDbColumn)),
+                new FieldExpression(joinedTable.Alias, new Field(e.RefDbColumn, e.RefDbColumn)),
                 "=",
-                new FieldExpression(table.Alias, new Field(e.FromDbColumn, e.FromDbColumn)),
+                new FieldExpression(table.Alias, new Field(e.DbColumn, e.DbColumn)),
                 typeof(bool)));
 
         return predicates;

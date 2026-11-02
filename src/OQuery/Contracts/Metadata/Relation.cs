@@ -10,17 +10,17 @@ public enum RelationType
 }
 
 [method: JsonConstructor]
-public record RelationItem(string FromDbColumn, string ToDbColumn)
+public record RelationItem(string DbColumn, string RefDbColumn)
 {
-    public RelationItem(string dbCollumn) : this(dbCollumn, dbCollumn)
+    public RelationItem(string dbColumn) : this(dbColumn, dbColumn)
     {
     }
 }
 
 public record Relation(
     string Name,
-    string RelatedEntity,
+    string RefEntity,
     RelationType Type,
-    List<RelationItem> RelatedKeys)
+    List<RelationItem> RefKeys)
 {
 }
