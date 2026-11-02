@@ -44,7 +44,7 @@ internal sealed class QueryRequestCockroachExecutionTests
     {
         var root = Path.Combine(
             GetRepositoryRoot(), "data-storage", "queries");
-        var markdown = File.ReadAllText(Path.Combine(GetRepositoryRoot(), "scripts", "northstar-demo-queries.md"));
+        var markdown = File.ReadAllText(Path.Combine(GetRepositoryRoot(), "data-storage", "scripts", "northstar-demo-queries.md"));
 
         var requests = Directory.EnumerateFiles(root, "*.json")
             .Where(path => Regex.IsMatch(Path.GetFileNameWithoutExtension(path), "^(Sales|Health|Insurance|HR) \\d+\\."))

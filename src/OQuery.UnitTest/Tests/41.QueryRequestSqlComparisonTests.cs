@@ -1214,7 +1214,7 @@ internal sealed class QueryRequestSqlComparisonTests
 
     private static string ExtractSqlServerStatement(string title)
     {
-        var markdown = File.ReadAllText(Path.Combine(GetRepositoryRoot(), "scripts", "northstar-demo-queries.md"));
+        var markdown = File.ReadAllText(Path.Combine(GetRepositoryRoot(), "data-storage", "scripts", "northstar-demo-queries.md"));
         var lines = markdown.Split('\n');
         var headingIndex = Array.FindIndex(
             lines,

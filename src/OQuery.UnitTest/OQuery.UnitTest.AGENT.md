@@ -12,7 +12,8 @@ testable.
 - Read the production API and neighboring tests before adding assertions.
 - Search all target-framework conditions and provider-specific tests.
 - Keep core query fixtures under `data-storage/queries` and scripts under
-  `scripts`; do not reference `OQuery.UI`, `Demo.*`, or UI-repository paths.
+  `data-storage/scripts`; do not reference `OQuery.UI`, `Demo.*`, or
+  UI-repository paths.
 - Treat Docker database tests as environment-dependent integration tests.
 
 ## Generating tests

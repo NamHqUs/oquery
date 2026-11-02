@@ -10,7 +10,7 @@ Keep the core project independent from `OQuery.UI` and the demo projects.
 - Production code is under `src/OQuery`.
 - Unit tests are under `src/OQuery.UnitTest`.
 - Query-definition fixtures are under `data-storage/queries`.
-- Database and report scripts are under `scripts`.
+- Database and report scripts are under `data-storage/scripts`.
 
 Preserve the `oquery` submodule boundary: core code must not reference UI or
 demo projects.

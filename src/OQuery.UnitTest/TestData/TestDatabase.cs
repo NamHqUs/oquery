@@ -207,7 +207,7 @@ internal sealed class TestDatabase
     private static string LoadScript(params string[] fileNames)
     {
         var path = new DirectoryInfo("../../../../../").FullName;
-        return string.Join(Environment.NewLine, fileNames.Select(fileName => File.ReadAllText(Path.Combine(path, "scripts", fileName))));
+        return string.Join(Environment.NewLine, fileNames.Select(fileName => File.ReadAllText(Path.Combine(path, "data-storage", "scripts", fileName))));
     }
     private static void ExecuteNonQuery(IDbConnection cn, string sql)
     {

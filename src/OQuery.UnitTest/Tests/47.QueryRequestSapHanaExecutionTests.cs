@@ -44,7 +44,7 @@ internal sealed class QueryRequestSapHanaExecutionTests
     {
         var root = GetRepositoryRoot();
         var requestRoot = Path.Combine(root, "data-storage", "queries");
-        var statements = LoadStatements(Path.Combine(root, "scripts", "northstar-demo-queries.md"));
+        var statements = LoadStatements(Path.Combine(root, "data-storage", "scripts", "northstar-demo-queries.md"));
         var requests = Directory.EnumerateFiles(requestRoot, "*.json")
             .Where(path =>
             {

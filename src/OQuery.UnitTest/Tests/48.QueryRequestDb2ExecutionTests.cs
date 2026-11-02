@@ -36,7 +36,7 @@ internal sealed class QueryRequestDb2ExecutionTests
             SqlDialect.ForConnection(_connection));
         _rawStatements = LoadStatements(Path.Combine(
             GetRepositoryRoot(),
-            "scripts",
+            "data-storage", "scripts",
             "northstar-demo-queries.md"));
     }
 

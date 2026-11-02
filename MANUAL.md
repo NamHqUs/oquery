@@ -705,7 +705,7 @@ dotnet test .\src\OQuery.UnitTest\OQuery.UnitTest.csproj
 ```
 
 SQL Server tests expect a local `DynamicSqlTest` database. SQLite, PostgreSQL,
-and CockroachDB scripts are included in `scripts`.
+and CockroachDB scripts are included in `data-storage/scripts`.
 
 ## License
 
