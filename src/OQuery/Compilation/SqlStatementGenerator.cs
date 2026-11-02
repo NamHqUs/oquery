@@ -7,8 +7,12 @@ namespace OQuery.Compilation;
 
 internal sealed record SqlStatement(string CommandText, IReadOnlyList<DbParameter> Parameters);
 
-internal sealed class SqlStatementGenerator(ISqlDialect dialect)
+internal sealed class SqlStatementGenerator(
+    ISqlDialect dialect,
+    IMetadataPermission permission)
 {
+    private IReadOnlyDictionary<string, Entity> _entities = new Dictionary<string, Entity>();
+
     public SqlStatement Generate(TableExpression query, IEnumerable<DbParameter> parameters)
     {
         var text = RenderQuery(query);
@@ -32,6 +36,24 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
     }
 
     private string RenderQuery(
+        TableExpression query,
+        bool exists = false,
+        bool includeCtes = true,
+        bool recursivePart = false)
+    {
+        var previousEntities = _entities;
+        _entities = GetEntities(query, previousEntities);
+        try
+        {
+            return RenderQueryCore(query, exists, includeCtes, recursivePart);
+        }
+        finally
+        {
+            _entities = previousEntities;
+        }
+    }
+
+    private string RenderQueryCore(
         TableExpression query,
         bool exists = false,
         bool includeCtes = true,
@@ -297,6 +319,14 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
     private string RenderField(FieldExpression field)
     {
+        if (!_entities.TryGetValue(field.TableAlias, out var entity))
+            throw new InvalidOperationException(
+                $"The query field alias [{field.TableAlias}] could not be resolved during SQL generation.");
+
+        if (!permission.CanReadField(entity.Name, field.MetaField.Name))
+            throw new UnauthorizedAccessException(
+                $"Field [{field.MetaField.Name}] is not allowed in entity [{entity.Name}].");
+
         if (field.MetaField.IsRawSql)
         {
             var rawSql = field.MetaField.DbColumn ?? field.MetaField.Name;
@@ -309,6 +339,31 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         return field.TableAlias.Length == 0
             ? $"({dbColumn})"
             : $"{field.TableAlias}.{dialect.QuoteIdentifier(dbColumn)}";
+    }
+
+    private static Dictionary<string, Entity> GetEntities(
+        TableExpression table,
+        IReadOnlyDictionary<string, Entity> inheritedEntities)
+    {
+        var entities = new Dictionary<string, Entity>(
+            inheritedEntities,
+            StringComparer.OrdinalIgnoreCase)
+        {
+            [table.Alias] = table.Entity
+        };
+        AddJoinedEntities(table, entities);
+        return entities;
+    }
+
+    private static void AddJoinedEntities(
+        TableExpression table,
+        IDictionary<string, Entity> entities)
+    {
+        foreach (var joinedTable in table.JoinedTables.Values)
+        {
+            entities[joinedTable.Alias] = joinedTable.Entity;
+            AddJoinedEntities(joinedTable, entities);
+        }
     }
 
     private string RenderTemplateComparison(TemplateCompareSqlExpression compare)

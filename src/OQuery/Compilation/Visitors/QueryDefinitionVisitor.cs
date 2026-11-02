@@ -88,7 +88,8 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             {
                 var cteTable = cteTables[GetContextAlias(reference)];
                 cteTable.Entity.Fields.Clear();
-                cteTable.Entity.Fields.AddRange(cteQuery.ProjectionItems.Select(item => new Field(item.Alias, item.Alias)));
+                cteTable.Entity.Fields.AddRange(
+                    cteQuery.ProjectionItems.Select(item => new Field(item.Alias, item.Alias)));
             }
         }
 

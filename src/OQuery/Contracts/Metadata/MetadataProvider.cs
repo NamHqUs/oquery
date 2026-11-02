@@ -8,6 +8,7 @@ namespace OQuery;
 
 public interface IMetadataProvider
 {
+    IMetadataPermission Permission { get; }
     Entity GetEntity(string entityName);
 }
 
@@ -15,13 +16,17 @@ public class MetadataProvider : IMetadataProvider
 {
     private readonly Dictionary<string, Entity> _entities;
 
-    public MetadataProvider(IEnumerable<Entity> entities)
+    public MetadataProvider(
+        IEnumerable<Entity> entities,
+        IMetadataPermission? permission = null)
     {
         ArgumentNullException.ThrowIfNull(entities);
 
         _entities = entities.ToDictionary(e => e.Name, StringComparer.OrdinalIgnoreCase);
+        Permission = permission ?? new PermissionManagement([], IsDenied: false);
     }
 
+    public IMetadataPermission Permission { get; }
     public IReadOnlyCollection<Entity> Entities => _entities.Values;
 
     public Entity GetEntity(string entityName)

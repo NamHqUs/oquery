@@ -127,6 +127,32 @@ ignoring literals, quoted identifiers, and comments. This is a conservative
 blacklist check, not a SQL parser or a security boundary; keep raw SQL metadata
 trusted and use read-only database permissions where applicable.
 
+### Metadata permissions
+
+Field access can be configured with `PermissionManagement` and supplied to the
+metadata provider. Permissions are checked when the SQL generator renders each
+resolved field, before the field becomes part of the SQL statement. This
+covers fields in projections, filters, sorting, grouping, joins, CTEs, and
+subqueries without adding permission work to every visitor operation.
+
+```csharp
+var permissions = new PermissionManagement(
+    [
+        new MetadataPermission("User", ["Id", "DisplayName"]),
+        new MetadataPermission("AuditLog", null),
+    ],
+    IsDenied: false);
+
+var metadataProvider = new MetadataProvider(metadata, permissions);
+```
+
+`IsDenied: false` makes the configured fields an allow-list. `IsDenied: true`
+makes them a deny-list. A null `Fields` list creates an `EntityName\0*`
+wildcard, which applies to every field of that entity. Permission keys are
+stored in one case-insensitive hash set; the wildcard is checked before the
+field-specific key. Relations are used to resolve field paths but are not
+permission-checked.
+
 ### Fields
 
 Fields can be:

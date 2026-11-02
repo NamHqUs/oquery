@@ -12,6 +12,8 @@ materialization. It must remain independent of UI and demo projects.
   before adding or changing core behavior.
 - Trace the full path from public API to query model, compiler, dialect, and
   execution before editing a hot path.
+- Before generating code, evaluate the algorithm, performance characteristics,
+  and architecture; choose the design before implementing details.
 - Check all supported providers and target frameworks (.NET 8, 9, and 10).
 - Preserve public API compatibility unless the task explicitly requires a
   breaking change.

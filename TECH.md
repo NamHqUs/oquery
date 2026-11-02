@@ -52,8 +52,12 @@ wheel to zoom, drag to pan).
    tree. `SqlQueryCompiler` runs `QueryVisitor` and its clause visitors;
    `QueryContext` resolves metadata and relations, assigns aliases, applies
    and collects parameters.
-4. **Render the SQL statement** passes the resulting IR to
-   `SqlStatementGenerator`. `ISqlDialect` owns quoting, table rendering,
+4. **Authorize and render the SQL statement** passes the resulting IR to
+   `SqlStatementGenerator`. The generator checks each `FieldExpression` through
+   `IMetadataPermission` immediately before rendering its column. This avoids
+   permission checks during every visitor operation while ensuring fields used
+   in projections, filters, ordering, grouping, joins, CTEs, and subqueries are
+   checked before SQL is emitted. `ISqlDialect` owns quoting, table rendering,
    concatenation, booleans, and paging.
 5. **Read from the database and return to the client** is handled by
    `DbQueryProvider` and `DbReader`. The provider creates synchronous or
@@ -256,6 +260,13 @@ The IR is in `Internal/Compilation/Expressions`. Important types include:
   references in a query's `FROM` or `JOIN` source.
 
 The IR must not depend on `ISqlDialect`.
+
+Field authorization is performed while `SqlStatementGenerator` renders the IR.
+Relations are used during visitor metadata resolution to find destination
+entities, but relation rules are not evaluated by the SQL generator. A null
+field list creates an `EntityName\0*` wildcard permission key. Permission keys
+are stored in one case-insensitive `HashSet<string>`; the generator checks the
+wildcard before the field-specific key and short-circuits when it matches.
 
 ### Supported input and output types
 

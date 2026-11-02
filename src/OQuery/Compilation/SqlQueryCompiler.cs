@@ -24,7 +24,7 @@ internal sealed class SqlQueryCompiler(
     {
         var queryContext = new QueryContext(metaProvider, functionProvider, sqlDialect);
         var tableExpression = (TableExpression)new QueryVisitor(queryContext).Visit(expression);
-        var statementGenerator = new SqlStatementGenerator(sqlDialect);
+        var statementGenerator = new SqlStatementGenerator(sqlDialect, metaProvider.Permission);
         var generatedSql = statementGenerator.Generate(tableExpression, queryContext.DbParameters);
         var totalRecordsSql = includeTotalRecords
             ? statementGenerator.GenerateTotalRecords(

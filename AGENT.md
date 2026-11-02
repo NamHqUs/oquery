@@ -15,6 +15,13 @@ Keep the core project independent from `OQuery.UI` and the demo projects.
 Preserve the `oquery` submodule boundary: core code must not reference UI or
 demo projects.
 
+## Design-first implementation
+
+Before generating code, consider the algorithm, performance characteristics,
+and architecture. Prefer a design that addresses the full execution path,
+avoids unnecessary repeated work, and keeps responsibilities at the correct
+layer.
+
 ## Validation
 
 Run commands from this repository root:
