@@ -1,6 +1,6 @@
 using System.Data;
 using FirebirdSql.Data.FirebirdClient;
-using OQuery.Contracts;
+using OQuery;
 using OQuery.Test.TestData;
 
 namespace OQuery.Test.Tests;

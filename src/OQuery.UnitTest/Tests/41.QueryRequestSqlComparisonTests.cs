@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Microsoft.Data.SqlClient;
-using OQuery.Contracts;
+using OQuery;
 using OQuery.Test.TestData;
 
 namespace OQuery.Test.Tests;

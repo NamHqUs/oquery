@@ -3,7 +3,7 @@ using OQuery.QueryBuilderDto.Parsers;
 using System.Text.Json;
 using YamlDotNet.Serialization;
 
-namespace OQuery.Contracts.QueryDefinitions.Parsers;
+namespace OQuery.QueryDefinitions.Parsers;
 
 public static partial class QueryDefinitionParser
 {

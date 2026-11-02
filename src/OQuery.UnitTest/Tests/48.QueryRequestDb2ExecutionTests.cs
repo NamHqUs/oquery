@@ -2,7 +2,7 @@ using System.Data;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using IBM.Data.Db2;
-using OQuery.Contracts;
+using OQuery;
 using OQuery.Test.TestData;
 
 namespace OQuery.Test.Tests;

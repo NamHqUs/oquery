@@ -1,7 +1,6 @@
 using OQuery;
 using OQuery.Compilation.Expressions;
-using OQuery.Contracts;
-using OQuery.Contracts.QueryDefinitions.Parsers;
+using OQuery.QueryDefinitions.Parsers;
 using System.Linq.Expressions;
 using System.Text.Json;
 

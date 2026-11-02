@@ -1,7 +1,7 @@
 using OQuery.Compilation.Expressions;
 using OQuery.Compilation.Models;
 using OQuery.Compilation.Visitors;
-using OQuery.Contracts;
+using OQuery;
 using System.Linq.Expressions;
 
 namespace OQuery.Compilation;

@@ -1,7 +1,7 @@
 using OQuery.QueryBuilderDto.Parsers;
 using System.Globalization;
 
-namespace OQuery.Contracts.QueryDefinitions.Parsers;
+namespace OQuery.QueryDefinitions.Parsers;
 
 internal sealed class ConditionDefinitionParser
 {

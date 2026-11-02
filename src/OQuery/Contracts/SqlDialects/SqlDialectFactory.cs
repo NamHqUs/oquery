@@ -2,7 +2,7 @@ using System.Data;
 using System.Globalization;
 
 #pragma warning disable IDE0130
-namespace OQuery.Contracts;
+namespace OQuery;
 #pragma warning restore IDE0130
 
 public static class SqlDialect

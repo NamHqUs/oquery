@@ -1,5 +1,5 @@
 #pragma warning disable IDE0130
-using OQuery.Contracts.QueryDefinitions.Parsers;
+using OQuery.QueryDefinitions.Parsers;
 using System.Text.Json.Serialization;
 
 namespace OQuery;

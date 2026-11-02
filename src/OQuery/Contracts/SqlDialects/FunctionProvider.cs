@@ -1,7 +1,7 @@
 #pragma warning disable IDE0130
 using OQuery;
 
-namespace OQuery.Contracts;
+namespace OQuery;
 #pragma warning restore IDE0130
 
 public interface IFunctionProvider

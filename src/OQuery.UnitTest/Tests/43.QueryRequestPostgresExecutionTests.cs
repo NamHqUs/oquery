@@ -1,7 +1,7 @@
 using System.Data;
 using OQuery.Test.TestData;
 using Npgsql;
-using OQuery.Contracts;
+using OQuery;
 
 namespace OQuery.Test.Tests;
 

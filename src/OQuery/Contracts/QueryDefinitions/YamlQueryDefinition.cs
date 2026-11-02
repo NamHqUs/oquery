@@ -1,4 +1,4 @@
-namespace OQuery.Contracts.QueryDefinitions;
+namespace OQuery.QueryDefinitions;
 
 public record YamlQueryDefinition()
 {

@@ -1,7 +1,7 @@
 using OQuery;
 using OQuery.QueryBuilderDto.Parsers;
 
-namespace OQuery.Contracts.QueryDefinitions.Parsers;
+namespace OQuery.QueryDefinitions.Parsers;
 
 internal class ProjectionDefinitionParser
 {

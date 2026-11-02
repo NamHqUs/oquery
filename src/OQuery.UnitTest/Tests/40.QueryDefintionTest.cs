@@ -1,4 +1,4 @@
-using OQuery.Contracts.QueryDefinitions.Parsers;
+using OQuery.QueryDefinitions.Parsers;
 using System.Text.Json;
 
 namespace OQuery.Test.Tests;

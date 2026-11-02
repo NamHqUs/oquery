@@ -1,5 +1,5 @@
 using System.Data;
-using OQuery.Contracts;
+using OQuery;
 using OQuery.Test.TestData;
 using Oracle.ManagedDataAccess.Client;
 

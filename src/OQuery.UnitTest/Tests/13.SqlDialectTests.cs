@@ -1,6 +1,6 @@
 using Microsoft.Data.Sqlite;
-using OQuery.Contracts;
-using OQuery.Contracts.QueryDefinitions.Parsers;
+using OQuery;
+using OQuery.QueryDefinitions.Parsers;
 
 namespace OQuery.Test.Tests;
 

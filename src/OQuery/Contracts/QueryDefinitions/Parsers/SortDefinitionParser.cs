@@ -1,6 +1,6 @@
 using OQuery.QueryBuilderDto.Parsers;
 
-namespace OQuery.Contracts.QueryDefinitions.Parsers;
+namespace OQuery.QueryDefinitions.Parsers;
 
 internal static class SortDefinitionParser
 {

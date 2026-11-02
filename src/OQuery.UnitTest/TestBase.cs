@@ -1,4 +1,4 @@
-using OQuery.Contracts;
+using OQuery;
 using System.Data;
 
 namespace OQuery.Test;

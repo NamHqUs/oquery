@@ -1,8 +1,7 @@
 using OQuery;
 using OQuery.Compilation.Expressions;
 using OQuery.Compilation.Models;
-using OQuery.Contracts;
-using OQuery.Contracts.QueryDefinitions.Parsers;
+using OQuery.QueryDefinitions.Parsers;
 using OQuery.QueryBuilderDto.Parsers;
 using static OQuery.SqlFunctionDefintion;
 

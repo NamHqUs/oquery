@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using OQuery.Test.TestData;
 using Npgsql;
-using OQuery.Contracts;
+using OQuery;
 
 namespace OQuery.Test.Tests;
 

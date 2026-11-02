@@ -1,7 +1,6 @@
 using OQuery;
 using OQuery.Compilation;
 using OQuery.Compilation.Models;
-using OQuery.Contracts;
 using System.Data;
 using System.Linq.Expressions;
 using System.Text;

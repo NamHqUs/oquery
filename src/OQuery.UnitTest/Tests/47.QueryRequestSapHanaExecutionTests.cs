@@ -1,7 +1,7 @@
 using System.Data;
 using System.Globalization;
 using System.Text.RegularExpressions;
-using OQuery.Contracts;
+using OQuery;
 using OQuery.Test.TestData;
 using Sap.Data.Hana;
 
