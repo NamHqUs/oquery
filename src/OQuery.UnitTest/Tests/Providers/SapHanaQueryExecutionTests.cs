@@ -38,6 +38,20 @@ internal sealed class SapHanaQueryExecutionTests
     [OneTimeTearDown]
     public void TearDown() => _db?.Dispose();
 
+    [TestCaseSource(typeof(SavedQueryTestCases), nameof(SavedQueryTestCases.Cases))]
+    public void SavedQueryExecutesOnSapHana(string fileName)
+    {
+        if (fileName.Equals(
+                "Sample-Recursive employee hierarchy.json",
+                StringComparison.Ordinal))
+        {
+            Assert.Ignore("SAP HANA does not support recursive CTEs.");
+        }
+
+        var query = QueryDefinitionLoader.Load(SavedQueryTestCases.GetRequestPath(fileName));
+        Assert.That(() => _db.Query(query).ToList(), Throws.Nothing, fileName);
+    }
+
     [Test]
     public void SavedNorthStarQueriesMatchSapHanaStatements()
     {
@@ -95,27 +109,6 @@ internal sealed class SapHanaQueryExecutionTests
                     Is.True,
                     $"{reportName}: generated=[{string.Join(", ", generatedRecord.Select(pair => $"{pair.Key}={pair.Value}"))}] raw=[{string.Join(", ", raw.SelectMany(record => record.Select(pair => $"{pair.Key}={pair.Value}")))}]");
             }
-        }
-    }
-
-    [Test]
-    public void SampleSavedQueryDefinitionsExecuteOnSapHana()
-    {
-        var root = Path.Combine(
-            GetRepositoryRoot(), "data-storage", "queries");
-        foreach (var requestPath in Directory.EnumerateFiles(root, "Sample-*.json").Order())
-        {
-            if (Path.GetFileName(requestPath).Equals(
-                    "Sample-Recursive employee hierarchy.json",
-                    StringComparison.Ordinal))
-            {
-                TestContext.Progress.WriteLine(
-                    $"{Path.GetFileName(requestPath)}: skipped - DBMS does not support recursive CTEs.");
-                continue;
-            }
-
-            var query = QueryDefinitionLoader.Load(requestPath);
-            Assert.That(() => _db.Query(query).ToList(), Throws.Nothing, Path.GetFileName(requestPath));
         }
     }
 

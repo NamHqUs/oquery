@@ -7,9 +7,11 @@ using MySqlConnector;
 using Sap.Data.Hana;
 using IBM.Data.Db2;
 using System.Data;
+using System.Security.Cryptography;
 using System.Text;
 
 using OQuery;
+using OQuery.UnitTest.Setup.DbInstances;
 
 namespace OQuery.UnitTest.Setup;
 
@@ -17,7 +19,11 @@ public enum DbServerType
 {
     Sqlite,
     SqlServer,
+    Firebird,
     Postgres,
+    Cockroach,
+    MySql,
+    Oracle,
     Db2
 }
 internal sealed class TestDatabase
@@ -53,47 +59,19 @@ internal sealed class TestDatabase
     }
 
     public static IDbConnection GetNorthStarPostgresConnection()
-    {
-        var cn = new NpgsqlConnection(
-            "Host=localhost;Port=5432;Database=dynamicsqltest;Username=postgres;Password=NoPassword123!");
-        cn.Open();
-
-        lock (oLock)
-        {
-            var isExisted = ExecuteScalar<bool>(
-                cn,
-                "SELECT EXISTS (SELECT 1 FROM information_schema.tables " +
-                "WHERE table_schema = 'main' AND table_name = 'Users');");
-            if (!isExisted)
-                ExecuteNonQuery(cn, LoadScript("northstar-demo.postgres.sql"));
-        }
-
-        return cn;
-    }
+        => CreatePostgresInstance(
+            "Host=localhost;Port=5432;Database=dynamicsqltest;Username=postgres;Password=NoPassword123!",
+            "northstar-demo.postgres.sql");
 
     public static IDbConnection GetNorthStarCockroachConnection()
-    {
-        var cn = new NpgsqlConnection(
-            "Host=localhost;Port=26257;Database=defaultdb;Username=root;Ssl Mode=Disable;");
-        cn.Open();
-        ExecuteNonQuery(cn, "SET search_path = main, hr, sa, he, \"in\", public;");
-
-        lock (oLock)
-        {
-            var isExisted = ExecuteScalar<bool>(
-                cn,
-                "SELECT EXISTS (SELECT 1 FROM information_schema.tables " +
-                "WHERE table_schema = 'main' AND table_name = 'Users');");
-            if (!isExisted)
-                ExecuteNonQuery(cn, LoadScript("northstar-demo.cockroach.sql"));
-        }
-
-        return cn;
-    }
+        => CreateCockroachInstance(
+            "Host=localhost;Port=26257;Database=defaultdb;Username=root;Ssl Mode=Disable;",
+            "northstar-demo.cockroach.sql");
 
     public static IDbConnection GetNorthStarSqliteDockerConnection()
     {
-        var root = new DirectoryInfo("../../../../../").FullName;
+        var root = new DirectoryInfo(
+            Path.Combine(AppContext.BaseDirectory, "../../../../../")).FullName;
         var cn = new SqliteConnection(
             $"Data Source={Path.Combine(root, "docker", "sqlite-data", "main.db")}");
         cn.Open();
@@ -110,28 +88,19 @@ internal sealed class TestDatabase
     }
 
     public static IDbConnection GetNorthStarFirebirdConnection()
-    {
-        var connection = new FbConnection(
-            "User=SYSDBA;Password=NoPassword123!;Database=localhost:/firebird/data/northstar.fdb");
-        connection.Open();
-        return connection;
-    }
+        => CreateFirebirdInstance(
+            "User=SYSDBA;Password=NoPassword123!;Database=localhost:/firebird/data/northstar.fdb",
+            "northstar-demo.firebird.sql");
 
     public static IDbConnection GetNorthStarOracleConnection()
-    {
-        var connection = new OracleConnection(
-            "User Id=NORTHSTAR;Password=NoPassword123!;Data Source=localhost:1521/FREEPDB1");
-        connection.Open();
-        return connection;
-    }
+        => CreateOracleInstance(
+            "User Id=NORTHSTAR;Password=NoPassword123!;Data Source=localhost:1521/FREEPDB1",
+            "northstar-demo.oracle.sql");
 
     public static IDbConnection GetNorthStarMariaConnection()
-    {
-        var connection = new MySqlConnection(
-            "Server=localhost;Port=3306;Database=northstar;User ID=root;Password=NoPassword123!;");
-        connection.Open();
-        return connection;
-    }
+        => CreateMySqlInstance(
+            "Server=localhost;Port=3306;Database=northstar;User ID=root;Password=NoPassword123!;",
+            "northstar-demo.mariadb.sql");
 
     public static IDbConnection GetNorthStarSapHanaConnection()
     {
@@ -145,12 +114,9 @@ internal sealed class TestDatabase
     }
 
     public static IDbConnection GetNorthStarDb2Connection()
-    {
-        var connection = new DB2Connection(
-            "Server=localhost:50000;Database=NORTHSTA;UID=db2inst1;PWD=NoPassword123!;");
-        connection.Open();
-        return connection;
-    }
+        => CreateDb2Instance(
+            "Server=localhost:50000;Database=NORTHSTA;UID=db2inst1;PWD=NoPassword123!;",
+            "northstar-demo.db2.sql");
 
     public static IDbConnection GetNorthStarSqlServerConnection()
         => CreateSqlServerDbConnection();
@@ -174,37 +140,104 @@ internal sealed class TestDatabase
     }
 
     private static IDbConnection CreateSqlServerDbConnection()
-    {
-        var cn = new SqlConnection("Server=localhost;Database=DynamicSqlTest;User Id=sa;Password=NoPassword123!;TrustServerCertificate=True;");
-        cn.Open();
-
-        var isExisted = ExecuteScalar<int>(cn, "SELECT IIF(OBJECT_ID('dbo.[User]', 'U') IS NOT NULL, 1, 0);");
-        if (isExisted != 1)
-            ExecuteNonQuery(cn, LoadScript("oquery-test.sqlserver.sql", "sale-demo.sqlserver.sql", "northstar-demo.sqlserver.sql"));
-        return cn;
-    }
+        => CreateSqlServerInstance(
+            "Server=localhost;Database=DynamicSqlTest;User Id=sa;Password=NoPassword123!;TrustServerCertificate=True;",
+            "oquery-test.sqlserver.sql",
+            "sale-demo.sqlserver.sql",
+            "northstar-demo.sqlserver.sql");
 
     private static IDbConnection CreatePostgresDbConnection()
-    {
-        var cn = new NpgsqlConnection(
-            "Host=localhost;Port=5432;Database=mydb;Username=postgres;Password=NoPassword123!");
-        cn.Open();
-
-        lock (oLock)
-        {
-            var isExisted = ExecuteScalar<bool>(cn,
-                "SELECT EXISTS (SELECT 1 FROM information_schema.tables " +
-                "WHERE table_schema = 'public' AND table_name = 'User');");
-
-            if (!isExisted)
-                ExecuteNonQuery(cn, LoadScript("oquery-test.postgres.sql", "sale-demo.postgres.sql"));
-        }
-
-        return cn;
-    }
+        => CreatePostgresInstance(
+            "Host=localhost;Port=5432;Database=DynamicSqlTest;Username=postgres;Password=NoPassword123!",
+            "oquery-test.postgres.sql",
+            "sale-demo.postgres.sql");
 
     private static IDbConnection CreateDb2DbConnection()
         => GetNorthStarDb2Connection();
+
+    private static IDbConnection CreateSqlServerInstance(
+        string connectionString,
+        params string[] scriptNames)
+        => OpenConnection(new SqlServerDbInstance(
+            connectionString,
+            GetScriptPaths(scriptNames),
+            GetScriptVersion(scriptNames)));
+
+    private static IDbConnection CreatePostgresInstance(
+        string connectionString,
+        params string[] scriptNames)
+        => OpenConnection(new PostgresDbInstance(
+            connectionString,
+            GetScriptPaths(scriptNames),
+            GetScriptVersion(scriptNames)));
+
+    private static IDbConnection CreateCockroachInstance(
+        string connectionString,
+        params string[] scriptNames)
+        => OpenConnection(new CockroachDbInstance(
+            connectionString,
+            GetScriptPaths(scriptNames),
+            GetScriptVersion(scriptNames)));
+
+    private static IDbConnection CreateFirebirdInstance(
+        string connectionString,
+        params string[] scriptNames)
+        => OpenConnection(new FirebirdDbInstance(
+            connectionString,
+            GetScriptPaths(scriptNames),
+            GetScriptVersion(scriptNames)));
+
+    private static IDbConnection CreateOracleInstance(
+        string connectionString,
+        params string[] scriptNames)
+        => OpenConnection(new OracleDbInstance(
+            connectionString,
+            GetScriptPaths(scriptNames),
+            GetScriptVersion(scriptNames)));
+
+    private static IDbConnection CreateMySqlInstance(
+        string connectionString,
+        params string[] scriptNames)
+        => OpenConnection(new MySqlDbInstance(
+            connectionString,
+            GetScriptPaths(scriptNames),
+            GetScriptVersion(scriptNames)));
+
+    private static IDbConnection CreateDb2Instance(
+        string connectionString,
+        params string[] scriptNames)
+        => OpenConnection(new Db2DbInstance(
+            connectionString,
+            GetScriptPaths(scriptNames),
+            GetScriptVersion(scriptNames)));
+
+    private static IDbConnection OpenConnection(DbInstance instance)
+    {
+        var connection = instance.CreateDbConnection();
+        if (connection.State != ConnectionState.Open)
+            connection.Open();
+        return connection;
+    }
+
+    private static string[] GetScriptPaths(IEnumerable<string> scriptNames)
+        => scriptNames
+            .Select(name => Path.Combine("data-storage", "scripts", name))
+            .ToArray();
+
+    private static string GetScriptVersion(IEnumerable<string> scriptNames)
+    {
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        var root = new DirectoryInfo("../../../../../").FullName;
+
+        foreach (var scriptName in scriptNames)
+        {
+            var path = Path.Combine(root, "data-storage", "scripts", scriptName);
+            hash.AppendData(Encoding.UTF8.GetBytes(File.ReadAllText(path)));
+        }
+
+        return Convert.ToHexString(hash.GetHashAndReset());
+    }
+
 
     private static string LoadScript(params string[] fileNames)
     {

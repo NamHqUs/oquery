@@ -17,7 +17,7 @@ internal sealed class OracleQueryExecutionTests
         {
             _connection = TestDatabase.GetNorthStarOracleConnection();
         }
-        catch (OracleException exception)
+        catch (Exception exception) when (exception is OracleException or ArgumentException)
         {
             Assert.Ignore($"Oracle execution requires the Docker Oracle service: {exception.Message}");
         }
@@ -32,30 +32,11 @@ internal sealed class OracleQueryExecutionTests
     [OneTimeTearDown]
     public void TearDown() => _db?.Dispose();
 
-    [Test]
-    public void AllNormalSavedQueryDefinitionsExecuteOnOracle()
+    [TestCaseSource(typeof(SavedQueryTestCases), nameof(SavedQueryTestCases.Cases))]
+    public void SavedQueryExecutesOnOracle(string fileName)
     {
-        var root = Path.Combine(GetRepositoryRoot(), "data-storage", "queries");
-        var requests = Directory.EnumerateFiles(root, "*.json")
-            .Where(path => !new[]
-            {
-                "Test-Check Context Calculation Fields.json",
-                "Test-Multiple Contexts.json",
-                "Test-Query directly on REF CONTEXT.json",
-                "Shared Context.json"
-            }.Contains(Path.GetFileName(path), StringComparer.Ordinal))
-            .OrderBy(path => path, StringComparer.Ordinal)
-            .ToList();
-
-        Assert.That(requests, Has.Count.EqualTo(26));
-        foreach (var requestPath in requests)
-        {
-            var query = QueryDefinitionLoader.Load(requestPath);
-            var fileName = Path.GetFileName(requestPath);
-            Assert.That(() => _db.Query(query).ToList(), Throws.Nothing, fileName);
-        }
+        var query = QueryDefinitionLoader.Load(SavedQueryTestCases.GetRequestPath(fileName));
+        Assert.That(() => _db.Query(query).ToList(), Throws.Nothing, fileName);
     }
 
-    private static string GetRepositoryRoot()
-        => new DirectoryInfo(Path.Combine(AppContext.BaseDirectory, "../../../../../")).FullName;
 }

@@ -1,19 +1,12 @@
 using System.Data;
 using OQuery.UnitTest.Setup;
+using OQuery.UnitTest.Tests.Providers;
 
 namespace OQuery.UnitTest.Tests.Query.Execution;
 
 [TestFixture]
 internal sealed class SqliteQueryExecutionTests
 {
-    private static readonly string[] LegacyRequests =
-    [
-        "Test-Check Context Calculation Fields.json",
-        "Test-Multiple Contexts.json",
-        "Test-Query directly on REF CONTEXT.json",
-        "Shared Context.json"
-    ];
-
     private IDbConnection _connection = null!;
     private OQueryEngine _db = null!;
 
@@ -36,31 +29,11 @@ internal sealed class SqliteQueryExecutionTests
         _db?.Dispose();
     }
 
-    [Test]
-    public void AllNormalSavedQueryDefinitionsExecuteOnSqlite()
+    [TestCaseSource(typeof(SavedQueryTestCases), nameof(SavedQueryTestCases.Cases))]
+    public void SavedQueryExecutesOnSqlite(string fileName)
     {
-        var root = Path.Combine(
-            GetRepositoryRoot(),
-            "data-storage", "queries");
-
-        var requests = Directory
-            .EnumerateFiles(root, "*.json")
-            .Where(path => !LegacyRequests.Contains(Path.GetFileName(path), StringComparer.Ordinal))
-            .OrderBy(path => path, StringComparer.Ordinal)
-            .ToList();
-
-        Assert.That(requests, Has.Count.EqualTo(26));
-        foreach (var requestPath in requests)
-        {
-            var query = QueryDefinitionLoader.Load(requestPath);
-            Assert.That(
-                () => _db.Query(query).ToList(),
-                Throws.Nothing,
-                Path.GetFileName(requestPath));
-        }
+        var query = QueryDefinitionLoader.Load(SavedQueryTestCases.GetRequestPath(fileName));
+        Assert.That(() => _db.Query(query).ToList(), Throws.Nothing, fileName);
     }
-
-    private static string GetRepositoryRoot()
-        => new DirectoryInfo(Path.Combine(AppContext.BaseDirectory, "../../../../../")).FullName;
 
 }

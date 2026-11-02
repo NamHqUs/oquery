@@ -19,7 +19,7 @@ internal sealed class MariaQueryExecutionTests
         {
             _connection = TestDatabase.GetNorthStarMariaConnection();
         }
-        catch (MySqlException exception)
+        catch (Exception exception) when (exception is MySqlException or ArgumentException)
         {
             Assert.Ignore($"MariaDB comparison requires the Docker MariaDB service: {exception.Message}");
         }
@@ -33,6 +33,13 @@ internal sealed class MariaQueryExecutionTests
 
     [OneTimeTearDown]
     public void TearDown() => _db?.Dispose();
+
+    [TestCaseSource(typeof(SavedQueryTestCases), nameof(SavedQueryTestCases.Cases))]
+    public void SavedQueryExecutesOnMariaDb(string fileName)
+    {
+        var query = QueryDefinitionLoader.Load(SavedQueryTestCases.GetRequestPath(fileName));
+        Assert.That(() => _db.Query(query).ToList(), Throws.Nothing, fileName);
+    }
 
     [Test]
     public void SavedNorthStarQueriesMatchMariaDbStatements()
@@ -75,18 +82,6 @@ internal sealed class MariaQueryExecutionTests
             var rawRecords = Execute(statements[title]);
 
             AssertEquivalentRecords(generatedRecords, rawRecords, reportName);
-        }
-    }
-
-    [Test]
-    public void SampleSavedQueryDefinitionsExecuteOnMariaDb()
-    {
-        var root = Path.Combine(
-            GetRepositoryRoot(), "data-storage", "queries");
-        foreach (var requestPath in Directory.EnumerateFiles(root, "Sample-*.json").Order())
-        {
-            var query = QueryDefinitionLoader.Load(requestPath);
-            Assert.That(() => _db.Query(query).ToList(), Throws.Nothing, Path.GetFileName(requestPath));
         }
     }
 

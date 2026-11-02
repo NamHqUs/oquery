@@ -19,7 +19,7 @@ internal sealed class CockroachQueryExecutionTests
         {
             _connection = TestDatabase.GetNorthStarCockroachConnection();
         }
-        catch (NpgsqlException exception)
+        catch (Exception exception) when (exception is NpgsqlException or ArgumentException)
         {
             Assert.Ignore($"CockroachDB comparison requires the Docker CockroachDB service: {exception.Message}");
         }
@@ -36,6 +36,13 @@ internal sealed class CockroachQueryExecutionTests
     public void TearDown()
     {
         _db?.Dispose();
+    }
+
+    [TestCaseSource(typeof(SavedQueryTestCases), nameof(SavedQueryTestCases.Cases))]
+    public void SavedQueryExecutesOnCockroach(string fileName)
+    {
+        var query = QueryDefinitionLoader.Load(SavedQueryTestCases.GetRequestPath(fileName));
+        Assert.That(() => _db.Query(query).ToList(), Throws.Nothing, fileName);
     }
 
     [Test]
@@ -76,18 +83,6 @@ internal sealed class CockroachQueryExecutionTests
         Assert.That(commandText, Does.Contain(" OFFSET 1"));
         Assert.That(commandText, Does.Not.Contain("LIMIT"));
         Assert.DoesNotThrow(() => query.ToList());
-    }
-
-    [Test]
-    public void SampleSavedQueryDefinitionsExecuteOnCockroach()
-    {
-        var root = Path.Combine(
-            GetRepositoryRoot(), "data-storage", "queries");
-        foreach (var requestPath in Directory.EnumerateFiles(root, "Sample-*.json").Order())
-        {
-            var query = QueryDefinitionLoader.Load(requestPath);
-            Assert.That(() => _db.Query(query).ToList(), Throws.Nothing, Path.GetFileName(requestPath));
-        }
     }
 
     private IReadOnlyList<string[]> ExecuteRaw(string sql)

@@ -17,7 +17,7 @@ internal sealed class PostgresQueryExecutionTests
         {
             _connection = TestDatabase.GetNorthStarPostgresConnection();
         }
-        catch (NpgsqlException exception)
+        catch (Exception exception) when (exception is NpgsqlException or ArgumentException)
         {
             Assert.Ignore($"PostgreSQL comparison requires the Docker PostgreSQL service: {exception.Message}");
         }
@@ -37,41 +37,11 @@ internal sealed class PostgresQueryExecutionTests
         _db?.Dispose();
     }
 
-    [Test]
-    public void AllNormalSavedQueryDefinitionsExecuteOnPostgres()
+    [TestCaseSource(typeof(SavedQueryTestCases), nameof(SavedQueryTestCases.Cases))]
+    public void SavedQueryExecutesOnPostgres(string fileName)
     {
-        var root = Path.Combine(
-            GetRepositoryRoot(),
-            "data-storage", "queries");
-
-        var requests = Directory
-            .EnumerateFiles(root, "*.json")
-            .Where(path => !Path.GetFileName(path).Equals(
-                "Test-Check Context Calculation Fields.json",
-                StringComparison.Ordinal))
-            .Where(path => !Path.GetFileName(path).Equals(
-                "Test-Multiple Contexts.json",
-                StringComparison.Ordinal))
-            .Where(path => !Path.GetFileName(path).Equals(
-                "Test-Query directly on REF CONTEXT.json",
-                StringComparison.Ordinal))
-            .Where(path => !Path.GetFileName(path).Equals(
-                "Shared Context.json",
-                StringComparison.Ordinal))
-            .OrderBy(path => path, StringComparer.Ordinal)
-            .ToList();
-
-        Assert.That(requests, Has.Count.EqualTo(26));
-        foreach (var requestPath in requests)
-        {
-            var query = QueryDefinitionLoader.Load(requestPath);
-            Assert.That(
-                () => _db.Query(query).ToList(),
-                Throws.Nothing,
-                Path.GetFileName(requestPath));
-        }
+        var query = QueryDefinitionLoader.Load(SavedQueryTestCases.GetRequestPath(fileName));
+        Assert.That(() => _db.Query(query).ToList(), Throws.Nothing, fileName);
     }
 
-    private static string GetRepositoryRoot()
-        => new DirectoryInfo(Path.Combine(AppContext.BaseDirectory, "../../../../../")).FullName;
 }
