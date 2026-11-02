@@ -4,8 +4,3 @@
 *.user
 *.suo
 *.log
-
-# Local agent and instruction files
-**/*[Aa][Gg][Ee][Nn][Tt].md
-**/*[Ii][Nn][Ss][Tt][Rr][Uu][Cc][Tt][Ii][Oo][Nn][Ss].md
-**/copilot-instructions.md
