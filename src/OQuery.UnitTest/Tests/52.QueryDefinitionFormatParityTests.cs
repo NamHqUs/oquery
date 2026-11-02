@@ -10,10 +10,7 @@ internal sealed class QueryDefinitionFormatParityTests : TestBase
     {
         var queryDirectory = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests");
+            "data-storage", "queries");
 
         var yamlFiles = Directory.EnumerateFiles(queryDirectory, "*.yml")
             .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
@@ -32,7 +29,7 @@ internal sealed class QueryDefinitionFormatParityTests : TestBase
             }
 
             var yamlQuery = QueryDefinitionParser.ParseFromYml(new FileInfo(yamlPath));
-            var jsonQuery = TestData.SavedQueryDefinitionLoader.Load(jsonPath);
+            var jsonQuery = TestData.QueryDefinitionLoader.Load(jsonPath);
             var yamlSql = _db.Query(yamlQuery).ToSql().CommandText;
             var jsonSql = _db.Query(jsonQuery).ToSql().CommandText;
 

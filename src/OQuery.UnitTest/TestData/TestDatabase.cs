@@ -18,7 +18,7 @@ public enum DbServerType
     Postgres,
     Db2
 }
-internal sealed class DefinedData 
+internal sealed class TestDatabase
 {
     private static readonly object oLock = new();
 
@@ -207,7 +207,7 @@ internal sealed class DefinedData
     private static string LoadScript(params string[] fileNames)
     {
         var path = new DirectoryInfo("../../../../../").FullName;
-        return string.Join(Environment.NewLine, fileNames.Select(fileName => File.ReadAllText(Path.Combine(path, "src", "OQuery.UnitTest", "TestData", "Scripts", fileName))));
+        return string.Join(Environment.NewLine, fileNames.Select(fileName => File.ReadAllText(Path.Combine(path, "scripts", fileName))));
     }
     private static void ExecuteNonQuery(IDbConnection cn, string sql)
     {

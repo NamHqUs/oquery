@@ -3,15 +3,16 @@
 ## Scope
 
 This project contains core-only NUnit tests for the OQuery engine across .NET
-8, .NET 9, and .NET 10. Its fixtures live under this project’s `TestData`
-directory so the core repository is independently testable.
+8, .NET 9, and .NET 10. Its query fixtures live under the repository
+`data-storage/queries` directory so the core repository is independently
+testable.
 
 ## Before changing code
 
 - Read the production API and neighboring tests before adding assertions.
 - Search all target-framework conditions and provider-specific tests.
-- Keep core fixtures under `TestData`; do not reference `OQuery.UI`, `Demo.*`,
-  or UI-repository paths.
+- Keep core query fixtures under `data-storage/queries` and scripts under
+  `scripts`; do not reference `OQuery.UI`, `Demo.*`, or UI-repository paths.
 - Treat Docker database tests as environment-dependent integration tests.
 
 ## Generating tests

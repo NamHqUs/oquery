@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace OQuery.Test.TestData;
 
-internal static class SavedQueryDefinitionLoader
+internal static class QueryDefinitionLoader
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

@@ -22,7 +22,7 @@ internal sealed class QueryRequestDb2ExecutionTests
 #endif
         try
         {
-            _connection = DefinedData.GetNorthStarDb2Connection();
+            _connection = TestDatabase.GetNorthStarDb2Connection();
         }
         catch (DB2Exception exception)
         {
@@ -31,7 +31,7 @@ internal sealed class QueryRequestDb2ExecutionTests
 
         _db = new OQueryEngine(
             _connection,
-            new MetadataProvider(BuiltinMetadata.UnitTestData.Concat(BuiltinMetadata.NorthStarDemoData)),
+            new MetadataProvider(MetadataLoader.UnitTestData.Concat(MetadataLoader.NorthStarDemoData)),
             new FunctionProvider(new Db2Dialect()),
             SqlDialect.ForConnection(_connection));
         _rawStatements = LoadStatements(Path.Combine(
@@ -81,12 +81,9 @@ internal sealed class QueryRequestDb2ExecutionTests
     {
         var path = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             fileName);
-        var query = SavedQueryDefinitionLoader.Load(path);
+        var query = QueryDefinitionLoader.Load(path);
         var sql = _db.Query(query).ToSql().CommandText;
         var reportName = Path.GetFileNameWithoutExtension(fileName);
         var title = reportName[(reportName.IndexOf(' ') + 1)..];
@@ -128,10 +125,10 @@ internal sealed class QueryRequestDb2ExecutionTests
     public void SampleSavedQueryDefinitionsExecuteOnDb2()
     {
         var root = Path.Combine(
-            GetRepositoryRoot(), "src", "OQuery.UnitTest", "TestData", "QueryRequests");
+            GetRepositoryRoot(), "data-storage", "queries");
         foreach (var requestPath in Directory.EnumerateFiles(root, "Sample-*.json").Order())
         {
-            var query = SavedQueryDefinitionLoader.Load(requestPath);
+            var query = QueryDefinitionLoader.Load(requestPath);
             Assert.That(() => _db.Query(query).ToList(), Throws.Nothing, Path.GetFileName(requestPath));
         }
     }

@@ -14,11 +14,11 @@ public class TestBase
     [OneTimeSetUp]
     public void SetupOnce()
     {
-        _connection = DefinedData.GetDbConnection(DbServerType.Sqlite);
+        _connection = TestDatabase.GetDbConnection(DbServerType.Sqlite);
 
-        var entities = BuiltinMetadata.UnitTestData
-            .Concat(BuiltinMetadata.SaleDemoData)
-            .Concat(BuiltinMetadata.NorthStarDemoData);
+        var entities = MetadataLoader.UnitTestData
+            .Concat(MetadataLoader.SaleDemoData)
+            .Concat(MetadataLoader.NorthStarDemoData);
 
         _sqlDialect = SqlDialect.ForConnection(_connection);
         IMetadataProvider metaProvider = new MetadataProvider(entities);

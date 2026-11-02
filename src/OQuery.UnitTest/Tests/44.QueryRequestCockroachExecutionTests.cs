@@ -18,14 +18,14 @@ internal sealed class QueryRequestCockroachExecutionTests
     {
         try
         {
-            _connection = DefinedData.GetNorthStarCockroachConnection();
+            _connection = TestDatabase.GetNorthStarCockroachConnection();
         }
         catch (NpgsqlException exception)
         {
             Assert.Ignore($"CockroachDB comparison requires the Docker CockroachDB service: {exception.Message}");
         }
 
-        var metadata = BuiltinMetadata.UnitTestData.Concat(BuiltinMetadata.NorthStarDemoData);
+        var metadata = MetadataLoader.UnitTestData.Concat(MetadataLoader.NorthStarDemoData);
         _db = new OQueryEngine(
             _connection,
             new MetadataProvider(metadata),
@@ -43,8 +43,8 @@ internal sealed class QueryRequestCockroachExecutionTests
     public void SavedQueriesMatchCockroachStatementsAndResults()
     {
         var root = Path.Combine(
-            GetRepositoryRoot(), "src", "OQuery.UnitTest", "TestData", "QueryRequests");
-        var markdown = File.ReadAllText(Path.Combine(GetRepositoryRoot(), "src", "OQuery.UnitTest", "TestData", "Scripts", "northstar-demo-queries.md"));
+            GetRepositoryRoot(), "data-storage", "queries");
+        var markdown = File.ReadAllText(Path.Combine(GetRepositoryRoot(), "scripts", "northstar-demo-queries.md"));
 
         var requests = Directory.EnumerateFiles(root, "*.json")
             .Where(path => Regex.IsMatch(Path.GetFileNameWithoutExtension(path), "^(Sales|Health|Insurance|HR) \\d+\\."))
@@ -54,7 +54,7 @@ internal sealed class QueryRequestCockroachExecutionTests
         Assert.That(requests, Has.Count.EqualTo(20));
         foreach (var requestPath in requests)
         {
-            var request = SavedQueryDefinitionLoader.Load(requestPath);
+            var request = QueryDefinitionLoader.Load(requestPath);
             var name = Path.GetFileNameWithoutExtension(requestPath);
             var rawSql = FindCockroachStatement(markdown, name);
             Assert.That(rawSql, Is.Not.Null.And.Not.Empty, name);
@@ -83,10 +83,10 @@ internal sealed class QueryRequestCockroachExecutionTests
     public void SampleSavedQueryDefinitionsExecuteOnCockroach()
     {
         var root = Path.Combine(
-            GetRepositoryRoot(), "src", "OQuery.UnitTest", "TestData", "QueryRequests");
+            GetRepositoryRoot(), "data-storage", "queries");
         foreach (var requestPath in Directory.EnumerateFiles(root, "Sample-*.json").Order())
         {
-            var query = SavedQueryDefinitionLoader.Load(requestPath);
+            var query = QueryDefinitionLoader.Load(requestPath);
             Assert.That(() => _db.Query(query).ToList(), Throws.Nothing, Path.GetFileName(requestPath));
         }
     }

@@ -18,7 +18,7 @@ internal sealed class QueryRequestMariaExecutionTests
     {
         try
         {
-            _connection = DefinedData.GetNorthStarMariaConnection();
+            _connection = TestDatabase.GetNorthStarMariaConnection();
         }
         catch (MySqlException exception)
         {
@@ -27,7 +27,7 @@ internal sealed class QueryRequestMariaExecutionTests
 
         _db = new OQueryEngine(
             _connection,
-            new MetadataProvider(BuiltinMetadata.UnitTestData.Concat(BuiltinMetadata.NorthStarDemoData)),
+            new MetadataProvider(MetadataLoader.UnitTestData.Concat(MetadataLoader.NorthStarDemoData)),
             new FunctionProvider(new MariaDialect()),
             SqlDialect.ForConnection(_connection));
     }
@@ -41,11 +41,8 @@ internal sealed class QueryRequestMariaExecutionTests
         var root = GetRepositoryRoot();
         var requestRoot = Path.Combine(
             root,
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests");
-        var statements = LoadMariaStatements(Path.Combine(root, "src", "OQuery.UnitTest", "TestData", "Scripts", "northstar-demo-queries.md"));
+            "data-storage", "queries");
+        var statements = LoadMariaStatements(Path.Combine(root, "scripts", "northstar-demo-queries.md"));
         var requests = Directory
             .EnumerateFiles(requestRoot, "*.json")
             .Where(path =>
@@ -68,7 +65,7 @@ internal sealed class QueryRequestMariaExecutionTests
         {
             var reportName = Path.GetFileNameWithoutExtension(requestPath);
             var title = reportName[(reportName.IndexOf(' ') + 1)..];
-            var query = SavedQueryDefinitionLoader.Load(requestPath);
+            var query = QueryDefinitionLoader.Load(requestPath);
 
             var generatedRecords = _db.Query(query).ToList()
                 .Select(record => record.ToDictionary(
@@ -86,10 +83,10 @@ internal sealed class QueryRequestMariaExecutionTests
     public void SampleSavedQueryDefinitionsExecuteOnMariaDb()
     {
         var root = Path.Combine(
-            GetRepositoryRoot(), "src", "OQuery.UnitTest", "TestData", "QueryRequests");
+            GetRepositoryRoot(), "data-storage", "queries");
         foreach (var requestPath in Directory.EnumerateFiles(root, "Sample-*.json").Order())
         {
-            var query = SavedQueryDefinitionLoader.Load(requestPath);
+            var query = QueryDefinitionLoader.Load(requestPath);
             Assert.That(() => _db.Query(query).ToList(), Throws.Nothing, Path.GetFileName(requestPath));
         }
     }

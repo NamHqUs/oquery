@@ -4,7 +4,7 @@ using System.Text.Json;
 namespace OQuery.Test.Tests;
 
 [TestFixture]
-public sealed class _53_BuiltinMetadataTests
+public sealed class _53_MetadataLoaderTests
 {
     [Test]
     public void UnitTestYamlMatchesExpectedMetadataObjects()
@@ -13,7 +13,7 @@ public sealed class _53_BuiltinMetadataTests
         {
             new Entity(
                 "School",
-                [new Field("Name", "Name")],
+                [new Field("Name")],
                 Relations:
                 [
                     new Relation("Students", "Student", RelationType.Collection, [new RelationItem("Id", "SchoolId")]),
@@ -22,12 +22,12 @@ public sealed class _53_BuiltinMetadataTests
             new Entity(
                 "User",
                 [
-                    new Field("Id", "Id", DataType.Number),
-                    new Field("Name", "Name"),
-                    new Field("ManagerId", "ManagerId", DataType.Number),
-                    new Field("Age", "Age", DataType.Number),
-                    new Field("Birthday", "Birthday", DataType.Datetime),
-                    new Field("IsMale", "IsMale", DataType.Boolean),
+                    new Field("Id", DataType: DataType.Number),
+                    new Field("Name"),
+                    new Field("ManagerId", DataType: DataType.Number),
+                    new Field("Age", DataType: DataType.Number),
+                    new Field("Birthday", DataType: DataType.Datetime),
+                    new Field("IsMale", DataType: DataType.Boolean),
                 ],
                 Relations:
                 [
@@ -37,17 +37,17 @@ public sealed class _53_BuiltinMetadataTests
                 ]),
         };
 
-        var actual = BuiltinMetadata.UnitTestData;
+        var actual = MetadataLoader.UnitTestData;
 
         Assert.That(ToJson(actual), Is.EqualTo(ToJson(expected)));
     }
 
     [Test]
-    public void BuiltinYamlMetadataLoadsValidEntitiesFieldsAndRelations()
+    public void MetadataFixturesLoadValidEntitiesFieldsAndRelations()
     {
-        var entities = BuiltinMetadata.UnitTestData
-            .Concat(BuiltinMetadata.SaleDemoData)
-            .Concat(BuiltinMetadata.NorthStarDemoData)
+        var entities = MetadataLoader.UnitTestData
+            .Concat(MetadataLoader.SaleDemoData)
+            .Concat(MetadataLoader.NorthStarDemoData)
             .ToArray();
 
         Assert.That(entities, Is.Not.Empty);

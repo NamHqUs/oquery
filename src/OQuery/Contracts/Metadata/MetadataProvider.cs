@@ -1,3 +1,4 @@
+using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -21,6 +22,8 @@ public class MetadataProvider : IMetadataProvider
         _entities = entities.ToDictionary(e => e.Name, StringComparer.OrdinalIgnoreCase);
     }
 
+    public IReadOnlyCollection<Entity> Entities => _entities.Values;
+
     public Entity GetEntity(string entityName)
     {
         if (_entities.TryGetValue(entityName, out Entity? entity))
@@ -32,72 +35,52 @@ public class MetadataProvider : IMetadataProvider
     public static MetadataProvider FromYml(string yml)
     {
         ArgumentNullException.ThrowIfNull(yml);
-
-        var entities = new DeserializerBuilder()
-            .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            .Build()
-            .Deserialize<List<YamlEntity>>(yml)
-            ?? throw new FormatException("The YAML metadata cannot be null.");
-
-        return new MetadataProvider(entities.Select(entity => new Entity(
-            Required(entity.Name, "entity name"),
-            (entity.Fields ?? []).Select(field => new Field(
-                Required(field.Name, "field name"),
-                field.DbColumn,
-                field.DataType,
-                field.IsRawSql)).ToList(),
-            entity.DbSchema,
-            entity.DbTable,
-            entity.Relations?.Select(relation => new Relation(
-                Required(relation.Name, "relation name"),
-                Required(relation.RefEntity, "relation referenced entity"),
-                relation.Type,
-                (relation.RefKeys ?? []).Select(key => new RelationItem(
-                    Required(key.DbColumn, "relation database column"),
-                    Required(key.RefDbColumn, "relation referenced database column"))).ToList())).ToList(),
-            entity.IsRawSql)));
+        return FromYml(yml, "<string>");
     }
 
     public static MetadataProvider FromYmlFile(string filePath)
     {
         ArgumentNullException.ThrowIfNull(filePath);
-        return FromYml(File.ReadAllText(filePath));
+        return FromYml(File.ReadAllText(filePath), filePath);
     }
 
-    private static string Required(string? value, string description)
-        => !string.IsNullOrWhiteSpace(value)
-            ? value
-            : throw new FormatException($"The YAML metadata requires a {description}.");
-
-    private sealed class YamlEntity
+    private static MetadataProvider FromYml(string yml, string sourceName)
     {
-        public string? Name { get; set; }
-        public string? DbSchema { get; set; }
-        public string? DbTable { get; set; }
-        public List<YamlField>? Fields { get; set; }
-        public List<YamlRelation>? Relations { get; set; }
-        public bool IsRawSql { get; set; }
+        try
+        {
+            var entities = new DeserializerBuilder()
+                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .Build()
+                .Deserialize<List<Entity>>(yml)
+                ?? throw new FormatException("The YAML metadata cannot be null.");
+
+            return new MetadataProvider(entities);
+        }
+        catch (YamlException exception)
+        {
+            throw CreateYamlFormatException(exception, sourceName, yml);
+        }
     }
 
-    private sealed class YamlField
+    private static FormatException CreateYamlFormatException(
+        YamlException exception,
+        string sourceName,
+        string yml)
     {
-        public string? Name { get; set; }
-        public string? DbColumn { get; set; }
-        public DataType DataType { get; set; }
-        public bool IsRawSql { get; set; }
-    }
+        var lineNumber = exception.Start.Line;
+        var columnNumber = exception.Start.Column;
+        var lines = yml.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+        var row = lineNumber > 0 && lineNumber <= lines.Length
+            ? lines[lineNumber - 1]
+            : string.Empty;
+        var markerColumn = (int)Math.Min(int.MaxValue, Math.Max(0, columnNumber - 1));
+        var marker = new string(' ', markerColumn) + "^";
+        var reason = exception.InnerException?.Message ?? exception.Message;
 
-    private sealed class YamlRelation
-    {
-        public string? Name { get; set; }
-        public string? RefEntity { get; set; }
-        public RelationType Type { get; set; }
-        public List<YamlRelationItem>? RefKeys { get; set; }
-    }
-
-    private sealed class YamlRelationItem
-    {
-        public string? DbColumn { get; set; }
-        public string? RefDbColumn { get; set; }
+        return new FormatException(
+            $"YAML metadata error in '{sourceName}' at line {lineNumber}, column {columnNumber}: {reason}{Environment.NewLine}" +
+            $"Row {lineNumber}: {row}{Environment.NewLine}" +
+            $"           {marker}",
+            exception);
     }
 }

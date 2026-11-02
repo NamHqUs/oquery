@@ -18,7 +18,7 @@ internal sealed class QueryRequestSapHanaExecutionTests
     {
         try
         {
-            _connection = DefinedData.GetNorthStarSapHanaConnection();
+            _connection = TestDatabase.GetNorthStarSapHanaConnection();
         }
         catch (HanaException exception)
         {
@@ -31,7 +31,7 @@ internal sealed class QueryRequestSapHanaExecutionTests
 
         _db = new OQueryEngine(
             _connection,
-            new MetadataProvider(BuiltinMetadata.UnitTestData.Concat(BuiltinMetadata.NorthStarDemoData)),
+            new MetadataProvider(MetadataLoader.UnitTestData.Concat(MetadataLoader.NorthStarDemoData)),
             new FunctionProvider(new SapHanaDialect()),
             SqlDialect.ForConnection(_connection));
     }
@@ -43,8 +43,8 @@ internal sealed class QueryRequestSapHanaExecutionTests
     public void SavedNorthStarQueriesMatchSapHanaStatements()
     {
         var root = GetRepositoryRoot();
-        var requestRoot = Path.Combine(root, "src", "OQuery.UnitTest", "TestData", "QueryRequests");
-        var statements = LoadStatements(Path.Combine(root, "src", "OQuery.UnitTest", "TestData", "Scripts", "northstar-demo-queries.md"));
+        var requestRoot = Path.Combine(root, "data-storage", "queries");
+        var statements = LoadStatements(Path.Combine(root, "scripts", "northstar-demo-queries.md"));
         var requests = Directory.EnumerateFiles(requestRoot, "*.json")
             .Where(path =>
             {
@@ -66,7 +66,7 @@ internal sealed class QueryRequestSapHanaExecutionTests
         {
             var reportName = Path.GetFileNameWithoutExtension(requestPath);
             var title = reportName[(reportName.IndexOf(' ') + 1)..];
-            var query = SavedQueryDefinitionLoader.Load(requestPath);
+            var query = QueryDefinitionLoader.Load(requestPath);
             IReadOnlyList<Dictionary<string, object?>> generated;
             var generatedSql = string.Empty;
             try
@@ -103,7 +103,7 @@ internal sealed class QueryRequestSapHanaExecutionTests
     public void SampleSavedQueryDefinitionsExecuteOnSapHana()
     {
         var root = Path.Combine(
-            GetRepositoryRoot(), "src", "OQuery.UnitTest", "TestData", "QueryRequests");
+            GetRepositoryRoot(), "data-storage", "queries");
         foreach (var requestPath in Directory.EnumerateFiles(root, "Sample-*.json").Order())
         {
             if (Path.GetFileName(requestPath).Equals(
@@ -115,7 +115,7 @@ internal sealed class QueryRequestSapHanaExecutionTests
                 continue;
             }
 
-            var query = SavedQueryDefinitionLoader.Load(requestPath);
+            var query = QueryDefinitionLoader.Load(requestPath);
             Assert.That(() => _db.Query(query).ToList(), Throws.Nothing, Path.GetFileName(requestPath));
         }
     }

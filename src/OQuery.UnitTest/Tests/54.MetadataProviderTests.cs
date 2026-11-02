@@ -40,4 +40,38 @@ public sealed class _54_MetadataProviderTests
             () => MetadataProvider.FromYmlFile(null!),
             Throws.TypeOf<ArgumentNullException>());
     }
+
+    [Test]
+    public void FromYmlReportsYamlErrorLocationAndReason()
+    {
+        var exception = Assert.Throws<FormatException>(() => MetadataProvider.FromYml("""
+            - name: Customer
+              fields: [}
+            """));
+
+        Assert.That(exception!.Message, Does.Contain("YAML metadata error in '<string>'"));
+        Assert.That(exception.Message, Does.Contain("line 2"));
+        Assert.That(exception.Message, Does.Contain("column"));
+        Assert.That(exception.Message, Does.Contain("Row 2:"));
+        Assert.That(exception.Message, Does.Contain("fields: ["));
+        Assert.That(exception.Message, Does.Contain("^"));
+    }
+
+    [Test]
+    public void FromYmlFileReportsSourceFileName()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"metadata-{Guid.NewGuid():N}.yml");
+        try
+        {
+            File.WriteAllText(path, "- name: Customer\n  fields: [}");
+
+            var exception = Assert.Throws<FormatException>(() => MetadataProvider.FromYmlFile(path));
+
+            Assert.That(exception!.Message, Does.Contain($"'{path}'"));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
 }

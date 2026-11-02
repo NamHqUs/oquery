@@ -26,16 +26,16 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         try
         {
-            _connection = DefinedData.GetDbConnection(DbServerType.SqlServer);
+            _connection = TestDatabase.GetDbConnection(DbServerType.SqlServer);
         }
         catch (SqlException exception)
         {
             Assert.Ignore($"SQL Server comparison requires the Docker SQL Server: {exception.Message}");
         }
 
-        var metadata = BuiltinMetadata.UnitTestData
-            .Concat(BuiltinMetadata.SaleDemoData)
-            .Concat(BuiltinMetadata.NorthStarDemoData);
+        var metadata = MetadataLoader.UnitTestData
+            .Concat(MetadataLoader.SaleDemoData)
+            .Concat(MetadataLoader.NorthStarDemoData);
 
         _db = new OQueryEngine(
             _connection,
@@ -55,10 +55,7 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Sales 1. Category and channel profitability.json");
         var request = JsonSerializer.Deserialize<StoredQueryRequest>(
             File.ReadAllText(requestPath),
@@ -123,12 +120,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Sales 2. Customer lifetime value and recency.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -160,12 +154,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Sales 3. Sales representative performance.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -197,12 +188,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Sales 4. Best-selling products and margin.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -234,12 +222,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Sales 5. Monthly sales trend and momentum.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -271,12 +256,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Health 1. Diagnosis burden by clinic.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList()
             .OrderByDescending(record => Convert.ToDecimal(record["VisitCount"], CultureInfo.InvariantCulture))
@@ -323,11 +305,8 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestRoot = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests");
-        var jsonQuery = SavedQueryDefinitionLoader.Load(
+            "data-storage", "queries");
+        var jsonQuery = QueryDefinitionLoader.Load(
             Path.Combine(requestRoot, "Health 1. Diagnosis burden by clinic.json"));
         var yamlPath = Path.Combine(requestRoot, "Health 1. Diagnosis burden by clinic.yml");
         var yamlQuery = QueryDefinition.FromYml(File.ReadAllText(yamlPath));
@@ -343,10 +322,7 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestRoot = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests");
+            "data-storage", "queries");
 
         foreach (var jsonPath in Directory.EnumerateFiles(requestRoot, "*.json").Order())
         {
@@ -361,7 +337,7 @@ internal sealed class QueryRequestSqlComparisonTests
             var yamlPath = Path.ChangeExtension(jsonPath, ".yml");
             Assert.That(File.Exists(yamlPath), Is.True, $"Missing YAML query request for '{jsonPath}'.");
 
-            var jsonSql = _db.Query(SavedQueryDefinitionLoader.Load(jsonPath)).ToSql();
+            var jsonSql = _db.Query(QueryDefinitionLoader.Load(jsonPath)).ToSql();
             var yamlSql = _db.Query(QueryDefinition.FromYml(File.ReadAllText(yamlPath))).ToSql();
 
             Assert.That(NormalizeSql(jsonSql), Is.EqualTo(NormalizeSql(yamlSql)), jsonPath);
@@ -373,14 +349,11 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestRoot = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests");
+            "data-storage", "queries");
         var jsonPath = Path.Combine(requestRoot, "Sample-Recursive employee hierarchy.json");
         var yamlPath = Path.ChangeExtension(jsonPath, ".yml");
 
-        var jsonDefinition = SavedQueryDefinitionLoader.Load(jsonPath);
+        var jsonDefinition = QueryDefinitionLoader.Load(jsonPath);
         var yamlDefinition = QueryDefinition.FromYml(File.ReadAllText(yamlPath));
 
         Assert.That(yamlDefinition.ToYml(), Is.EqualTo(jsonDefinition.ToYml()));
@@ -392,14 +365,11 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestRoot = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests");
+            "data-storage", "queries");
         var jsonPath = Path.Combine(requestRoot, fileName);
         var yamlPath = Path.ChangeExtension(jsonPath, ".yml");
 
-        var jsonDefinition = SavedQueryDefinitionLoader.Load(jsonPath);
+        var jsonDefinition = QueryDefinitionLoader.Load(jsonPath);
         var yamlDefinition = QueryDefinition.FromYml(File.ReadAllText(yamlPath));
 
         Assert.That(yamlDefinition.ToYml(), Is.EqualTo(jsonDefinition.ToYml()), fileName);
@@ -410,12 +380,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Health 2. Physician workload and care-quality scorecard.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -447,12 +414,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Health 3. High-risk patient care profile.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -484,10 +448,7 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Health 4. Lab abnormality patterns.json");
         var request = JsonSerializer.Deserialize<StoredQueryRequest>(
             File.ReadAllText(requestPath),
@@ -550,10 +511,7 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Health 5. Visit-type utilization by month.json");
         var request = JsonSerializer.Deserialize<StoredQueryRequest>(
             File.ReadAllText(requestPath),
@@ -620,12 +578,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Insurance 1. Denial analysis by plan and reason.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -658,12 +613,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Insurance 2. Plan profitability and medical loss ratio.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -696,12 +648,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Insurance 3. Agent portfolio and premium collection.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -733,12 +682,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Insurance 4. Claims adjudication by plan.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -771,12 +717,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Insurance 5. Member utilization versus premium.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -809,12 +752,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "HR 1. Department compensation and performance.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -846,12 +786,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "HR 2. Manager span and team profile.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -883,12 +820,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "HR 4. Leave demand and approval status.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -924,12 +858,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "HR 3. Workforce composition by location.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -964,12 +895,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "HR 5. Performance and bonus trends.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -1005,12 +933,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Sample-Nested customer monthly peak by region.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -1053,12 +978,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Sample-Correlated top three orders per customer.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
             "WITH ranked_orders AS (" +
@@ -1103,12 +1025,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Sample-Union completed orders and active policies.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList()
             .Select(record => Convert.ToInt32(record["UserId"], CultureInfo.InvariantCulture))
@@ -1128,12 +1047,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Sample-Recursive employee hierarchy.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var records = _db.Query(query).ToList();
 
@@ -1146,12 +1062,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Sample-Correlated revenue since policy start.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -1189,12 +1102,9 @@ internal sealed class QueryRequestSqlComparisonTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests",
+            "data-storage", "queries",
             "Sample-Department salary rank.json");
-        var query = SavedQueryDefinitionLoader.Load(requestPath);
+        var query = QueryDefinitionLoader.Load(requestPath);
 
         var dynamicRecords = _db.Query(query).ToList();
         var sqlServerRecords = ExecuteSqlServerQuery(
@@ -1304,7 +1214,7 @@ internal sealed class QueryRequestSqlComparisonTests
 
     private static string ExtractSqlServerStatement(string title)
     {
-        var markdown = File.ReadAllText(Path.Combine(GetRepositoryRoot(), "src", "OQuery.UnitTest", "TestData", "Scripts", "northstar-demo-queries.md"));
+        var markdown = File.ReadAllText(Path.Combine(GetRepositoryRoot(), "scripts", "northstar-demo-queries.md"));
         var lines = markdown.Split('\n');
         var headingIndex = Array.FindIndex(
             lines,

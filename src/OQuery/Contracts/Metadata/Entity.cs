@@ -3,6 +3,13 @@ namespace OQuery;
 #pragma warning restore IDE0130
 public record Entity
 {
+    public Entity()
+    {
+        Name = string.Empty;
+        DbTable = string.Empty;
+        Fields = [];
+    }
+
     public Entity(
         string Name,
         List<Field> Fields,

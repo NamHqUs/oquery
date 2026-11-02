@@ -16,15 +16,15 @@ internal sealed class QueryRequestFirebirdExecutionTests
     {
         try
         {
-            _connection = DefinedData.GetNorthStarFirebirdConnection();
+            _connection = TestDatabase.GetNorthStarFirebirdConnection();
         }
         catch (FbException exception)
         {
             Assert.Ignore($"Firebird execution requires the Docker Firebird service: {exception.Message}");
         }
 
-        var metadata = BuiltinMetadata.UnitTestData
-            .Concat(BuiltinMetadata.NorthStarDemoData);
+        var metadata = MetadataLoader.UnitTestData
+            .Concat(MetadataLoader.NorthStarDemoData);
         _db = new OQueryEngine(
             _connection,
             new MetadataProvider(metadata),
@@ -43,10 +43,7 @@ internal sealed class QueryRequestFirebirdExecutionTests
     {
         var root = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests");
+            "data-storage", "queries");
 
         var requests = Directory
             .EnumerateFiles(root, "*.json")
@@ -68,7 +65,7 @@ internal sealed class QueryRequestFirebirdExecutionTests
         Assert.That(requests, Has.Count.EqualTo(26));
         foreach (var requestPath in requests)
         {
-            var query = SavedQueryDefinitionLoader.Load(requestPath);
+            var query = QueryDefinitionLoader.Load(requestPath);
             Assert.That(
                 () => _db.Query(query).ToList(),
                 Throws.Nothing,

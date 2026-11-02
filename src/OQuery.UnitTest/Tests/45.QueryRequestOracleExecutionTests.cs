@@ -16,7 +16,7 @@ internal sealed class QueryRequestOracleExecutionTests
     {
         try
         {
-            _connection = DefinedData.GetNorthStarOracleConnection();
+            _connection = TestDatabase.GetNorthStarOracleConnection();
         }
         catch (OracleException exception)
         {
@@ -25,7 +25,7 @@ internal sealed class QueryRequestOracleExecutionTests
 
         _db = new OQueryEngine(
             _connection,
-            new MetadataProvider(BuiltinMetadata.UnitTestData.Concat(BuiltinMetadata.NorthStarDemoData)),
+            new MetadataProvider(MetadataLoader.UnitTestData.Concat(MetadataLoader.NorthStarDemoData)),
             new FunctionProvider(new OracleDialect()),
             SqlDialect.ForConnection(_connection));
     }
@@ -36,7 +36,7 @@ internal sealed class QueryRequestOracleExecutionTests
     [Test]
     public void AllNormalSavedQueryDefinitionsExecuteOnOracle()
     {
-        var root = Path.Combine(GetRepositoryRoot(), "src", "OQuery.UnitTest", "TestData", "QueryRequests");
+        var root = Path.Combine(GetRepositoryRoot(), "data-storage", "queries");
         var requests = Directory.EnumerateFiles(root, "*.json")
             .Where(path => !new[]
             {
@@ -51,7 +51,7 @@ internal sealed class QueryRequestOracleExecutionTests
         Assert.That(requests, Has.Count.EqualTo(26));
         foreach (var requestPath in requests)
         {
-            var query = SavedQueryDefinitionLoader.Load(requestPath);
+            var query = QueryDefinitionLoader.Load(requestPath);
             var fileName = Path.GetFileName(requestPath);
             Assert.That(() => _db.Query(query).ToList(), Throws.Nothing, fileName);
         }

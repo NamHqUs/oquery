@@ -21,9 +21,9 @@ internal sealed class QueryRequestSqliteExecutionTests
     [OneTimeSetUp]
     public void SetUp()
     {
-        _connection = DefinedData.GetNorthStarSqliteDockerConnection();
-        var metadata = BuiltinMetadata.UnitTestData
-            .Concat(BuiltinMetadata.NorthStarDemoData);
+        _connection = TestDatabase.GetNorthStarSqliteDockerConnection();
+        var metadata = MetadataLoader.UnitTestData
+            .Concat(MetadataLoader.NorthStarDemoData);
         _db = new OQueryEngine(
             _connection,
             new MetadataProvider(metadata),
@@ -42,10 +42,7 @@ internal sealed class QueryRequestSqliteExecutionTests
     {
         var root = Path.Combine(
             GetRepositoryRoot(),
-            "src",
-            "OQuery.UnitTest",
-            "TestData",
-            "QueryRequests");
+            "data-storage", "queries");
 
         var requests = Directory
             .EnumerateFiles(root, "*.json")
@@ -56,7 +53,7 @@ internal sealed class QueryRequestSqliteExecutionTests
         Assert.That(requests, Has.Count.EqualTo(26));
         foreach (var requestPath in requests)
         {
-            var query = SavedQueryDefinitionLoader.Load(requestPath);
+            var query = QueryDefinitionLoader.Load(requestPath);
             Assert.That(
                 () => _db.Query(query).ToList(),
                 Throws.Nothing,
