@@ -1,6 +1,7 @@
 using Microsoft.Data.Sqlite;
+using OQuery.UnitTest;
 
-namespace OQuery.Test.Tests;
+namespace OQuery.UnitTest.Tests.Query.Execution;
 
 [TestFixture]
 public sealed class TotalRecordsTests : TestBase

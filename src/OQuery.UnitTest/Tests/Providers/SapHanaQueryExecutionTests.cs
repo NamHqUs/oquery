@@ -1,11 +1,10 @@
 using System.Data;
 using System.Globalization;
 using System.Text.RegularExpressions;
-using OQuery;
-using OQuery.Test.TestData;
+using OQuery.UnitTest.Setup;
 using Sap.Data.Hana;
 
-namespace OQuery.Test.Tests;
+namespace OQuery.UnitTest.Tests.Providers;
 
 [TestFixture]
 internal sealed class SapHanaQueryExecutionTests

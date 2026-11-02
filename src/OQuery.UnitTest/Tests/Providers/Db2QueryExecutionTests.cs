@@ -2,10 +2,9 @@ using System.Data;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using IBM.Data.Db2;
-using OQuery;
-using OQuery.Test.TestData;
+using OQuery.UnitTest.Setup;
 
-namespace OQuery.Test.Tests;
+namespace OQuery.UnitTest.Tests.Providers;
 
 [TestFixture]
 internal sealed class Db2QueryExecutionTests

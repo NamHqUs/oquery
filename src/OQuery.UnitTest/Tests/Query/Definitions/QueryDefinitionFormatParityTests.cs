@@ -1,6 +1,8 @@
 using OQuery.QueryDefinitions.Parsers;
+using OQuery.UnitTest;
+using OQuery.UnitTest.Setup;
 
-namespace OQuery.Test.Tests;
+namespace OQuery.UnitTest.Tests.Query.Definitions;
 
 [TestFixture]
 internal sealed class QueryDefinitionFormatParityTests : TestBase
@@ -29,7 +31,7 @@ internal sealed class QueryDefinitionFormatParityTests : TestBase
             }
 
             var yamlQuery = QueryDefinitionParser.ParseFromYml(new FileInfo(yamlPath));
-            var jsonQuery = TestData.QueryDefinitionLoader.Load(jsonPath);
+            var jsonQuery = QueryDefinitionLoader.Load(jsonPath);
             var yamlSql = _db.Query(yamlQuery).ToSql().CommandText;
             var jsonSql = _db.Query(jsonQuery).ToSql().CommandText;
 

@@ -1,6 +1,7 @@
 using OQuery.QueryDefinitions.Parsers;
+using OQuery.UnitTest;
 
-namespace OQuery.Test.Tests;
+namespace OQuery.UnitTest.Tests.Query.Definitions;
 
 [TestFixture]
 public sealed class QueryRequestExecutionTests : TestBase

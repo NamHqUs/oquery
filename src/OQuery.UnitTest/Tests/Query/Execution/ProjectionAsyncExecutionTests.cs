@@ -1,4 +1,6 @@
-namespace OQuery.Test.Tests;
+using OQuery.UnitTest;
+
+namespace OQuery.UnitTest.Tests.Query.Execution;
 
 [TestFixture]
 public sealed class ProjectionAsyncExecutionTests : TestBase

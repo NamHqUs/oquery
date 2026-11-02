@@ -2,7 +2,7 @@ using Microsoft.Data.Sqlite;
 using System.Globalization;
 using static OQuery.SqlFunctionDefintion;
 
-namespace OQuery.Test.Tests;
+namespace OQuery.UnitTest.Tests.Metadata;
 
 [TestFixture]
 public sealed class FunctionMetadataTests

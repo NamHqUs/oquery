@@ -1,8 +1,7 @@
 using System.Data;
-using OQuery;
-using OQuery.Test.TestData;
+using OQuery.UnitTest.Setup;
 
-namespace OQuery.Test.Tests;
+namespace OQuery.UnitTest.Tests.Query.Execution;
 
 [TestFixture]
 internal sealed class SqliteQueryExecutionTests

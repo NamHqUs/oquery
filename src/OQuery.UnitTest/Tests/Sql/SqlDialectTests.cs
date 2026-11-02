@@ -1,8 +1,7 @@
 using Microsoft.Data.Sqlite;
-using OQuery;
 using OQuery.QueryDefinitions.Parsers;
 
-namespace OQuery.Test.Tests;
+namespace OQuery.UnitTest.Tests.Sql;
 
 [TestFixture]
 public sealed class SqlDialectTests

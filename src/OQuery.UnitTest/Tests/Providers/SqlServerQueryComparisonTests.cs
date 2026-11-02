@@ -4,10 +4,9 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Microsoft.Data.SqlClient;
-using OQuery;
-using OQuery.Test.TestData;
+using OQuery.UnitTest.Setup;
 
-namespace OQuery.Test.Tests;
+namespace OQuery.UnitTest.Tests.Providers;
 
 [TestFixture]
 internal sealed class SqlServerQueryComparisonTests

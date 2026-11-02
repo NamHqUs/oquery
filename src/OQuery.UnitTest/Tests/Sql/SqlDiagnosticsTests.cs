@@ -1,6 +1,6 @@
 using Microsoft.Data.SqlClient;
 
-namespace OQuery.Test.Tests;
+namespace OQuery.UnitTest.Tests.Sql;
 
 [TestFixture]
 public sealed class SqlDiagnosticsTests

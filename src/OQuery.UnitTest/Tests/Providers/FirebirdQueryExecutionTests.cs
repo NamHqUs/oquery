@@ -1,9 +1,8 @@
 using System.Data;
 using FirebirdSql.Data.FirebirdClient;
-using OQuery;
-using OQuery.Test.TestData;
+using OQuery.UnitTest.Setup;
 
-namespace OQuery.Test.Tests;
+namespace OQuery.UnitTest.Tests.Providers;
 
 [TestFixture]
 internal sealed class FirebirdQueryExecutionTests

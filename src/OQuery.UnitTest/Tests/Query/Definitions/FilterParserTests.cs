@@ -1,6 +1,7 @@
 using OQuery.QueryDefinitions.Parsers;
+using OQuery.UnitTest;
 
-namespace OQuery.Test;
+namespace OQuery.UnitTest.Tests.Query.Definitions;
 
 [TestFixture]
 internal sealed class FilterParserTests : TestBase

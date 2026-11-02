@@ -1,7 +1,8 @@
 using OQuery.QueryDefinitions.Parsers;
+using OQuery.UnitTest;
 using System.Text.Json;
 
-namespace OQuery.Test.Tests;
+namespace OQuery.UnitTest.Tests.Query.Definitions;
 
 [TestFixture]
 internal sealed class QueryDefinitionTests

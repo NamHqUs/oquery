@@ -9,7 +9,9 @@ using IBM.Data.Db2;
 using System.Data;
 using System.Text;
 
-namespace OQuery.Test.TestData;
+using OQuery;
+
+namespace OQuery.UnitTest.Setup;
 
 public enum DbServerType
 {

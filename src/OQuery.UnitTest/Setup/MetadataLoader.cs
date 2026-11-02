@@ -1,6 +1,4 @@
-using OQuery;
-
-namespace OQuery.Test.TestData;
+namespace OQuery.UnitTest.Setup;
 
 public static class MetadataLoader
 {

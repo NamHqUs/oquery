@@ -1,6 +1,6 @@
 using Microsoft.Data.Sqlite;
 
-namespace OQuery.Test.Tests;
+namespace OQuery.UnitTest.Tests.Metadata;
 
 [TestFixture]
 public sealed class FieldMetadataTests

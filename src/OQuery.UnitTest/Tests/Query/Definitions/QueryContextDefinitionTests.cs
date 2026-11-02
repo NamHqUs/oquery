@@ -1,9 +1,9 @@
 using Microsoft.Data.Sqlite;
-using OQuery;
 using OQuery.QueryDefinitions.Parsers;
+using OQuery.UnitTest;
 using System.Text.Json;
 
-namespace OQuery.Test.Tests;
+namespace OQuery.UnitTest.Tests.Query.Definitions;
 
 [TestFixture]
 public sealed class QueryContextDefinitionTests : TestBase

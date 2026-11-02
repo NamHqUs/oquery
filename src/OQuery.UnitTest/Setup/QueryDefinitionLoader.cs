@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace OQuery.Test.TestData;
+namespace OQuery.UnitTest.Setup;
 
 internal static class QueryDefinitionLoader
 {

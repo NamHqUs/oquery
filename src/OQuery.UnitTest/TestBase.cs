@@ -1,7 +1,7 @@
-using OQuery;
+using OQuery.UnitTest.Setup;
 using System.Data;
 
-namespace OQuery.Test;
+namespace OQuery.UnitTest;
 
 [TestFixture]
 public class TestBase 

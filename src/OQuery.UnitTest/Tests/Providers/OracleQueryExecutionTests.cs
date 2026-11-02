@@ -1,9 +1,8 @@
 using System.Data;
-using OQuery;
-using OQuery.Test.TestData;
+using OQuery.UnitTest.Setup;
 using Oracle.ManagedDataAccess.Client;
 
-namespace OQuery.Test.Tests;
+namespace OQuery.UnitTest.Tests.Providers;
 
 [TestFixture]
 internal sealed class OracleQueryExecutionTests

@@ -1,4 +1,4 @@
-namespace OQuery.Test.Tests;
+namespace OQuery.UnitTest.Tests.Query.Execution;
 
 [TestFixture]
 public sealed class ResultMaterializationTests

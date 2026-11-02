@@ -2,7 +2,7 @@ using Microsoft.Data.Sqlite;
 using OQuery.QueryDefinitions.Parsers;
 using System.Text.Json;
 
-namespace OQuery.Test.Tests;
+namespace OQuery.UnitTest.Tests.Query.Definitions;
 
 [TestFixture]
 public sealed class QueryExpressionTests

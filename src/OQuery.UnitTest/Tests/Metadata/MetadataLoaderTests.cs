@@ -1,7 +1,7 @@
-using OQuery.Test.TestData;
+using OQuery.UnitTest.Setup;
 using System.Text.Json;
 
-namespace OQuery.Test.Tests;
+namespace OQuery.UnitTest.Tests.Metadata;
 
 [TestFixture]
 public sealed class MetadataLoaderTests

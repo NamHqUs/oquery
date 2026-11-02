@@ -1,9 +1,8 @@
 using System.Data;
-using OQuery.Test.TestData;
 using Npgsql;
-using OQuery;
+using OQuery.UnitTest.Setup;
 
-namespace OQuery.Test.Tests;
+namespace OQuery.UnitTest.Tests.Providers;
 
 [TestFixture]
 internal sealed class PostgresQueryExecutionTests

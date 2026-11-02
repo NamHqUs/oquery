@@ -1,11 +1,10 @@
 using System.Data;
 using System.Globalization;
 using System.Text.RegularExpressions;
-using OQuery.Test.TestData;
 using Npgsql;
-using OQuery;
+using OQuery.UnitTest.Setup;
 
-namespace OQuery.Test.Tests;
+namespace OQuery.UnitTest.Tests.Providers;
 
 [TestFixture]
 internal sealed class CockroachQueryExecutionTests
