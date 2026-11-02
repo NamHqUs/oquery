@@ -1,0 +1,164 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "NoPassword123!"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - dbnet
+
+  postgres:
+    image: postgres:17
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "NoPassword123!"
+      POSTGRES_DB: DynamicSqlTest
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - dbnet
+
+  cockroach:
+    image: cockroachdb/cockroach:v25.2.5
+    container_name: cockroach
+    command: start-single-node --insecure --http-addr=0.0.0.0:8080
+    ports:
+      - "26257:26257"
+      - "8080:8080"
+    volumes:
+      - cockroach_data:/cockroach/cockroach-data
+      - ../data-storage/scripts:/scripts:ro
+    networks:
+      - dbnet
+
+  mariadb:
+    image: mariadb:11
+    container_name: mariadb
+    environment:
+      MARIADB_ROOT_PASSWORD: "NoPassword123!"
+      MARIADB_DATABASE: northstar
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ../data-storage/scripts/northstar-demo.mariadb.sql:/docker-entrypoint-initdb.d/northstar-demo.mariadb.sql:ro
+    networks:
+      - dbnet
+
+  saphana:
+    image: saplabs/hanaexpress:2.00.088.00.20251110.1
+    container_name: saphana
+    hostname: e7dc851bbbde
+    environment:
+      LOCAL_HANA_PASSWORD: "NoPassword123!"
+    ports:
+      - "39013:39013"
+      - "39017:39017"
+    volumes:
+      - saphana_data:/hana/mounts
+      - ../data-storage/scripts:/scripts:ro
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        printf '{"master_password":"%s"}' "$$LOCAL_HANA_PASSWORD" > /tmp/hana-password.json
+        exec /run_hana --agree-to-sap-license --passwords-url file:///tmp/hana-password.json
+    networks:
+      - dbnet
+
+  sqlite:
+    image: alpine:3.20
+    container_name: sqlite
+    working_dir: /data
+    volumes:
+      - ./sqlite-data:/data
+      - ../data-storage/scripts:/scripts:ro
+    command:
+      - /bin/sh
+      - -c
+      - |
+        apk add --no-cache sqlite
+        sed '/^PRAGMA foreign_keys/d;/^ATTACH DATABASE/d' /scripts/northstar-demo.sqlite.sql > /tmp/northstar-demo.sqlite.sql
+        cat > /tmp/sqlite-init.sql <<'EOF'
+        ATTACH DATABASE '/data/hr.db' AS hr;
+        ATTACH DATABASE '/data/sa.db' AS sa;
+        ATTACH DATABASE '/data/he.db' AS he;
+        ATTACH DATABASE '/data/in.db' AS "in";
+        .read /tmp/northstar-demo.sqlite.sql
+        EOF
+        sqlite3 /data/main.db < /tmp/sqlite-init.sql
+        tail -f /dev/null
+    networks:
+      - dbnet
+
+  firebird:
+    image: jacobalberty/firebird:latest
+    container_name: firebird
+    environment:
+      ISC_PASSWORD: "NoPassword123!"
+      FIREBIRD_DATABASE: northstar.fdb
+    ports:
+      - "3050:3050"
+    volumes:
+      - firebird_data:/firebird
+      - ../data-storage/scripts:/scripts:ro
+    entrypoint:
+      - /bin/bash
+      - /scripts/firebird-entrypoint.sh
+    networks:
+      - dbnet
+
+  oracle:
+    image: gvenzl/oracle-free:23-slim
+    container_name: oracle
+    environment:
+      ORACLE_PASSWORD: "NoPassword123!"
+      APP_USER: NORTHSTAR
+      APP_USER_PASSWORD: "NoPassword123!"
+    ports:
+      - "1521:1521"
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+      - ../scripts:/scripts:ro
+      - ../data-storage/scripts/northstar-demo.oracle.sql:/container-entrypoint-initdb.d/01-northstar-demo.oracle.sql:ro
+    networks:
+      - dbnet
+
+  db2:
+    image: icr.io/db2_community/db2:11.5.9.0
+    container_name: db2
+    privileged: true
+    environment:
+      LICENSE: accept
+      DBNAME: NORTHSTA
+      DB2INST1_PASSWORD: "NoPassword123!"
+    ports:
+      - "50000:50000"
+    volumes:
+      - db2_data:/database
+      - ../data-storage/scripts/northstar-demo.db2.sh:/var/custom/northstar-demo.db2.sh:ro
+      - ../data-storage/scripts/northstar-demo.db2.sql:/scripts/northstar-demo.db2.sql:ro
+    networks:
+      - dbnet
+
+volumes:
+  sqlserver_data:
+  postgres_data:
+  cockroach_data:
+  sqlite_data:
+  firebird_data:
+  oracle_data:
+  mariadb_data:
+  saphana_data:
+  db2_data:
+
+networks:
+  dbnet:
