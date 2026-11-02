@@ -37,6 +37,7 @@ class TableExpression(IEntity entity, string alias, IReadOnlyList<Field> fields)
     public readonly string Alias = alias;
     public readonly IEntity Entity = entity;
     private IReadOnlyList<Field> MetadataFields { get; set; } = fields;
+    internal IReadOnlyList<Field> AuthorizedFields => MetadataFields;
     public string? CommonTableExpressionName { get; protected set; }
     public readonly Dictionary<string, TableExpression> JoinedTables = [];
     public TableExpression? JoinRoot { get; set; }

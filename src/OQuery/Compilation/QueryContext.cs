@@ -25,8 +25,24 @@ class QueryContext(
     public IReadOnlyList<Field> GetFields(IEntity entity)
         => metaProvider.GetFields(entity);
 
+    public IReadOnlyList<Field> GetFields(TableExpression table)
+        => table.AuthorizedFields;
+
+    public TableExpression ResolveTableContext(TableExpression tableContext, string relationPath)
+    {
+        if (tableContext.JoinedTables.TryGetValue(relationPath, out var joinedTable))
+            return joinedTable;
+
+        var joinedData = ParseRelationPath(tableContext, relationPath);
+        return ApplyJoin(tableContext, joinedData);
+    }
+
     public AggregateExpression CreateCountAggregate(TableExpression tableContext, string fieldName)
     {
+        if (string.Equals(fieldName, "*", StringComparison.Ordinal))
+            throw new UnauthorizedAccessException(
+                "COUNT(*) is not allowed. Specify an authorized field to count.");
+
         var field = ParseFieldPath(tableContext, fieldName);
         var definition = functionProvider.GetFunction("Count");
         return new AggregateExpression(

@@ -319,9 +319,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         if (projections.Length > 0)
         {
             table.ProjectionItems = projections
-                .Select(projection => new ProjectionItem(
-                    queryContext.ParseQueryExpression(table, projection.Fields),
-                    GetProjectionAlias(projection)))
+                .SelectMany(projection => ExpandProjection(table, projection))
                 .ToList();
         }
         else
@@ -349,6 +347,29 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         }
 
         return table;
+    }
+
+    private IEnumerable<ProjectionItem> ExpandProjection(
+        TableExpression table,
+        ProjectionDefinition projection)
+    {
+        if (projection.Fields.Length == 1 &&
+            projection.Fields[0] is FieldDefinition { FieldName: var fieldName } &&
+            (fieldName == "*" || fieldName.EndsWith(".*", StringComparison.Ordinal)))
+        {
+            var wildcardTable = fieldName == "*"
+                ? table
+                : queryContext.ResolveTableContext(table, fieldName[..^2]);
+            foreach (var field in queryContext.GetFields(wildcardTable))
+                yield return new ProjectionItem(
+                    new FieldExpression(wildcardTable.Alias, field),
+                    field.Name);
+            yield break;
+        }
+
+        yield return new ProjectionItem(
+            queryContext.ParseQueryExpression(table, projection.Fields),
+            GetProjectionAlias(projection));
     }
 
     private static string GetProjectionAlias(ProjectionDefinition projection)

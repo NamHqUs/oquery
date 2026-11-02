@@ -77,6 +77,111 @@ public sealed class _55_MetadataAuthorizationPathTests
     }
 
     [Test]
+    public void JoinedWildcardProjectionUsesAuthorizedJoinedFields()
+    {
+        using var db = CreateDatabase();
+
+        var sql = db.Query("User").Select("Members.*").ToSql().CommandText;
+
+        Assert.That(sql, Does.Contain("Id"));
+        Assert.That(sql, Does.Not.Contain("Secret"));
+    }
+
+    [Test]
+    public void CteWildcardProjectionUsesAuthorizedProjectedFields()
+    {
+        var metadata = new MetadataProvider(
+        [
+            new Entity("User", [new Field("Id"), new Field("Name"), new Field("Secret")])
+        ],
+        new PermissionManagement(
+            [new MetadataPermission("User", ["Id", "Name"])],
+            IsDenied: false));
+        using var db = new OQueryEngine(new SqliteConnection(), metadata, new SqliteDialect());
+        var query = new QueryDefinition
+        {
+            Entity = "User",
+            Contexts =
+            [
+                new QueryContextDefintion(
+                    "UserContext",
+                    new QueryDefinition
+                    {
+                        Entity = "User",
+                        Projection = [new("Id"), new("Name")]
+                    },
+                    Condition: null)
+            ],
+            Projection = [new("UserContext.*")]
+        };
+
+        var sql = db.Query(query).ToSql().CommandText;
+
+        Assert.That(sql, Does.Contain("Id"));
+        Assert.That(sql, Does.Contain("Name"));
+        Assert.That(sql, Does.Not.Contain("Secret"));
+    }
+
+    [Test]
+    public void RawCalculatedFieldsAreCheckedAcrossQueryClauses()
+    {
+        var metadata = new MetadataProvider(
+        [
+            new Entity(
+                "User",
+                [
+                    new Field("Id"),
+                    new Field("Value"),
+                    new Field("Calculated", "@Value + 1", IsRawSql: true)
+                ])
+        ]);
+        using var db = new OQueryEngine(new SqliteConnection(), metadata, new SqliteDialect());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(
+                () => db.Query("User").Where(user => user["Calculated"] > 0).ToSql(),
+                Throws.Nothing);
+            Assert.That(
+                () => db.Query("User").OrderBy("Calculated").ToSql(),
+                Throws.Nothing);
+            Assert.That(
+                () => db.Query("User").GroupBy("Calculated").ToSql(),
+                Throws.Nothing);
+            Assert.That(
+                () => db.Query("User").Select("COUNT(Calculated)").ToSql(),
+                Throws.Nothing);
+            Assert.That(
+                () => db.Query(new QueryDefinition
+                {
+                    Entity = "User",
+                    Projection = QueryDefinitionParser.ParseProjection("COUNT(Calculated) | Total"),
+                    Filter = QueryDefinitionParser.ParseFilter("COUNT(Calculated) >= <1>")
+                }).ToSql(),
+                Throws.Nothing);
+        });
+    }
+
+    [Test]
+    public void FluentCountWildcardIsRejected()
+    {
+        using var db = CreateDatabase();
+
+        Assert.That(
+            () => db.Query("User").Count("*"),
+            Throws.TypeOf<UnauthorizedAccessException>());
+    }
+
+    [Test]
+    public void FluentCountAsyncWildcardIsRejected()
+    {
+        using var db = CreateDatabase();
+
+        Assert.ThrowsAsync<UnauthorizedAccessException>(
+            async () => await db.Query("User").CountAsync("*"));
+    }
+
+    [Test]
     public void CteProjectionCannotBypassFieldAuthorization()
     {
         var metadata = new MetadataProvider(
@@ -298,6 +403,41 @@ public sealed class _55_MetadataAuthorizationPathTests
         Assert.That(
             () => db.Query(query).ToSql(),
             Throws.TypeOf<UnauthorizedAccessException>());
+    }
+
+    [Test]
+    public async Task RecursiveCteCannotUseDeniedSourceFieldsAsync()
+    {
+        var metadata = RestrictedUserMetadata();
+        using var db = new OQueryEngine(
+            new SqliteConnection("Data Source=:memory:"),
+            metadata,
+            new SqliteDialect());
+        var query = new QueryDefinition
+        {
+            Entity = "User",
+            Contexts =
+            [
+                new QueryContextDefintion(
+                    "UserTree",
+                    new QueryDefinition
+                    {
+                        Entity = "User",
+                        Projection = [new("Id"), new("Secret")]
+                    },
+                    new ConditionStatementDefinition(
+                        new FieldDefinition("Id"),
+                        BinaryOperator.Equals,
+                        new FieldDefinition("UserTree.Id")))
+                    {
+                        Recursive = true
+                    }
+            ],
+            Projection = [new("Id")]
+        };
+
+        Assert.ThrowsAsync<UnauthorizedAccessException>(
+            async () => await db.Query(query).ToListAsync());
     }
 
     [Test]

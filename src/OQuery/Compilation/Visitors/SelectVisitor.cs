@@ -85,12 +85,16 @@ class SelectVisitor(TableExpression tableContext, QueryContext queryContext)
             else
             {
                 var wildcardPath = e.Value as string;
-                if (wildcardPath == "*")
+                if (wildcardPath == "*" ||
+                    wildcardPath?.EndsWith(".*", StringComparison.Ordinal) == true)
                 {
-                    foreach (var field in QueryContext.GetFields(tableContext.Entity))
+                    var wildcardTable = wildcardPath == "*"
+                        ? tableContext
+                        : QueryContext.ResolveTableContext(tableContext, wildcardPath[..^2]);
+                    foreach (var field in QueryContext.GetFields(wildcardTable))
                         yield return new ProjectionItem(
                             new FieldExpression(
-                                tableContext.Alias,
+                                wildcardTable.Alias,
                                 field),
                             parentKey == null ? field.Name : $"{parentKey}.{field.Name}");
                     continue;
