@@ -1,7 +1,17 @@
 #pragma warning disable IDE0130
 namespace OQuery;
 #pragma warning restore IDE0130
-public record Entity
+public interface IEntity
+{
+    string Name { get; }
+    string? DbSchema { get; }
+    string DbTable { get; }
+    List<Relation>? Relations { get; }
+    bool IsRawSql { get; }
+    Relation GetRelation(string relationName);
+}
+
+public record Entity : IEntity
 {
     public Entity()
     {

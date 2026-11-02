@@ -361,7 +361,7 @@ The actual command still uses `@p0`, `@p1`, and `@p2`, while
 ```text
 Name
 Manager.Name
-Members.COUNT()
+Members.COUNT(Id)
 ```
 
 It follows relations, creates aliases, and translates aggregate functions over

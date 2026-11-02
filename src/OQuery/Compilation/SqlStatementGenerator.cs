@@ -7,11 +7,9 @@ namespace OQuery.Compilation;
 
 internal sealed record SqlStatement(string CommandText, IReadOnlyList<DbParameter> Parameters);
 
-internal sealed class SqlStatementGenerator(
-    ISqlDialect dialect,
-    IMetadataPermission permission)
+internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 {
-    private IReadOnlyDictionary<string, Entity> _entities = new Dictionary<string, Entity>();
+    private IReadOnlyDictionary<string, IEntity> _entities = new Dictionary<string, IEntity>();
 
     public SqlStatement Generate(TableExpression query, IEnumerable<DbParameter> parameters)
     {
@@ -29,7 +27,7 @@ internal sealed class SqlStatementGenerator(
         query.EnsureDefaultProjection();
         var limitedQuery = new TakeExpression(query.WithoutPaging(), maximumRecords);
         var alias = dialect.QuoteIdentifier("__bounded_count");
-        var text = $"{RenderCommonTableExpressions(query)}SELECT COUNT(*)\nFROM ({RenderQuery(limitedQuery, includeCtes: false)}) AS {alias}";
+        var text = $"{RenderCommonTableExpressions(query)}SELECT COUNT(1)\nFROM ({RenderQuery(limitedQuery, includeCtes: false)}) AS {alias}";
         dialect.ValidateSqlStatement(text);
 
         return new SqlStatement(text, parameters.ToArray());
@@ -186,7 +184,7 @@ internal sealed class SqlStatementGenerator(
     private string RenderTable(TableExpression table)
         => $"{(table.CommonTableExpressionName is { } cteName
             ? dialect.RenderCteIdentifier(cteName)
-            : dialect.RenderTable(table.Entity))} {table.Alias}";
+            : dialect.RenderTable((Entity)table.Entity))} {table.Alias}";
 
     private string RenderCommonTableExpressions(TableExpression query)
     {
@@ -323,10 +321,6 @@ internal sealed class SqlStatementGenerator(
             throw new InvalidOperationException(
                 $"The query field alias [{field.TableAlias}] could not be resolved during SQL generation.");
 
-        if (!permission.CanReadField(entity.Name, field.MetaField.Name))
-            throw new UnauthorizedAccessException(
-                $"Field [{field.MetaField.Name}] is not allowed in entity [{entity.Name}].");
-
         if (field.MetaField.IsRawSql)
         {
             var rawSql = field.MetaField.DbColumn ?? field.MetaField.Name;
@@ -341,11 +335,11 @@ internal sealed class SqlStatementGenerator(
             : $"{field.TableAlias}.{dialect.QuoteIdentifier(dbColumn)}";
     }
 
-    private static Dictionary<string, Entity> GetEntities(
+    private static Dictionary<string, IEntity> GetEntities(
         TableExpression table,
-        IReadOnlyDictionary<string, Entity> inheritedEntities)
+        IReadOnlyDictionary<string, IEntity> inheritedEntities)
     {
-        var entities = new Dictionary<string, Entity>(
+        var entities = new Dictionary<string, IEntity>(
             inheritedEntities,
             StringComparer.OrdinalIgnoreCase)
         {
@@ -357,7 +351,7 @@ internal sealed class SqlStatementGenerator(
 
     private static void AddJoinedEntities(
         TableExpression table,
-        IDictionary<string, Entity> entities,
+        IDictionary<string, IEntity> entities,
         ISet<TableExpression> visited)
     {
         if (!visited.Add(table))

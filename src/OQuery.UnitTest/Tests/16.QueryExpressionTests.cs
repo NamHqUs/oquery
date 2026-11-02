@@ -84,13 +84,13 @@ public sealed class _16_QueryExpressionTests
 
         using var db = new OQueryEngine(connection, Metadata);
         var records = db.Query("Products")
-            .Where(record => record["InvoiceItems.COUNT()"] >= 2)
-            .Select("Name", "InvoiceItems.COUNT()")
+            .Where(record => record["InvoiceItems.COUNT(Id)"] >= 2)
+            .Select("Name", "InvoiceItems.COUNT(Id)")
             .ToList();
 
         Assert.That(records, Has.Count.EqualTo(1));
         Assert.That(records[0]["Name"], Is.EqualTo("Widget"));
-        Assert.That(Convert.ToInt32(records[0]["InvoiceItems.COUNT()"]), Is.EqualTo(2));
+        Assert.That(Convert.ToInt32(records[0]["InvoiceItems.COUNT(Id)"]), Is.EqualTo(2));
     }
 
     [Test]

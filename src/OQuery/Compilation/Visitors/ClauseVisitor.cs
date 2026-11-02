@@ -92,7 +92,12 @@ class ClauseVisitor(QueryContext queryContext)
                 return tableContext;
 
             case nameof(FluentQueryExtensions.Count):
-                return new AggregateExpression(tableContext, "Count(*)");
+                if (methodCall.Arguments.Count != 2 ||
+                    methodCall.Arguments[1] is not ConstantExpression { Value: string fieldName } ||
+                    string.IsNullOrWhiteSpace(fieldName))
+                    throw new UnauthorizedAccessException(
+                        "COUNT(*) is not allowed. Specify an authorized field to count.");
+                return QueryContext.CreateCountAggregate(tableContext, fieldName);
 
             case nameof(FluentQueryExtensions.ToList):
                 return tableContext;

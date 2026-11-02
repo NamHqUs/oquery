@@ -322,7 +322,7 @@ var users = db.Query("User")
     .Select(user => new Dictionary<string, object?>
     {
         ["Name"] = user["Name"],
-        ["MemberCount"] = user.Query("Members").Count(),
+        ["MemberCount"] = user.Query("Members").Count("Id"),
     })
     .ToList();
 ```
@@ -337,7 +337,7 @@ var managers = db.Query("User")
     .ToList();
 
 var activeManagers = db.Query("User")
-    .Where(user => user.Query("Members").Count() >= 2)
+    .Where(user => user.Query("Members").Count("Id") >= 2)
     .ToList();
 ```
 
@@ -372,18 +372,18 @@ var (pageRecords, resultTotal) = query.ToListWithTotal(out var totalRecords);
 ### Scalar operations
 
 ```csharp
-var totalUsers = db.Query("User").Count();
-var adults = db.Query("User").Count(user => user["Age"] >= 18);
+var totalUsers = db.Query("User").Count("Id");
 var hasManagers = db.Query("User")
     .Any(user => user["ManagerId"] != null);
 ```
 
 ### Aggregates
 
-Define aggregates in the query projection with functions such as `COUNT()` and
-`SUM(Age)`. Query expressions can also aggregate over related collections, for
-example `Members.COUNT()`, without adding a synthetic aggregate field to entity
-metadata.
+Define aggregates in the query projection with functions such as `COUNT(Id)` and
+`SUM(Age)`. Field-independent `COUNT(*)` is rejected; count operations must
+name an authorized field. Query expressions can also aggregate over related
+collections, for example `Members.COUNT(Id)`, without adding a synthetic
+aggregate field to entity metadata.
 
 ## YAML queries
 

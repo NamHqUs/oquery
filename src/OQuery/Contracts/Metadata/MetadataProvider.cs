@@ -10,6 +10,8 @@ public interface IMetadataProvider
 {
     IMetadataPermission Permission { get; }
     Entity GetEntity(string entityName);
+    IReadOnlyList<Field> GetFields(IEntity entity);
+    Field GetField(IEntity entity, string fieldName);
 }
 
 public class MetadataProvider : IMetadataProvider
@@ -35,6 +37,40 @@ public class MetadataProvider : IMetadataProvider
             return entity;
 
         throw new EntityNotFoundException(entityName);
+    }
+
+    public IReadOnlyList<Field> GetFields(IEntity entity)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+
+        if (entity is not Entity metadataEntity)
+            throw new EntityNotFoundException(entity.Name);
+
+        var fields = metadataEntity.Fields
+            .Where(field => Permission.CanReadField(entity.Name, field.Name))
+            .ToArray();
+
+        if (fields.Length == 0 && metadataEntity.Fields.Count != 0)
+            throw new UnauthorizedAccessException(
+                $"No fields are allowed in entity [{entity.Name}].");
+
+        return fields;
+    }
+
+    public Field GetField(IEntity entity, string fieldName)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        ArgumentException.ThrowIfNullOrWhiteSpace(fieldName);
+
+        if (entity is not Entity metadataEntity)
+            throw new FieldNotFoundException(entity.Name, fieldName);
+
+        var field = metadataEntity.GetField(fieldName);
+        if (!Permission.CanReadField(entity.Name, field.Name))
+            throw new UnauthorizedAccessException(
+                $"Field [{field.Name}] is not allowed in entity [{entity.Name}].");
+
+        return field;
     }
 
     public static MetadataProvider FromYml(string yml)

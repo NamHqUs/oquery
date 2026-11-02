@@ -34,12 +34,12 @@ public class AggregateTest : TestBase
     [Test]
     public void CollectionField_Projection_Count()
     {
-        var query = _db.Query("User").Select("Name", "Members.Count()");
+        var query = _db.Query("User").Select("Name", "Members.Count(Id)");
         var data = query.ToList();
 
         var actualValues = data.ToDictionary(
             e => (string)e["Name"]!,
-            e => Convert.ToInt32(e["Members.Count()"]));
+            e => Convert.ToInt32(e["Members.Count(Id)"]));
 
         Assert.That(actualValues, Is.EqualTo(new Dictionary<string, int>
         {
@@ -55,12 +55,12 @@ public class AggregateTest : TestBase
     [Test]
     public void CollectionField_Projection_Count_Nested()
     {
-        var query = _db.Query("User").Select("Name", "Members.Members.Count()");
+        var query = _db.Query("User").Select("Name", "Members.Members.Count(Id)");
         var data = query.ToList();
 
         //var actualValues = data.ToDictionary(
         //    e => (string)e["Name"]!,
-        //    e => Convert.ToInt32(e["Members.Count()"]));
+        //    e => Convert.ToInt32(e["Members.Count(Id)"]));
 
         //Assert.That(actualValues, Is.EqualTo(new Dictionary<string, int>
         //{

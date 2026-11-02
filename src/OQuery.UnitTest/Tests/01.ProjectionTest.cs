@@ -145,7 +145,7 @@ public class _01_ProjectionTest : TestBase
     [Test]
     public void _04_Field_Collection_Aggregate_Function()
     {
-        var query = _db.Query("User").Select("Id", "Name", "Members.COUNT()");
+        var query = _db.Query("User").Select("Id", "Name", "Members.COUNT(Id)");
         var data = query.ToList();
 
         string[] expectedValues = [
@@ -155,7 +155,7 @@ public class _01_ProjectionTest : TestBase
             "David - 2",
             "Eve - 0",
             "Frank - 0"];
-        var actualValues = data.Select(e => $"{e["Name"]} - {e["Members.COUNT()"]}").ToArray();
+        var actualValues = data.Select(e => $"{e["Name"]} - {e["Members.COUNT(Id)"]}").ToArray();
         Assert.That(actualValues, Is.EquivalentTo(expectedValues));
     }
 
@@ -212,7 +212,7 @@ public class _01_ProjectionTest : TestBase
             .Select(e => new Dictionary<string, object?>{
                 { "Id", "Id" },
                 { "Name", "Name" },
-                { "Total-Members", e.Query("Members").Count()},
+                { "Total-Members", e.Query("Members").Count("Id")},
             });
         var data = query.ToList();
 
@@ -235,7 +235,7 @@ public class _01_ProjectionTest : TestBase
                 { "Id", "Id" },
                 { "Name", "Name" },
                 { "Manager-Name", "Manager.Name" },
-                { "Manager-Total-Members", e.Query("Manager.Members").Count() },
+                { "Manager-Total-Members", e.Query("Manager.Members").Count("Id") },
             });
         var data = query.ToList();
 

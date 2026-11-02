@@ -90,22 +90,25 @@ public static partial class FluentQueryExtensions
         where T : new()
         => (await source.ToListAsync<T>(cancellationToken)).FirstOrDefault();
 
-    public static int Count(this IOQuery source)
+    public static int Count(this IOQuery source, string field)
     {
-        var expression = source.CreateQuery(MethodBase.GetCurrentMethod()!).Expression;
+        ArgumentException.ThrowIfNullOrWhiteSpace(field);
+        var expression = source.CreateQuery(
+            MethodBase.GetCurrentMethod()!,
+            Expression.Constant(field)).Expression;
         return Convert.ToInt32(source.Provider.ExecuteScalar(expression));
     }
-    public static int Count(this IOQuery source, Expression<Func<IQueryParameter, bool>> predicate)
-        => source.Where(predicate).Count();
     public static Task<int> CountAsync(
         this IOQuery source,
+        string field,
         CancellationToken cancellationToken = default)
-        => ExecuteScalarAsync<int>(source, cancellationToken);
-    public static Task<int> CountAsync(
-        this IOQuery source,
-        Expression<Func<IQueryParameter, bool>> predicate,
-        CancellationToken cancellationToken = default)
-        => source.Where(predicate).CountAsync(cancellationToken);
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(field);
+        var query = source.CreateQuery(
+            GetQueryMethod(nameof(Count), 2)!,
+            Expression.Constant(field));
+        return ExecuteScalarAsync<int>(source, query.Expression, cancellationToken);
+    }
 
     public static bool Any(this IOQuery source, Expression<Func<IQueryParameter, bool>> predicate)
     {

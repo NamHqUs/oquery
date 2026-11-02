@@ -109,20 +109,30 @@ public sealed class _24_FunctionMetadataTests
     }
 
     [Test]
-    public void CountSupportsOmittedWildcardExplicitWildcardAndFieldArguments()
+    public void CountRejectsOmittedAndWildcardArguments()
     {
-        var countWithoutArgument = GenerateSql(
-            new FunctionFieldDefinition("COUNT", []),
-            dialect: new SqliteDialect());
-        var countWildcard = GenerateSql(
-            new FunctionFieldDefinition("COUNT", [new FieldDefinition("*")]),
-            dialect: new SqliteDialect());
+        Assert.Multiple(() =>
+        {
+            Assert.That(
+                () => GenerateSql(
+                    new FunctionFieldDefinition("COUNT", []),
+                    dialect: new SqliteDialect()),
+                Throws.TypeOf<UnauthorizedAccessException>());
+            Assert.That(
+                () => GenerateSql(
+                    new FunctionFieldDefinition("COUNT", [new FieldDefinition("*")]),
+                    dialect: new SqliteDialect()),
+                Throws.TypeOf<UnauthorizedAccessException>());
+        });
+    }
+
+    [Test]
+    public void CountAcceptsAuthorizedFieldArgument()
+    {
         var countField = GenerateSql(
             new FunctionFieldDefinition("COUNT", [new FieldDefinition("Id")]),
             dialect: new SqliteDialect());
 
-        Assert.That(countWithoutArgument.CommandText, Does.Match(@"COUNT\s*\(\s*\*\s*\)"));
-        Assert.That(countWildcard.CommandText, Does.Match(@"COUNT\s*\(\s*\*\s*\)"));
         Assert.That(countField.CommandText, Does.Match(@"COUNT\s*\(\s*t0\.""Id""\s*\)"));
     }
 

@@ -285,7 +285,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDefinition
         {
             Entity = "User",
-            Projection = QueryDefinitionParser.ParseProjection("Name, COUNT() | InvoiceCount, SUM(Age) | Revenue, AVG(Age) | AverageOrderValue"),
+            Projection = QueryDefinitionParser.ParseProjection("Name, COUNT(Id) | InvoiceCount, SUM(Age) | Revenue, AVG(Age) | AverageOrderValue"),
             Filter = null
         };
 
@@ -293,7 +293,7 @@ public class _14_QueryRequestTests : TestBase
         var records = _db.Query(definition).ToList();
 
         Assert.That(sql.CommandText, Does.Contain("GROUP BY"));
-        Assert.That(sql.CommandText, Does.Match(@"(?i)\bCOUNT\s*\(\s*\*\s*\)"));
+        Assert.That(sql.CommandText, Does.Match(@"(?i)\bCOUNT\s*\("));
         Assert.That(sql.CommandText, Does.Match(@"(?i)\bSUM\s*\("));
         Assert.That(sql.CommandText, Does.Match(@"(?i)\bAVG\s*\("));
         Assert.That(sql.CommandText, Does.Not.Match(@"(?i)\bSELECT\s+COUNT\s*\(\s*\*\s*\)"));
@@ -308,7 +308,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDefinition
         {
             Entity = "User",
-            Projection = QueryDefinitionParser.ParseProjection("Name, COUNT[Id] | InvoiceCount, SUM[Age] | TotalAge, AVG[Age] | AverageAge"),
+            Projection = QueryDefinitionParser.ParseProjection("Name, COUNT(Id) | InvoiceCount, SUM[Age] | TotalAge, AVG[Age] | AverageAge"),
             Filter = null
         };
 
@@ -321,7 +321,7 @@ public class _14_QueryRequestTests : TestBase
     }
 
     [Test]
-    public void DefinitionSupportsWildcardAndEmptyCountArguments()
+    public void DefinitionRejectsWildcardAndEmptyCountArguments()
     {
         var definition = new QueryDefinition
         {
@@ -330,14 +330,10 @@ public class _14_QueryRequestTests : TestBase
             Filter = null
         };
 
-        var query = _db.Query(definition);
-        var sql = query.ToSql().CommandText;
-        var records = query.ToList();
-
-        Assert.That(sql, Does.Match(@"(?i)\bCOUNT\s*\(\s*\*\s*\)"));
-        Assert.That(records, Is.Not.Empty);
-        Assert.That(records.All(record => Convert.ToInt64(record["WildcardCount"]) == 1), Is.True);
-        Assert.That(records.All(record => Convert.ToInt64(record["EmptyCount"]) == 1), Is.True);
+        Assert.That(
+            () => _db.Query(definition).ToSql(),
+            Throws.TypeOf<UnauthorizedAccessException>()
+                .With.Message.Contain("COUNT(*)"));
     }
 
     [Test]
@@ -365,7 +361,7 @@ public class _14_QueryRequestTests : TestBase
         var definition = new QueryDefinition
         {
             Entity = "User",
-            Projection = QueryDefinitionParser.ParseProjection("Name, Count[] | TotalCount"),
+            Projection = QueryDefinitionParser.ParseProjection("Name, Count(Id) | TotalCount"),
             Sorts = [new SortDefinition(new FieldDefinition("TotalCount"), QuerySortDirection.Descending)]
         };
 
@@ -637,7 +633,7 @@ public class _14_QueryRequestTests : TestBase
             Projection:
               - Name
               - Manager.Name | Manager-Name
-            Filter: "[Name] like 'Dav%' && ([Manager.Name] == 'Alice' || [Members.COUNT()] < 12)"
+            Filter: "[Name] like 'Dav%' && ([Manager.Name] == 'Alice' || [Members.COUNT(Id)] < 12)"
             Sorts: Manager.Name DESC
             Page: 1
             PageSize: 50

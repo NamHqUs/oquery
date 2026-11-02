@@ -84,6 +84,18 @@ class SelectVisitor(TableExpression tableContext, QueryContext queryContext)
                     yield return projection;
             else
             {
+                var wildcardPath = e.Value as string;
+                if (wildcardPath == "*")
+                {
+                    foreach (var field in QueryContext.GetFields(tableContext.Entity))
+                        yield return new ProjectionItem(
+                            new FieldExpression(
+                                tableContext.Alias,
+                                field),
+                            parentKey == null ? field.Name : $"{parentKey}.{field.Name}");
+                    continue;
+                }
+
                 var sql = e.Value switch
                 {
                     SqlExpression expression => expression,

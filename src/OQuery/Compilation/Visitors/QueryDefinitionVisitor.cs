@@ -58,6 +58,10 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         foreach (var context in definition.Contexts)
         {
             var alias = GetContextAlias(context);
+            var cteFields = GetCteFields(
+                definitions[context.Name],
+                definitions,
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase));
             var cteTable = table is CteTableExpression rootCte &&
                 string.Equals(rootCte.Name, context.Name, StringComparison.OrdinalIgnoreCase)
                 && string.Equals(alias, context.Name, StringComparison.OrdinalIgnoreCase)
@@ -65,7 +69,8 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
                     : new CteTableExpression(
                         context.Name,
                         CreateCteEntity(definitions[context.Name], definitions),
-                        queryContext.GetNextAlias());
+                        queryContext.GetNextAlias(),
+                        cteFields);
             cteTables.Add(alias, cteTable);
             table.JoinedTables.Add(alias, cteTable);
         }
@@ -87,9 +92,10 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
                 string.Equals(reference.Name, context.Name, StringComparison.OrdinalIgnoreCase)))
             {
                 var cteTable = cteTables[GetContextAlias(reference)];
-                cteTable.Entity.Fields.Clear();
-                cteTable.Entity.Fields.AddRange(
-                    cteQuery.ProjectionItems.Select(item => new Field(item.Alias, item.Alias)));
+                cteTable.SetMetadataFields(
+                    cteQuery.ProjectionItems
+                        .Select(item => new Field(item.Alias, item.Alias))
+                        .ToArray());
             }
         }
 
@@ -133,11 +139,16 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             PageSize = null
         };
         var anchor = BuildQuery(anchorDefinition, definitions);
+        var cteFields = GetCteFields(
+            context,
+            definitions,
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase));
         var cteEntity = CreateCteEntity(context, definitions);
         var recursiveCte = new CteTableExpression(
             context.Name,
             cteEntity,
-            queryContext.GetNextAlias());
+            queryContext.GetNextAlias(),
+            cteFields);
         var recursive = CreateSource(context.Query.Entity, definitions);
         recursive.JoinedTables[GetContextAlias(context)] = recursiveCte;
         recursive = BuildQueryBody(context.Query, recursive, definitions);
@@ -160,17 +171,18 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         ValidateRecursiveProjectionShape(
             anchor.ProjectionItems.ToArray(),
             recursive.ProjectionItems.ToArray(),
-            cteEntity.Fields);
+            cteFields);
         var result = new CteTableExpression(
             context.Name,
             cteEntity,
-            queryContext.GetNextAlias());
+            queryContext.GetNextAlias(),
+            cteFields);
         result.CommonTableExpressions.Add(new RecursiveCommonTableExpression(
             context.Name,
             anchor,
             recursive,
-            cteEntity.Fields.Select(field => field.Name).ToArray()));
-        result.ProjectionItems = cteEntity.Fields
+            cteFields.Select(field => field.Name).ToArray()));
+        result.ProjectionItems = cteFields
             .Select(field => new ProjectionItem(
                 new FieldExpression(result.Alias, field),
                 field.Name))
@@ -243,10 +255,14 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         IReadOnlyDictionary<string, QueryContextDefintion> definitions)
     {
         if (definitions.TryGetValue(entityName, out var context))
+        {
+            var fields = GetCteFields(context, definitions, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
             return new CteTableExpression(
                 context.Name,
                 CreateCteEntity(context, definitions),
-                queryContext.GetNextAlias());
+                queryContext.GetNextAlias(),
+                fields);
+        }
 
         return queryContext.CreateTableContext(queryContext.GetEntity(entityName));
     }
@@ -277,7 +293,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         if (definitions.TryGetValue(context.Query.Entity, out var sourceContext))
             return GetCteFields(sourceContext, definitions, visited);
 
-        return queryContext.GetEntity(context.Query.Entity).Fields
+        return queryContext.GetFields(queryContext.GetEntity(context.Query.Entity))
             .Select(field => new Field(field.Name, field.Name))
             .ToList();
     }

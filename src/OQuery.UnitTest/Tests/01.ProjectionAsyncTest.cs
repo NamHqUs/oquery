@@ -132,7 +132,7 @@ public class _01_ProjectionAsyncTest : TestBase
     [Test]
     public async Task _04_Field_Collection_Aggregate_Function()
     {
-        var data = await _db.Query("User").Select("Id", "Name", "Members.COUNT()").ToListAsync();
+        var data = await _db.Query("User").Select("Id", "Name", "Members.COUNT(Id)").ToListAsync();
 
         string[] expectedValues = [
             "Alice - 2",
@@ -141,7 +141,7 @@ public class _01_ProjectionAsyncTest : TestBase
             "David - 2",
             "Eve - 0",
             "Frank - 0"];
-        var actualValues = data.Select(e => $"{e["Name"]} - {e["Members.COUNT()"]}").ToArray();
+        var actualValues = data.Select(e => $"{e["Name"]} - {e["Members.COUNT(Id)"]}").ToArray();
         Assert.That(actualValues, Is.EquivalentTo(expectedValues));
     }
 
@@ -199,7 +199,7 @@ public class _01_ProjectionAsyncTest : TestBase
             {
                 { "Id", "Id" },
                 { "Name", "Name" },
-                { "Total-Members", e.Query("Members").Count() },
+                { "Total-Members", e.Query("Members").Count("Id") },
             })
             .ToListAsync();
 
@@ -223,7 +223,7 @@ public class _01_ProjectionAsyncTest : TestBase
                 { "Id", "Id" },
                 { "Name", "Name" },
                 { "Manager-Name", "Manager.Name" },
-                { "Manager-Total-Members", e.Query("Manager.Members").Count() },
+                { "Manager-Total-Members", e.Query("Manager.Members").Count("Id") },
             })
             .ToListAsync();
 

@@ -23,7 +23,7 @@ internal sealed record RecursiveCommonTableExpression(
 
 internal sealed record OrderExpression(SqlExpression Expression, bool Descending, string? ProjectionAlias = null);
 
-class TableExpression(Entity entity, string alias) : SqlExpression(typeof(IOQuery))
+class TableExpression(IEntity entity, string alias, IReadOnlyList<Field> fields) : SqlExpression(typeof(IOQuery))
 {
     public IEnumerable<ProjectionItem> ProjectionItems = [];
     public List<CommonTableExpression> CommonTableExpressions { get; } = [];
@@ -35,9 +35,9 @@ class TableExpression(Entity entity, string alias) : SqlExpression(typeof(IOQuer
     public StringBuilder? SqlSelect { get; protected set; }
     public StringBuilder? SqlOrder { get; set; }
     public readonly string Alias = alias;
-    public readonly Entity Entity = entity;
+    public readonly IEntity Entity = entity;
+    private IReadOnlyList<Field> MetadataFields { get; set; } = fields;
     public string? CommonTableExpressionName { get; protected set; }
-    public readonly List<FieldExpression> Fields = [];
     public readonly Dictionary<string, TableExpression> JoinedTables = [];
     public TableExpression? JoinRoot { get; set; }
     protected int? TakeCount;
@@ -46,7 +46,7 @@ class TableExpression(Entity entity, string alias) : SqlExpression(typeof(IOQuer
     internal TableExpression JoinHost => JoinRoot ?? this;
     internal override string DebugView => $"{GetType().Name}: {Entity.Name} ({Alias})";
 
-    protected TableExpression(TableExpression source) : this(source.Entity, source.Alias)
+    protected TableExpression(TableExpression source) : this(source.Entity, source.Alias, source.MetadataFields)
     {
         ProjectionItems = source.ProjectionItems.ToList();
         CommonTableExpressions.AddRange(source.CommonTableExpressions);
@@ -86,18 +86,21 @@ class TableExpression(Entity entity, string alias) : SqlExpression(typeof(IOQuer
     {
         if (ProjectionItems.Any() || SqlSelect is not null)
             return;
-        ProjectionItems = Entity.Fields
+        ProjectionItems = MetadataFields
             .Select(e => new ProjectionItem(new FieldExpression(Alias, e), e.Name))
             .ToList();
     }
+
+    internal void SetMetadataFields(IReadOnlyList<Field> fields)
+        => MetadataFields = fields;
 }
 
 internal sealed class CteTableExpression : TableExpression
 {
     public string Name { get; }
 
-    public CteTableExpression(string name, Entity entity, string alias)
-        : base(entity, alias)
+    public CteTableExpression(string name, IEntity entity, string alias, IReadOnlyList<Field> fields)
+        : base(entity, alias, fields)
     {
         Name = name;
         CommonTableExpressionName = name;

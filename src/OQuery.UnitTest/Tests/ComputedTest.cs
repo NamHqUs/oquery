@@ -9,7 +9,7 @@ public class ComputedTest : TestBase
         var query = _db.Query("User")
             .Select(e => new Dictionary<string, object?>
             {
-                {"Computed", e.Query("Members").Count() + 1 }
+                {"Computed", e.Query("Members").Count("Id") + 1 }
             });
 
         var queryString = query.ToString();

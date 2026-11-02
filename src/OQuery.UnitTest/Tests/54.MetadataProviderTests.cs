@@ -26,6 +26,28 @@ public sealed class _54_MetadataProviderTests
     }
 
     [Test]
+    public void FieldMetadataIsReturnedOnlyAfterPermissionCheck()
+    {
+        var entity = new Entity(
+            "Customer",
+            [new Field("Id"), new Field("Name")]);
+        var provider = new MetadataProvider(
+            [entity],
+            new PermissionManagement(
+                [new MetadataPermission("Customer", ["Id"])],
+                IsDenied: false));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(provider.GetField(provider.GetEntity("Customer"), "Id").Name, Is.EqualTo("Id"));
+            Assert.That(
+                () => provider.GetField(provider.GetEntity("Customer"), "Name"),
+                Throws.TypeOf<UnauthorizedAccessException>());
+            Assert.That(provider.GetFields(provider.GetEntity("Customer")), Has.Count.EqualTo(1));
+        });
+    }
+
+    [Test]
     public void FromYmlRejectsNullYaml()
     {
         Assert.That(

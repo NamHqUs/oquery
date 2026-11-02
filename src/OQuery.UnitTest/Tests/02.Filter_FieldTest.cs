@@ -9,28 +9,28 @@ public class _02_Filter_FieldTest : TestBase
     public void _01_Field_Primitive()
     {
         var query = _db.Query("User").Where(e => e["Age"] > 30);
-        Assert.That(query.Count(), Is.EqualTo(3));
+        Assert.That(query.Count("Id"), Is.EqualTo(3));
     }
 
     [Test]
     public void _02_Field_Lookup()
     {
         var query = _db.Query("User").Where(e => e["Manager.Name"] == "Alice");
-        Assert.That(query.Count(), Is.EqualTo(2));
+        Assert.That(query.Count("Id"), Is.EqualTo(2));
     }
 
     [Test]
     public void _02_Field_Lookup_Lookup()
     {
         var query = _db.Query("User").Where(e => e["Manager.Manager.Name"] == "Alice");
-        Assert.That(query.Count(), Is.EqualTo(1));
+        Assert.That(query.Count("Id"), Is.EqualTo(1));
     }
 
     [Test]
     public void _02_Field_Lookup_Collection()
     {
         var query = _db.Query("User").Where(e => e["Manager.Members.Name"] == "Bob");
-        Assert.That(query.Count(), Is.EqualTo(2));
+        Assert.That(query.Count("Id"), Is.EqualTo(2));
     }
 
 
@@ -38,20 +38,20 @@ public class _02_Filter_FieldTest : TestBase
     public void _03_Field_Collection()
     {
         var query = _db.Query("User").Where(e => e["Members.Name"] == "Bob");
-        Assert.That(query.Count(), Is.EqualTo(1));
+        Assert.That(query.Count("Id"), Is.EqualTo(1));
     }
 
     [Test]
     public void _03_Field_Collection_Count()
     {
-        var query = _db.Query("User").Where(e => e.Query("Members").Count() >= 2);
-        Assert.That(query.Count(), Is.EqualTo(2));
+        var query = _db.Query("User").Where(e => e.Query("Members").Count("Id") >= 2);
+        Assert.That(query.Count("Id"), Is.EqualTo(2));
     }
     [Test]
     public void _03_Field_Collection_Any()
     {
         var query = _db.Query("User").Where(e => e.Query("Members").Any(x => x["Name"] == "Bob"));
-        Assert.AreEqual(query.Count(), 1);
+        Assert.AreEqual(query.Count("Id"), 1);
     }
 
     [Test]
@@ -110,7 +110,7 @@ public class _02_Filter_FieldTest : TestBase
     public void _03_Field_Collection_Collection()
     {
         var query = _db.Query("User").Where(e => e["Members.Members.Name"] == "David");
-        Assert.That(query.Count(), Is.EqualTo(1));
+        Assert.That(query.Count("Id"), Is.EqualTo(1));
     }
 
     [Test]
@@ -119,14 +119,14 @@ public class _02_Filter_FieldTest : TestBase
         var query = _db.Query("User")
             .Where(e => e.Query("Members").Any(x => x.Query("Members").Any(y => y["Name"] == "David")));
 
-        Assert.That(query.Count(), Is.EqualTo(1));
+        Assert.That(query.Count("Id"), Is.EqualTo(1));
     }
 
     [Test]
     public void _04_Field_Collection_Aggregate_Function()
     {
-        var query = _db.Query("User").Where(e => e["Members.COUNT()"] >= 2);
-        Assert.AreEqual(query.Count(), 2);
+        var query = _db.Query("User").Where(e => e["Members.COUNT(Id)"] >= 2);
+        Assert.AreEqual(query.Count("Id"), 2);
     }
 
 }

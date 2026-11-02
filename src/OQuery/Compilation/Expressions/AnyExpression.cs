@@ -1,6 +1,6 @@
 namespace OQuery.Compilation.Expressions;
 
-class AnyExpression(TableExpression tableContext) : TableExpression(tableContext.Entity, tableContext.Alias)
+class AnyExpression(TableExpression tableContext) : TableExpression(tableContext)
 {
     private readonly TableExpression _tableContext = tableContext;
 

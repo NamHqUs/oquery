@@ -19,12 +19,31 @@ class QueryContext(
     public IEnumerable<DbParameter> DbParameters => _dbParameters;
     public bool SupportsRecursiveCte => sqlDialect.SupportsRecursiveCte;
 
-    public Entity GetEntity(string entityName)
+    public IEntity GetEntity(string entityName)
         => metaProvider.GetEntity(entityName);
 
-    public TableExpression CreateTableContext(Entity entity)
+    public IReadOnlyList<Field> GetFields(IEntity entity)
+        => metaProvider.GetFields(entity);
+
+    public AggregateExpression CreateCountAggregate(TableExpression tableContext, string fieldName)
     {
-        return new TableExpression(entity, GetNextAlias());
+        var field = ParseFieldPath(tableContext, fieldName);
+        var definition = functionProvider.GetFunction("Count");
+        return new AggregateExpression(
+            tableContext,
+            new FunctionSqlExpression(
+                definition,
+                [new FunctionSqlExpressionArgument(field)]));
+    }
+
+    public TableExpression CreateTableContext(IEntity entity)
+    {
+        return new TableExpression(entity, GetNextAlias(), metaProvider.GetFields(entity));
+    }
+
+    public TableExpression CreateTableContext(IEntity entity, string alias)
+    {
+        return new TableExpression(entity, alias, metaProvider.GetFields(entity));
     }
 
     public SqlExpression ParseFieldPath(TableExpression tableContext, string fieldPath)
@@ -64,7 +83,7 @@ class QueryContext(
         }
 
         var lastEntity = joinedData.LastOrDefault().joinedEntity ?? tableContext.Entity;
-        var metaField = lastEntity.GetField(fieldName);
+        var metaField = metaProvider.GetField(lastEntity, fieldName);
         var lastAlias = ApplyJoin(tableContext, joinedData).Alias;
         return new FieldExpression(lastAlias, metaField);
     }
@@ -182,6 +201,13 @@ class QueryContext(
             arguments[index] = index < suppliedArguments.Length
                 ? ParseFunctionArgument(tableContext, argumentDefinition, suppliedArguments[index], depth + 1)
                 : ParseDefaultFunctionArgument(tableContext, argumentDefinition, depth + 1);
+        }
+
+        if (string.Equals(definition.Name, "Count", StringComparison.OrdinalIgnoreCase) &&
+            arguments.Any(argument => argument is FunctionSqlTokenArgument { Token: "*" }))
+        {
+            throw new UnauthorizedAccessException(
+                "COUNT(*) is not allowed. Specify an authorized field to count.");
         }
 
         return new FunctionSqlExpression(definition, arguments);
@@ -389,9 +415,6 @@ class QueryContext(
     private bool TryParseAggregateFunction(string fieldName, out FunctionFieldDefinition function)
     {
         function = null!;
-        if (!fieldName.Contains('(') || !fieldName.EndsWith(')'))
-            return false;
-
         if (FieldDefinitionParser.Parse(fieldName) is not FunctionFieldDefinition parsedFunction ||
             !functionProvider.TryGetFunction(parsedFunction.FunctionName, out var definition) ||
             definition is not { IsAggregate: true })
@@ -407,18 +430,18 @@ class QueryContext(
         var lastTable = ApplyJoin(tableContext, joinedData.Take(joinedData.Count() - 1));
 
         var (relation, entity) = joinedData.Last();
-        var joinedTable = new TableExpression(entity, GetNextAlias());
+        var joinedTable = CreateTableContext(entity);
         joinedTable.SqlWhere.AddRange(BuildJoinKeys(lastTable, joinedTable, relation));
 
         return joinedTable;
     }
 
-    private IEnumerable<(Relation relation, Entity joinedEntity)> ParseRelationPath(TableExpression table, string? relationPath)
+    private IEnumerable<(Relation relation, IEntity joinedEntity)> ParseRelationPath(TableExpression table, string? relationPath)
     {
         var next = table.Entity;
 
         return string.IsNullOrEmpty(relationPath)
-            ? Enumerable.Empty<(Relation relation, Entity joinedEntity)>()
+            ? Enumerable.Empty<(Relation relation, IEntity joinedEntity)>()
             : relationPath.Split('.')
                 .Select(e =>
                 {
@@ -429,17 +452,16 @@ class QueryContext(
                 .ToList();
     }
 
-    private TableExpression ApplyJoin(TableExpression tableContext, IEnumerable<(Relation relation, Entity joinedEntity)> joinedData)
+    private TableExpression ApplyJoin(TableExpression tableContext, IEnumerable<(Relation relation, IEntity joinedEntity)> joinedData)
     {
         var lastTable = tableContext;
         foreach (var (relation, joinedEntity) in joinedData)
         {
             if (!lastTable.JoinedTables.TryGetValue(relation.Name, out TableExpression? joinedTable))
             {
-                lastTable.JoinedTables[relation.Name] = joinedTable = new TableExpression(joinedEntity, GetNextAlias())
-                {
-                    JoinRoot = tableContext.JoinHost
-                };
+                joinedTable = CreateTableContext(joinedEntity);
+                joinedTable.JoinRoot = tableContext.JoinHost;
+                lastTable.JoinedTables[relation.Name] = joinedTable;
                 tableContext.JoinHost.Joins.Add(BuildJoinPath(lastTable, joinedTable, relation));
             }
             lastTable = joinedTable;
@@ -448,7 +470,7 @@ class QueryContext(
         return lastTable;
     }
 
-    private TableExpression ApplyJoinAggregate(TableExpression tableContext, IEnumerable<(Relation relation, Entity joinedEntity)> joinedData)
+    private TableExpression ApplyJoinAggregate(TableExpression tableContext, IEnumerable<(Relation relation, IEntity joinedEntity)> joinedData)
     {
         var lastTable = tableContext;
         if (joinedData.Any())
@@ -456,7 +478,7 @@ class QueryContext(
             List<SqlExpression>? predicates = null;
             foreach (var (relation, joinedEntity) in joinedData)
             {
-                var joinedTable = new TableExpression(joinedEntity, GetNextAlias());
+                var joinedTable = CreateTableContext(joinedEntity);
                 if (predicates == null)
                     predicates = BuildJoinKeys(tableContext, joinedTable, relation);
                 else

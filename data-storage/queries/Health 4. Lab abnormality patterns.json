@@ -202,7 +202,7 @@
           "logicalOperator": 0,
           "left": {
             "kind": "field",
-            "field": "COUNT(*)"
+            "field": "COUNT(Id)"
           },
           "operation": 6,
           "right": {
