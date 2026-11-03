@@ -1,15 +1,13 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using OQuery.QueryDefinitions.Parsers;
 
 namespace OQuery.UnitTest.Setup;
 
 internal static class QueryDefinitionLoader
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        Converters = { new JsonStringEnumConverter() }
-    };
+    private static readonly JsonSerializerOptions JsonOptions =
+        JsonQueryDefinitionParser.CreateSerializerOptions();
 
     public static QueryDefinition Load(string path)
     {
@@ -20,7 +18,6 @@ internal static class QueryDefinitionLoader
         var contexts = request.Contexts.ToDictionary(context => context.Id, StringComparer.OrdinalIgnoreCase);
         return BuildQuery(request.MainQuery, contexts, [], allowDirectContext: true);
     }
-
     private static QueryDefinition BuildQuery(
         StoredQueryNode node,
         IReadOnlyDictionary<string, StoredQueryNode> contexts,
@@ -30,7 +27,7 @@ internal static class QueryDefinitionLoader
         if (!visited.Add(node.Id))
             throw new InvalidDataException($"Query request context [{node.Name}] is recursive.");
 
-        return new QueryDefinition
+        var query = new QueryDefinition
         {
             Entity = node.Entity,
             Projection = node.Projection,
@@ -40,9 +37,19 @@ internal static class QueryDefinitionLoader
             PageSize = node.PageSize,
             Contexts = BuildContexts(node, contexts, visited, allowDirectContext)
         };
+        if (node.ExtraRelations is { Count: > 0 })
+            query.Relations.AddRange(node.ExtraRelations.Select(relation =>
+                new RelationDefinition(
+                    contexts[relation.RefContextId].Name,
+                    relation.Alias,
+                    relation.Condition,
+                    relation.JoinType)));
+        else
+            query.Relations.AddRange(query.Contexts.Keys.Select(name => new RelationDefinition(name)));
+        return query;
     }
 
-    private static List<QueryContextDefintion>? BuildContexts(
+    private static Dictionary<string, QueryDefinitionBase> BuildContexts(
         StoredQueryNode node,
         IReadOnlyDictionary<string, StoredQueryNode> contexts,
         HashSet<string> visited,
@@ -50,23 +57,18 @@ internal static class QueryDefinitionLoader
     {
         if (node.ExtraRelations is { Count: > 0 })
         {
-            return node.ExtraRelations.Select(relation =>
+            var result = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase);
+            foreach (var relation in node.ExtraRelations)
             {
                 if (!contexts.TryGetValue(relation.RefContextId, out var context))
                     throw new InvalidDataException($"Unknown query context [{relation.RefContextId}].");
-                return new QueryContextDefintion(
-                    context.Name,
-                    BuildQuery(
+                result[context.Name] = BuildQuery(
                         context,
                         contexts,
                         new HashSet<string>(visited, StringComparer.OrdinalIgnoreCase),
-                        allowDirectContext: false),
-                    relation.Condition,
-                    relation.JoinType)
-                {
-                    Alias = relation.Alias
-                };
-            }).ToList();
+                        allowDirectContext: false);
+            }
+            return result;
         }
 
         var directContext = contexts.Values.FirstOrDefault(context =>
@@ -75,20 +77,17 @@ internal static class QueryDefinitionLoader
             directContext is null ||
             string.Equals(directContext.Id, node.Id, StringComparison.OrdinalIgnoreCase))
         {
-            return null;
+            return new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase);
         }
 
-        return
-        [
-            new QueryContextDefintion(
-                directContext.Name,
-                BuildQuery(
+        return new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
+        {
+            [directContext.Name] = BuildQuery(
                     directContext,
                     contexts,
                     new HashSet<string>(visited, StringComparer.OrdinalIgnoreCase),
-                    allowDirectContext: false),
-                Condition: null)
-        ];
+                    allowDirectContext: false)
+        };
     }
 
     private sealed class StoredQueryRequest

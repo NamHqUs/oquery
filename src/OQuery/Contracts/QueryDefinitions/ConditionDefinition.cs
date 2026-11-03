@@ -1,17 +1,12 @@
-using OQuery.QueryDefinitions.Parsers;
-using System.Text.Json.Serialization;
-
 #pragma warning disable IDE0130
 namespace OQuery;
 #pragma warning restore IDE0130
 
-[JsonConverter(typeof(ConditionDefinitionJsonConverter))]
 public interface IConditionDefintion
 {
     string ToText();
 }
 
-[JsonConverter(typeof(ConditionDefintionJsonConverter))]
 public class ConditionDefinition(LogicalOperator logicalOperator, params IConditionDefintion[] filter) : IConditionDefintion
 {
     public ConditionDefinition(IEnumerable<IConditionDefintion> filter)
@@ -48,7 +43,6 @@ public class ConditionDefinition(LogicalOperator logicalOperator, params ICondit
     }
 }
 
-[JsonConverter(typeof(ConditionStatementDefinitionJsonConverter))]
 public record ConditionStatementDefinition(
     LogicalOperator? LogicalOperator,
     IFieldDefinition Left,

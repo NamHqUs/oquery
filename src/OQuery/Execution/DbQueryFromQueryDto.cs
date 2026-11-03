@@ -76,13 +76,14 @@ internal static class DbQueryFromQueryDto
         var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         while (true)
         {
-            var context = definition.Contexts?.FirstOrDefault(queryContext =>
-                string.Equals(queryContext.Name, entityName, StringComparison.OrdinalIgnoreCase));
-            if (context is null)
-                return entityName;
-            if (!visited.Add(context.Name))
-                throw new FormatException($"Query context source cycle detected at [{context.Name}].");
-            entityName = context.Query.Entity;
+            if (definition.Contexts?.TryGetValue(entityName, out var context) == true)
+            {
+                if (!visited.Add(entityName))
+                    throw new FormatException($"Query context source cycle detected at [{entityName}].");
+                entityName = context.Entity;
+                continue;
+            }
+            return entityName;
         }
     }
 

@@ -222,7 +222,7 @@ internal static class FieldDefinitionParser
         var fields = new List<IFieldDefinition> { ParseAtom(parts[0]) };
         for (var index = 1; index < parts.Count; index += 2)
         {
-            var operation = MatchOperationExtensions.ParseArithmetic(parts[index]);
+            var operation = MatchOperationParser.ParseArithmetic(parts[index]);
             var operand = ParseAtom(parts[index + 1]);
             fields.Add(WithOperation(operand, operation));
         }

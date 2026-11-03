@@ -1,11 +1,7 @@
 #pragma warning disable IDE0130
-using OQuery.QueryDefinitions.Parsers;
-using System.Text.Json.Serialization;
-
 namespace OQuery;
 #pragma warning restore IDE0130
 
-[JsonConverter(typeof(ProjectionDefinitionJsonConverter))]
 public sealed record ProjectionDefinition(IFieldDefinition[] Fields, string? Alias = null)
 {
     public ProjectionDefinition(string field, string? alias = null)

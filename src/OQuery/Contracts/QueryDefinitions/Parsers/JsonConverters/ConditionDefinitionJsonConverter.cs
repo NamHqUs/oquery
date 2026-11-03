@@ -2,7 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Globalization;
 
-namespace OQuery.QueryDefinitions.Parsers;
+namespace OQuery.QueryDefinitions.Parsers.JsonConverters;
 
 internal sealed class ConditionDefinitionJsonConverter : JsonConverter<IConditionDefintion>
 {

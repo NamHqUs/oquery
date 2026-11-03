@@ -303,7 +303,7 @@ public sealed class QueryExpressionTests
 
         var definition = JsonSerializer.Deserialize<QueryDefinition>(
             json,
-            new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            JsonQueryDefinitionParser.CreateSerializerOptions())
             ?? throw new InvalidOperationException("The query request JSON did not produce a definition.");
         var query = db.Query(definition).GroupBy("Id", "Name");
         var sql = query.ToSql();
@@ -315,8 +315,9 @@ public sealed class QueryExpressionTests
         Assert.That(sql.CommandText, Does.Match(@"ORDER BY[\s\S]*DESC"));
         Assert.That(sql.Parameters.Select(parameter => parameter.Value),
             Is.EquivalentTo(new object?[] { 100m, 0m, 2m }));
-        Assert.That(definition.ToString(), Does.Not.Contain("GroupBy"));
-        Assert.That(definition.ToString(), Does.Contain("ROUND("));
+        var definitionText = YamlQueryDefinitionParser.Write(definition);
+        Assert.That(definitionText, Does.Not.Contain("GroupBy"));
+        Assert.That(definitionText, Does.Contain("ROUND("));
 
         var queryResult = await query.ToListWithTotalRecordsAsync();
         var records = queryResult.Records;
@@ -356,7 +357,7 @@ public sealed class QueryExpressionTests
     {
         using var connection = new SqliteConnection("Data Source=:memory:");
         using var db = new OQueryEngine(connection, Metadata);
-        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var options = JsonQueryDefinitionParser.CreateSerializerOptions();
         var definition = new QueryDefinition
         {
             Entity = "Products",
@@ -387,10 +388,12 @@ public sealed class QueryExpressionTests
     {
         var projection = new ProjectionDefinition([new FieldDefinition("Name")], "ProductName");
 
-        var defaultJson = JsonSerializer.Serialize(projection);
+        var defaultOptions = new JsonSerializerOptions();
+        JsonQueryDefinitionParser.Configure(defaultOptions);
+        var defaultJson = JsonSerializer.Serialize(projection, defaultOptions);
         var webJson = JsonSerializer.Serialize(
             projection,
-            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            JsonQueryDefinitionParser.CreateSerializerOptions());
 
         Assert.That(defaultJson, Is.EqualTo(
             """{"Fields":[{"kind":"field","field":"Name"}],"Alias":"ProductName"}"""));
@@ -407,7 +410,7 @@ public sealed class QueryExpressionTests
                 new ConstFieldDefinition(MatchOperation.Multiply, 2)
             ],
             "Calculated");
-        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var options = JsonQueryDefinitionParser.CreateSerializerOptions();
 
         var serialized = JsonSerializer.Serialize(projection, options);
 
@@ -436,7 +439,7 @@ public sealed class QueryExpressionTests
               }]
             }
             """;
-        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var options = JsonQueryDefinitionParser.CreateSerializerOptions();
         var definition = JsonSerializer.Deserialize<QueryDefinition>(json, options)
             ?? throw new InvalidOperationException("The query request JSON did not produce a definition.");
         var serialized = JsonSerializer.Serialize(definition, options);

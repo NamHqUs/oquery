@@ -3,7 +3,7 @@ using OQuery.QueryBuilderDto.Parsers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace OQuery.QueryDefinitions.Parsers;
+namespace OQuery.QueryDefinitions.Parsers.JsonConverters;
 
 public sealed class ProjectionDefinitionJsonConverter : JsonConverter<ProjectionDefinition>
 {
@@ -125,7 +125,7 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
     {
         try
         {
-            return MatchOperationExtensions.ParseArithmetic(value);
+            return MatchOperationParser.ParseArithmetic(value);
         }
         catch (FormatException)
         {
@@ -147,7 +147,7 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
                 throw new JsonException("A grouped projection operator must be a string.");
             try
             {
-                operation = MatchOperationExtensions.Parse(operatorElement.GetString()!);
+                operation = MatchOperationParser.Parse(operatorElement.GetString()!);
             }
             catch (FormatException exception)
             {
@@ -198,7 +198,7 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
 
             try
             {
-                return MatchOperationExtensions.Parse(value);
+                return MatchOperationParser.Parse(value);
             }
             catch (FormatException exception)
             {
@@ -217,7 +217,9 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
         if (!TryGetProperty(element, "condition", out var condition))
             throw new JsonException("A condition expression requires a condition.");
 
-        var parsed = JsonSerializer.Deserialize<IConditionDefintion>(condition.GetRawText())
+        var parsed = JsonSerializer.Deserialize<IConditionDefintion>(
+            condition.GetRawText(),
+            JsonQueryDefinitionParser.CreateSerializerOptions())
             ?? throw new JsonException("A condition expression cannot be null.");
         return new ConditionFieldDefinition(parsed);
     }

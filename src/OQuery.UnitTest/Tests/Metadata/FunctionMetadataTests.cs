@@ -2,6 +2,8 @@ using Microsoft.Data.Sqlite;
 using System.Globalization;
 using static OQuery.SqlFunctionDefintion;
 
+using OQuery.QueryDefinitions.Parsers;
+
 namespace OQuery.UnitTest.Tests.Metadata;
 
 [TestFixture]
@@ -170,7 +172,7 @@ public sealed class FunctionMetadataTests
         var projection = new ProjectionDefinition(
             [new FunctionFieldDefinition("CountIf", [new ConditionFieldDefinition(condition)])],
             "CompletedCount");
-        var options = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web);
+        var options = JsonQueryDefinitionParser.CreateSerializerOptions();
 
         var json = System.Text.Json.JsonSerializer.Serialize(projection, options);
         var restored = System.Text.Json.JsonSerializer.Deserialize<ProjectionDefinition>(json, options);

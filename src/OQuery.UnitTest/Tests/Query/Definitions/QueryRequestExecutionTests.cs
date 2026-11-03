@@ -268,7 +268,7 @@ public sealed class QueryRequestExecutionTests : TestBase
             Entity = "User",
             Filter = QueryDefinitionParser.ParseFilter("Id between <100,200>")
         };
-        var options = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web);
+        var options = JsonQueryDefinitionParser.CreateSerializerOptions();
 
         var serialized = System.Text.Json.JsonSerializer.Serialize(definition, options);
         var roundTrip = System.Text.Json.JsonSerializer.Deserialize<QueryDefinition>(serialized, options)!;
@@ -386,10 +386,10 @@ public sealed class QueryRequestExecutionTests : TestBase
         var sql = _db.Query(definition).ToSql().CommandText;
         var serialized = System.Text.Json.JsonSerializer.Serialize(
             definition,
-            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+            JsonQueryDefinitionParser.CreateSerializerOptions());
         var roundTrippedSort = System.Text.Json.JsonSerializer.Deserialize<QueryDefinition>(
             serialized,
-            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web))!
+            JsonQueryDefinitionParser.CreateSerializerOptions())!
             .Sorts.Single();
 
         Assert.That(sort.Field, Is.TypeOf<FunctionFieldDefinition>());
@@ -507,7 +507,7 @@ public sealed class QueryRequestExecutionTests : TestBase
             "Page: 1",
             "PageSize: 25");
 
-        Assert.That(definition.ToString(), Is.EqualTo(expected));
+        Assert.That(YamlQueryDefinitionParser.Write(definition), Is.EqualTo(expected));
     }
 
     [Test]
@@ -518,7 +518,7 @@ public sealed class QueryRequestExecutionTests : TestBase
         var expected = string.Join(Environment.NewLine,
             "Entity: User");
 
-        Assert.That(definition.ToString(), Is.EqualTo(expected));
+        Assert.That(YamlQueryDefinitionParser.Write(definition), Is.EqualTo(expected));
     }
 
     [Test]
@@ -538,7 +538,7 @@ public sealed class QueryRequestExecutionTests : TestBase
             """;
 
         var definition = QueryDefinitionParser.Parse(json);
-        var yml = definition.ToYml();
+        var yml = YamlQueryDefinitionParser.Write(definition);
 
         Assert.That(yml, Does.Not.Contain("Name:"));
         Assert.That(yml, Does.Not.Contain("ProjectionRows:"));
@@ -586,7 +586,7 @@ public sealed class QueryRequestExecutionTests : TestBase
 
         var definition = System.Text.Json.JsonSerializer.Deserialize<QueryDefinition>(
             json,
-            new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+            JsonQueryDefinitionParser.CreateSerializerOptions())!;
 
         Assert.That(definition.Filter, Is.TypeOf<ConditionDefinition>());
         var filter = definition.Filter!.Filters.Single() as ConditionStatementDefinition;
@@ -596,7 +596,7 @@ public sealed class QueryRequestExecutionTests : TestBase
         Assert.That(filter.Right, Is.TypeOf<ConstFieldDefinition>());
         Assert.That(((ConstFieldDefinition)filter.Right!).Value, Is.EqualTo("Alice"));
 
-        var options = new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web);
+        var options = JsonQueryDefinitionParser.CreateSerializerOptions();
         var serialized = System.Text.Json.JsonSerializer.Serialize(definition, options);
         Assert.That(serialized, Does.Contain("\"left\":{\"kind\":\"field\",\"field\":\"Name\"}"));
         Assert.That(serialized, Does.Contain("\"right\":{\"kind\":\"value\",\"value\":\"Alice\"}"));
@@ -612,7 +612,9 @@ public sealed class QueryRequestExecutionTests : TestBase
             Filter: "Name = <Alice Smith>"
             """);
 
-        Assert.That(definition.ToString(), Does.Contain("Filter: Name = <Alice Smith>"));
+        Assert.That(
+            YamlQueryDefinitionParser.Write(definition),
+            Does.Contain("Filter: Name = <Alice Smith>"));
     }
 
     [Test]

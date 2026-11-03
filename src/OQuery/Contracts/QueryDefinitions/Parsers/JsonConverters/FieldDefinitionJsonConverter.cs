@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace OQuery.QueryDefinitions.Parsers;
+namespace OQuery.QueryDefinitions.Parsers.JsonConverters;
 
 internal sealed class FieldDefinitionJsonConverter : JsonConverter<IFieldDefinition>
 {

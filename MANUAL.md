@@ -415,15 +415,16 @@ Supported properties:
 - `entity`: metadata entity name.
 - `projection`: projection expressions; use `|` to specify an output alias.
 - Legacy YAML and JSON definitions using `Fields` remain readable.
-- Saved queries use `QueryDto`: `MainQuery` stores the root query and
-  `Contexts` stores each distinct context once. `MainQuery.ExtraRelations`
-  references context IDs rather than embedding query copies. Saved-query
-  files are named with `MainQuery.Id`.
-- Saved-query projections on `QueryContextDto` are stored as a flat list.
+- Saved queries use `QueryDto`, which inherits the core `QueryDefinition`
+  model. `Contexts` stores each distinct context once and `Relations`
+  references contexts by dictionary key rather than embedding query copies.
+  `Name`, `Id`, and `IsBuiltin` are request metadata; saved-query files are
+  named with `Id`.
+- Saved-query projections are stored as a flat list.
   The reserved alias `NEW_LINE` marks query-designer row boundaries; those
   markers are retained in saved-query files and ignored when creating a
   `QueryDefinition`, so they do not affect query execution.
-- Saved-query `Filters` contains one recursive filter group or `null`; older
+- Saved-query `Filter` contains one recursive filter group or `null`; older
   arrays of filter groups are combined with `AND` when read.
 - `filter`: field comparisons, `like`, `not like`, `between`, `not between`,
   `in`, `not in`, `is null`, `is not null`, `&&`, `||`, `AND`, `OR`, and
@@ -615,10 +616,10 @@ and `GETDATE()` renders the provider's current date and time.
 
 ## YAML query definitions
 
-`QueryDefinitionParser.ParseFromYml` accepts YAML text or a `FileInfo`:
+`YamlQueryDefinitionParser.Parse` accepts YAML text or a `FileInfo`:
 
 ```csharp
-var query = QueryDefinitionParser.ParseFromYml("""
+var query = YamlQueryDefinitionParser.Parse("""
 Name: Product totals
 Entity: InvoiceItems
 Projection:
@@ -627,8 +628,19 @@ Projection:
 Sorts: ItemCount DESC
 """);
 
-var fileQuery = QueryDefinitionParser.ParseFromYml(new FileInfo("query.yml"));
+var fileQuery = YamlQueryDefinitionParser.Parse(new FileInfo("query.yml"));
 ```
+
+JSON definitions are parsed through `JsonQueryDefinitionParser.Parse`. When
+using `System.Text.Json` directly, configure the parser-owned converters:
+
+```csharp
+var options = JsonQueryDefinitionParser.CreateSerializerOptions();
+var query = JsonSerializer.Deserialize<QueryDefinition>(json, options);
+```
+
+`QueryDefinition` and its related records are plain model types; parsing and
+serialization behavior belongs to the parser namespace.
 
 YAML query definitions use the same properties as `QueryDefinition`. Sorts are
 plain-text expressions parsed by the sort definition parser. Projection and
@@ -669,12 +681,10 @@ Contexts:
     Condition: A.Salary BETWEEN <B.MinSalary, B.MinSalary + 10000>
 ```
 
-For saved `QueryDto` requests, `MainQuery.Entity` may match a reference
-context's `Name`. That context is the root source, not an extra join: keep its
-definition in `Contexts` and leave `MainQuery.ExtraRelations` empty unless
-there is a separate join. When converting the request to a `QueryDefinition`,
-include the source context in `QueryDefinition.Contexts` with no alias or join
-condition. The compiler then uses the context CTE as `FROM` without emitting a
+For saved `QueryDto` requests, `Entity` may match a reference context's
+dictionary key. That context is the root source, not an extra join: keep its
+definition in `Contexts` and leave `Relations` empty unless there is a separate
+join. The compiler then uses the context CTE as `FROM` without emitting a
 `JOIN`.
 
 For a condition, unqualified left-side fields resolve against the outer source

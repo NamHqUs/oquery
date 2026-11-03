@@ -100,10 +100,10 @@ shape and the [manual](MANUAL.md#common-table-expressions) for YAML usage.
 
 ### Reference context as the root source
 
-A saved `QueryDto` can set `MainQuery.Entity` to a context's `Name` while
-leaving `MainQuery.ExtraRelations` empty. This means the context is the query's
-root source, not a joined relation. Keep the definition in the saved
-`Contexts` catalog. The UI conversion must add that definition to the runtime
+A saved `QueryDto` can set `Entity` to a context dictionary key while
+leaving `Relations` empty. This means the context is the query's root source,
+not a joined relation. Keep the definition in the saved `Contexts` catalog.
+The UI conversion must add that definition to the runtime
 `QueryDefinition.Contexts` with no alias or join condition; this gives
 `QueryDefinitionVisitor` the CTE definition needed to resolve the virtual
 entity. The visitor uses that CTE as the `FROM` source and emits joins only for

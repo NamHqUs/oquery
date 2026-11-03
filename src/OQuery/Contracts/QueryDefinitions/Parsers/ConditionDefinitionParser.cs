@@ -13,9 +13,27 @@ internal sealed class ConditionDefinitionParser
         => string.IsNullOrWhiteSpace(text) ? null : new ConditionDefinitionParser(text).Parse();
 
     public static IConditionDefintion? ParseJoinCondition(string? text)
-        => string.IsNullOrWhiteSpace(text)
-            ? null
-            : new ConditionDefinitionParser(text, parseJoinExpressions: true).Parse();
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return null;
+        var between = text.IndexOf("BETWEEN", StringComparison.OrdinalIgnoreCase);
+        var open = between >= 0 ? text.IndexOf('<', between) : -1;
+        var close = text.LastIndexOf('>');
+        if (between > 0 && open > between && close > open)
+        {
+            var left = text[..between].Trim();
+            var values = text[(open + 1)..close]
+                .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                .Select(value => ConvertNumericFields(FieldDefinitionParser.Parse(value)))
+                .ToArray();
+            return new ConditionStatementDefinition(
+                LogicalOperator.And,
+                new FieldDefinition(left),
+                BinaryOperator.Between,
+                new GroupFieldDefintion(values));
+        }
+        return new ConditionDefinitionParser(text, parseJoinExpressions: true).Parse();
+    }
 
     private ConditionDefinitionParser(string text, bool parseJoinExpressions = false)
     {

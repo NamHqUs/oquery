@@ -4,12 +4,16 @@ Projection:
   - Name
 Page: 1
 PageSize: 50
+ExtraRelations:
+  - Alias: User Context
+    JoinType: Left
+    RefContextId: context-0
 Contexts:
-  - Name: User Context
-    Query:
-      Entity: User
-      Projection:
-        - Id
-        - Name
-        - 'COUNT(Members.Id) | Total Members'
-      Page: 1
+  - Id: context-0
+    Name: User Context
+    Entity: User
+    Projection:
+      - Id
+      - Name
+      - COUNT(Members.Id) | Total Members
+    Page: 1

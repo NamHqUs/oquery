@@ -4,6 +4,16 @@ using OQuery.Execution;
 
 namespace OQuery.Compilation.Visitors;
 
+internal sealed class ContextBinding(string name, QueryDefinitionBase query, RelationDefinition relation)
+{
+    public string Name { get; } = name;
+    public QueryDefinitionBase Query { get; } = query;
+    public string? Alias => relation.Alias;
+    public IConditionDefintion? Condition => relation.Condition;
+    public QueryJoinType JoinType => relation.JoinType ?? QueryJoinType.Left;
+    public bool Recursive => Query.Recursive;
+}
+
 internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
 {
     public TableExpression Eval(QueryDefinition definition)
@@ -11,13 +21,22 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         if (definition.Contexts is not { Count: > 0 })
             throw new FormatException("A query-definition expression requires at least one context.");
 
-        if (definition.Contexts.Any(context => context.Query.Contexts is { Count: > 0 }))
+        var contextBindings = (definition.Relations ?? []).Select(relation =>
+        {
+            if (!definition.Contexts!.TryGetValue(relation.RefContext, out var query))
+                throw new FormatException($"Query relation references unknown context [{relation.RefContext}].");
+            return new ContextBinding(relation.RefContext, query, relation);
+        }).ToList();
+        if (contextBindings.Count == 0)
+            contextBindings.AddRange(definition.Contexts!.Select(pair =>
+                new ContextBinding(pair.Key, pair.Value, new RelationDefinition(pair.Key))));
+        if (contextBindings.Any(context => context.Query.Relations is { Count: > 0 }))
             throw new NotSupportedException("Nested query contexts are not supported.");
 
-        var definitions = new Dictionary<string, QueryContextDefintion>(StringComparer.OrdinalIgnoreCase);
-        List<QueryContextDefintion> cteDefinitions = [];
+        var definitions = new Dictionary<string, ContextBinding>(StringComparer.OrdinalIgnoreCase);
+        List<ContextBinding> cteDefinitions = [];
         HashSet<string> aliases = new(StringComparer.OrdinalIgnoreCase);
-        foreach (var context in definition.Contexts)
+        foreach (var context in contextBindings)
         {
             if (string.IsNullOrWhiteSpace(context.Name))
                 throw new FormatException("A query context requires a name.");
@@ -25,9 +44,6 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
                 throw new FormatException($"Duplicate query context alias [{GetContextAlias(context)}].");
             if (definitions.TryGetValue(context.Name, out var existing))
             {
-                if (!string.Equals(existing.Query.ToYml(), context.Query.ToYml(), StringComparison.Ordinal))
-                    throw new FormatException(
-                        $"Query context [{context.Name}] has conflicting query definitions.");
                 continue;
             }
 
@@ -55,7 +71,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
 
         var table = CreateSource(definition.Entity, definitions);
         var cteTables = new Dictionary<string, TableExpression>(StringComparer.OrdinalIgnoreCase);
-        foreach (var context in definition.Contexts)
+        foreach (var context in contextBindings)
         {
             var alias = GetContextAlias(context);
             var cteFields = GetCteFields(
@@ -75,7 +91,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             table.JoinedTables.Add(alias, cteTable);
         }
 
-        foreach (var context in definition.Contexts.Where(context => context.Condition is not null))
+        foreach (var context in contextBindings.Where(context => context.Condition is not null))
         {
             var joinedTable = cteTables[GetContextAlias(context)];
             table.Joins.Add(new JoinExpression(
@@ -88,7 +104,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         {
             var cteQuery = BuildQuery(context.Query, definitions);
             table.CommonTableExpressions.Add(new StandardCommonTableExpression(context.Name, cteQuery));
-            foreach (var reference in definition.Contexts.Where(reference =>
+            foreach (var reference in contextBindings.Where(reference =>
                 string.Equals(reference.Name, context.Name, StringComparison.OrdinalIgnoreCase)))
             {
                 var cteTable = cteTables[GetContextAlias(reference)];
@@ -103,9 +119,9 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
     }
 
     private bool TryBuildRecursiveQuery(
-        QueryDefinition definition,
-        IReadOnlyDictionary<string, QueryContextDefintion> definitions,
-        IReadOnlyList<QueryContextDefintion> contexts,
+        QueryDefinitionBase definition,
+        IReadOnlyDictionary<string, ContextBinding> definitions,
+        IReadOnlyList<ContextBinding> contexts,
         out TableExpression query)
     {
         query = null!;
@@ -209,7 +225,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         }
     }
 
-    private static bool ContainsContextReference(QueryDefinition definition, string contextName)
+    private static bool ContainsContextReference(QueryDefinitionBase definition, string contextName)
     {
         return definition.Projection.Any(projection =>
                 projection.Fields.Any(field => ContainsContextReference(field, contextName))) ||
@@ -252,7 +268,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
 
     private TableExpression CreateSource(
         string entityName,
-        IReadOnlyDictionary<string, QueryContextDefintion> definitions)
+        IReadOnlyDictionary<string, ContextBinding> definitions)
     {
         if (definitions.TryGetValue(entityName, out var context))
         {
@@ -268,8 +284,8 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
     }
 
     private Entity CreateCteEntity(
-        QueryContextDefintion context,
-        IReadOnlyDictionary<string, QueryContextDefintion> definitions)
+        ContextBinding context,
+        IReadOnlyDictionary<string, ContextBinding> definitions)
     {
         var fields = GetCteFields(context, definitions, new HashSet<string>(StringComparer.OrdinalIgnoreCase));
 
@@ -277,8 +293,8 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
     }
 
     private List<Field> GetCteFields(
-        QueryContextDefintion context,
-        IReadOnlyDictionary<string, QueryContextDefintion> definitions,
+        ContextBinding context,
+        IReadOnlyDictionary<string, ContextBinding> definitions,
         HashSet<string> visited)
     {
         if (!visited.Add(context.Name))
@@ -299,17 +315,17 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
     }
 
     private TableExpression BuildQuery(
-        QueryDefinition definition,
-        IReadOnlyDictionary<string, QueryContextDefintion> definitions)
+        QueryDefinitionBase definition,
+        IReadOnlyDictionary<string, ContextBinding> definitions)
     {
         var table = CreateSource(definition.Entity, definitions);
         return BuildQueryBody(definition, table, definitions);
     }
 
     private TableExpression BuildQueryBody(
-        QueryDefinition definition,
+        QueryDefinitionBase definition,
         TableExpression table,
-        IReadOnlyDictionary<string, QueryContextDefintion> definitions)
+        IReadOnlyDictionary<string, ContextBinding> definitions)
     {
         if (definition.Filter is not null)
             table = new WhereVisitor(table, queryContext)
@@ -377,7 +393,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             ? string.Join(" ", projection.Fields.Select(field => field.ToText()))
             : projection.Alias;
 
-    private static string GetContextAlias(QueryContextDefintion context)
+    private static string GetContextAlias(ContextBinding context)
         => string.IsNullOrWhiteSpace(context.Alias) ? context.Name : context.Alias;
 
     private static string RenderJoinType(QueryJoinType joinType)

@@ -5,10 +5,50 @@ expressions. A projection expression is a flat `fields` array; there is no
 root group and no `math` wrapper. This differs from the frontend TypeScript
 expression type.
 
-The backend serializer is
-[`ProjectionDefinitionJsonConverter`](./src/OQuery/Contracts/QueryDefinitions/Parsers/ProjectionDefinitionJsonConverter.cs).
+The backend serializer is configured by
+[`JsonQueryDefinitionParser`](./src/OQuery/Contracts/QueryDefinitions/Parsers/JsonQueryDefinitionParser.cs),
+which owns the projection and condition converters. Query model records are
+plain POCOs and do not carry JSON or YAML parsing attributes.
 The format is covered by
-[`ProjectionJsonWritesOperatorOnEachExpressionNode`](./src/OQuery.UnitTest/Tests/40.QueryDefintionTest.cs).
+[`QueryDefinitionFormatParityTests`](./src/OQuery.UnitTest/Tests/Query/Definitions/QueryDefinitionFormatParityTests.cs).
+
+## Query context graph
+
+The query model stores context definitions in a dictionary. The dictionary key
+is the context name; context definitions do not repeat that name property.
+`relations` references contexts by name.
+
+```json
+{
+  "entity": "Employees",
+  "relations": [
+    { "refContext": "C1" },
+    { "refContext": "C2" }
+  ],
+  "contexts": {
+    "C1": {
+      "entity": "Departments",
+      "projection": []
+    },
+    "C2": {
+      "entity": "Employees",
+      "relations": [
+        {
+          "refContext": "C1",
+          "alias": "Department",
+          "condition": "DepartmentId = C1.Id",
+          "joinType": "Left"
+        }
+      ]
+    }
+  }
+}
+```
+
+`refContext` is required. `alias` and `condition` are optional, and
+`joinType` defaults to `Left`. Legacy array-based contexts and
+`extraRelations`/`refContextId` input remain supported by the parser for
+backward compatibility.
 
 ## Nodes and operators
 

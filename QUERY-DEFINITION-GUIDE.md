@@ -13,6 +13,39 @@ backend JSON projection shape is documented in
 Complete sample requests and their YAML counterparts are stored in
 [`data-storage/queries`](./data-storage/queries).
 
+## Flat context graph
+
+Contexts are stored once in the `Contexts` dictionary. The dictionary key is
+the context name and is the identity used by `Relations`. A relation contains
+only the referenced context name and join metadata; it does not embed another
+query definition.
+
+```yaml
+Entity: Employees
+Relations:
+  - RefContext: C1
+  - RefContext: C2
+
+Contexts:
+  C1:
+    Entity: Departments
+    Projection:
+      - Id
+
+  C2:
+    Entity: Employees
+    Relations:
+      - RefContext: C1
+        Alias: Department
+        Condition: DepartmentId = C1.Id
+        JoinType: Left
+```
+
+This shape allows multiple contexts to share `C1` without repeating its
+definition. The parser still accepts the older nested `Contexts` and
+`ExtraRelations` forms and normalizes them into this graph. Missing context
+references and conflicting definitions are rejected during parsing.
+
 ## Core rules
 
 1. Start with the result grain: one row per user, policy, department, order,

@@ -15,7 +15,6 @@ public sealed class MetadataAuthorizationPathTests
             () => db.Query("User").Select("Name", "Members.Secret").ToSql(),
             Throws.TypeOf<UnauthorizedAccessException>());
     }
-
     [Test]
     public void JoinedAggregateRequiresPermissionForItsField()
     {
@@ -25,7 +24,6 @@ public sealed class MetadataAuthorizationPathTests
             () => db.Query("User").Select("Name", "Members.COUNT(Secret)").ToSql(),
             Throws.TypeOf<UnauthorizedAccessException>());
     }
-
     [Test]
     public void ProjectionAliasDoesNotGrantAccessToAHiddenPhysicalField()
     {
@@ -101,17 +99,19 @@ public sealed class MetadataAuthorizationPathTests
         var query = new QueryDefinition
         {
             Entity = "User",
-            Contexts =
-            [
-                new QueryContextDefintion(
-                    "UserContext",
-                    new QueryDefinition
+            Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["UserContext"] = new QueryDefinition
                     {
                         Entity = "User",
                         Projection = [new("Id"), new("Name")]
                     },
-                    Condition: null)
+            },
+            Relations =
+            [
+                new RelationDefinition("UserContext", null, null, QueryJoinType.Left),
             ],
+
             Projection = [new("UserContext.*")]
         };
 
@@ -195,17 +195,19 @@ public sealed class MetadataAuthorizationPathTests
         var query = new QueryDefinition
         {
             Entity = "User",
-            Contexts =
-            [
-                new QueryContextDefintion(
-                    "UserContext",
-                    new QueryDefinition
+            Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["UserContext"] = new QueryDefinition
                     {
                         Entity = "User",
                         Projection = [new("Secret")]
                     },
-                    Condition: null)
+            },
+            Relations =
+            [
+                new RelationDefinition("UserContext", null, null, QueryJoinType.Left),
             ],
+
             Projection = [new("Id")]
         };
 
@@ -258,20 +260,22 @@ public sealed class MetadataAuthorizationPathTests
         var query = new QueryDefinition
         {
             Entity = "User",
-            Contexts =
-            [
-                new QueryContextDefintion(
-                    "MemberContext",
-                    new QueryDefinition
+            Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["MemberContext"] = new QueryDefinition
                     {
                         Entity = "Member",
                         Projection = [new("Id")]
                     },
-                    new ConditionStatementDefinition(
+            },
+            Relations =
+            [
+                new RelationDefinition("MemberContext", null, new ConditionStatementDefinition(
                         new FieldDefinition("Secret"),
                         BinaryOperator.Equals,
-                        new FieldDefinition("Id")))
+                        new FieldDefinition("Id")), QueryJoinType.Left),
             ],
+
             Projection = [new("Id")]
         };
 
@@ -380,23 +384,22 @@ public sealed class MetadataAuthorizationPathTests
         var query = new QueryDefinition
         {
             Entity = "User",
-            Contexts =
-            [
-                new QueryContextDefintion(
-                    "UserTree",
-                    new QueryDefinition
+            Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["UserTree"] = new QueryDefinition
                     {
                         Entity = "User",
                         Projection = [new("Id"), new("Secret")]
                     },
-                    new ConditionStatementDefinition(
+            },
+            Relations =
+            [
+                new RelationDefinition("UserTree", null, new ConditionStatementDefinition(
                         new FieldDefinition("Id"),
                         BinaryOperator.Equals,
-                        new FieldDefinition("UserTree.Id")))
-                    {
-                        Recursive = true
-                    }
+                        new FieldDefinition("UserTree.Id")), QueryJoinType.Left),
             ],
+
             Projection = [new("Id")]
         };
 
@@ -416,23 +419,22 @@ public sealed class MetadataAuthorizationPathTests
         var query = new QueryDefinition
         {
             Entity = "User",
-            Contexts =
-            [
-                new QueryContextDefintion(
-                    "UserTree",
-                    new QueryDefinition
+            Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["UserTree"] = new QueryDefinition
                     {
                         Entity = "User",
                         Projection = [new("Id"), new("Secret")]
                     },
-                    new ConditionStatementDefinition(
+            },
+            Relations =
+            [
+                new RelationDefinition("UserTree", null, new ConditionStatementDefinition(
                         new FieldDefinition("Id"),
                         BinaryOperator.Equals,
-                        new FieldDefinition("UserTree.Id")))
-                    {
-                        Recursive = true
-                    }
+                        new FieldDefinition("UserTree.Id")), QueryJoinType.Left),
             ],
+
             Projection = [new("Id")]
         };
 

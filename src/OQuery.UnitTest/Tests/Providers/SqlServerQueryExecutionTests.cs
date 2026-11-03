@@ -6,6 +6,8 @@ using System.Text.RegularExpressions;
 using Microsoft.Data.SqlClient;
 using OQuery.UnitTest.Setup;
 
+using OQuery.QueryDefinitions.Parsers;
+
 namespace OQuery.UnitTest.Tests.Providers;
 
 [TestFixture]
@@ -65,7 +67,7 @@ internal sealed class SqlServerQueryExecutionTests
         var jsonQuery = QueryDefinitionLoader.Load(
             Path.Combine(requestRoot, "Health 1. Diagnosis burden by clinic.json"));
         var yamlPath = Path.Combine(requestRoot, "Health 1. Diagnosis burden by clinic.yml");
-        var yamlQuery = QueryDefinition.FromYml(File.ReadAllText(yamlPath));
+        var yamlQuery = YamlQueryDefinitionParser.Parse(File.ReadAllText(yamlPath));
 
         var jsonSql = _db.Query(jsonQuery).ToSql();
         var yamlSql = _db.Query(yamlQuery).ToSql();
@@ -94,7 +96,7 @@ internal sealed class SqlServerQueryExecutionTests
             Assert.That(File.Exists(yamlPath), Is.True, $"Missing YAML query request for '{jsonPath}'.");
 
             var jsonSql = _db.Query(QueryDefinitionLoader.Load(jsonPath)).ToSql();
-            var yamlSql = _db.Query(QueryDefinition.FromYml(File.ReadAllText(yamlPath))).ToSql();
+            var yamlSql = _db.Query(YamlQueryDefinitionParser.Parse(File.ReadAllText(yamlPath))).ToSql();
 
             Assert.That(NormalizeSql(jsonSql), Is.EqualTo(NormalizeSql(yamlSql)), jsonPath);
         }
@@ -110,9 +112,10 @@ internal sealed class SqlServerQueryExecutionTests
         var yamlPath = Path.ChangeExtension(jsonPath, ".yml");
 
         var jsonDefinition = QueryDefinitionLoader.Load(jsonPath);
-        var yamlDefinition = QueryDefinition.FromYml(File.ReadAllText(yamlPath));
+        var yamlDefinition = YamlQueryDefinitionParser.Parse(File.ReadAllText(yamlPath));
 
-        Assert.That(yamlDefinition.ToYml(), Is.EqualTo(jsonDefinition.ToYml()));
+        Assert.That(YamlQueryDefinitionParser.Write(yamlDefinition),
+            Is.EqualTo(YamlQueryDefinitionParser.Write(jsonDefinition)));
     }
 
     [TestCase("Test-Check Context Calculation Fields.json")]
@@ -126,9 +129,10 @@ internal sealed class SqlServerQueryExecutionTests
         var yamlPath = Path.ChangeExtension(jsonPath, ".yml");
 
         var jsonDefinition = QueryDefinitionLoader.Load(jsonPath);
-        var yamlDefinition = QueryDefinition.FromYml(File.ReadAllText(yamlPath));
+        var yamlDefinition = YamlQueryDefinitionParser.Parse(File.ReadAllText(yamlPath));
 
-        Assert.That(yamlDefinition.ToYml(), Is.EqualTo(jsonDefinition.ToYml()), fileName);
+        Assert.That(YamlQueryDefinitionParser.Write(yamlDefinition),
+            Is.EqualTo(YamlQueryDefinitionParser.Write(jsonDefinition)), fileName);
     }
 
     [Test]

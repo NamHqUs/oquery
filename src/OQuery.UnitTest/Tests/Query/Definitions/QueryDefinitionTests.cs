@@ -80,7 +80,7 @@ internal sealed class QueryDefinitionTests
     public void ProjectionJsonWritesOperatorOnEachExpressionNode()
     {
         var projection = QueryDefinitionParser.ParseProjection("A + B - <3>").Single();
-        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var options = JsonQueryDefinitionParser.CreateSerializerOptions();
 
         var json = JsonSerializer.Serialize(projection, options);
 
@@ -114,13 +114,51 @@ internal sealed class QueryDefinitionTests
 
         var projection = JsonSerializer.Deserialize<ProjectionDefinition>(
             json,
-            new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            JsonQueryDefinitionParser.CreateSerializerOptions())
             ?? throw new InvalidOperationException("The legacy projection JSON did not produce a definition.");
 
         Assert.That(projection.Fields, Has.Length.EqualTo(2));
         Assert.That(projection.Fields[1], Is.EqualTo(
             new ConstFieldDefinition(MatchOperation.Subtract, 3L)));
         Assert.That(projection.ToText(), Is.EqualTo("A - <3> | Calculated"));
+    }
+
+    [Test]
+    public void YamlRejectsRelationsReferencingUnknownContexts()
+    {
+        Assert.That(
+            () => QueryDefinitionParser.ParseFromYml("""
+                Entity: Orders
+                Contexts:
+                  - Id: known-id
+                    Name: Known
+                    Entity: KnownEntity
+                ExtraRelations:
+                  - RefContextId: missing-id
+                """),
+            Throws.TypeOf<FormatException>()
+                .With.Message.EqualTo("Query relation references unknown context [missing-id]."));
+    }
+
+    [Test]
+    public void JsonRejectsRelationsReferencingUnknownContexts()
+    {
+        Assert.That(
+            () => QueryDefinitionParser.Parse("""
+                {
+                  "entity": "Orders",
+                  "contexts": {
+                    "Known": {
+                      "entity": "KnownEntity"
+                    }
+                  },
+                  "relations": [
+                    { "refContext": "Missing" }
+                  ]
+                }
+                """),
+            Throws.TypeOf<FormatException>()
+                .With.Message.EqualTo("Query relation references unknown context [Missing]."));
     }
 }
 
