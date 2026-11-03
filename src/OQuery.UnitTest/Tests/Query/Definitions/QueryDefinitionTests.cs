@@ -141,6 +141,39 @@ internal sealed class QueryDefinitionTests
     }
 
     [Test]
+    public void JsonPreservesNullJoinTypesDespiteIgnoringOtherNullProperties()
+    {
+        var definition = new QueryDefinition
+        {
+            Entity = "User",
+            Relations = [new("Managers", JoinType: null)],
+            Contexts = new()
+            {
+                ["Managers"] = new QueryDefinitionBase
+                {
+                    Entity = "User",
+                    Relations = [new("Managers", JoinType: null)]
+                }
+            }
+        };
+        var options = JsonQueryDefinitionParser.CreateSerializerOptions();
+        var json = JsonSerializer.Serialize(definition, options);
+        Assert.That(json, Does.Contain("\"joinType\":null"));
+        var deserialized = JsonSerializer.Deserialize<QueryDefinition>(json, options)
+            ?? throw new InvalidOperationException("The query did not deserialize.");
+        Assert.That(deserialized.Relations!.Single().JoinType, Is.Null);
+        Assert.That(deserialized.Contexts!["Managers"].Relations!.Single().JoinType, Is.Null);
+        var parsed = QueryDefinitionParser.Parse("""
+            {
+              "entity": "User",
+              "relations": [{ "refContext": "Managers", "joinType": null }],
+              "contexts": { "Managers": { "entity": "User" } }
+            }
+            """);
+        Assert.That(parsed.Relations!.Single().JoinType, Is.Null);
+    }
+
+    [Test]
     public void YamlUsesDtoRelationNamesAndPreservesNullValues()
     {
         var definition = new QueryDefinition

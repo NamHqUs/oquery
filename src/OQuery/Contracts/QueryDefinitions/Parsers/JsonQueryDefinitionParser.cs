@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using OQuery.QueryDefinitions.Parsers.JsonConverters;
 
 namespace OQuery.QueryDefinitions.Parsers;
@@ -39,6 +40,17 @@ public static class JsonQueryDefinitionParser
         AddConverter<ConditionDefintionJsonConverter>(options);
         AddConverter<ConditionStatementDefinitionJsonConverter>(options);
         AddConverter<ProjectionDefinitionJsonConverter>(options);
+        options.TypeInfoResolver = (options.TypeInfoResolver ?? new DefaultJsonTypeInfoResolver())
+            .WithAddedModifier(typeInfo =>
+            {
+                if (typeInfo.Type != typeof(RelationDefinition))
+                    return;
+                var joinTypeName = options.PropertyNamingPolicy?.ConvertName(nameof(RelationDefinition.JoinType))
+                    ?? nameof(RelationDefinition.JoinType);
+                foreach (var property in typeInfo.Properties)
+                    if (property.Name == joinTypeName)
+                        property.ShouldSerialize = (_, _) => true;
+            });
     }
 
     private static void AddConverter<TConverter>(JsonSerializerOptions options)

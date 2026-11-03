@@ -61,6 +61,11 @@ Canonical YAML with an omitted `JoinType` parses back to null; explicit join
 types are preserved. Legacy `ExtraRelations`/`RefContextId` YAML remains
 readable with its historical `Left` default.
 
+JSON writes an explicit `"joinType": null` for null relation join types,
+even when other null properties are omitted. This preserves null on save and
+reload rather than applying the constructor's `Left` default for an omitted
+JSON property.
+
 ## Nodes and operators
 
 - Each field, value, function, or group node has an `oper` property in the

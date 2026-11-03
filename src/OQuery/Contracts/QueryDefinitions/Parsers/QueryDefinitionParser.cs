@@ -401,7 +401,9 @@ public static partial class QueryDefinitionParser
                 "A query relation requires a referenced context."),
             TryGetProperty(element, "alias", out var alias) ? alias.GetString() : null,
             TryGetProperty(element, "condition", out var condition) ? ParseJsonCondition(condition) : null,
-            TryGetProperty(element, "joinType", out var join) ? ParseJoinType(join) : QueryJoinType.Left);
+            TryGetProperty(element, "joinType", out var join)
+                ? join.ValueKind == JsonValueKind.Null ? null : ParseJoinType(join)
+                : QueryJoinType.Left);
 
     private static QueryJoinType ParseJoinType(JsonElement element)
         => element.ValueKind switch
