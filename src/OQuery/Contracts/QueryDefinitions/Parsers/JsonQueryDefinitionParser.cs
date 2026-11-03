@@ -27,6 +27,13 @@ public static class JsonQueryDefinitionParser
     public static void Configure(JsonSerializerOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
+        options.PropertyNamingPolicy ??= JsonNamingPolicy.CamelCase;
+        options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        if (!options.Converters.Any(converter => converter is JsonStringEnumConverter))
+        {
+            options.Converters.Add(
+                new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+        }
         AddConverter<FieldDefinitionJsonConverter>(options);
         AddConverter<ConditionDefinitionJsonConverter>(options);
         AddConverter<ConditionDefintionJsonConverter>(options);

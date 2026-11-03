@@ -396,7 +396,7 @@ public sealed class QueryExpressionTests
             JsonQueryDefinitionParser.CreateSerializerOptions());
 
         Assert.That(defaultJson, Is.EqualTo(
-            """{"Fields":[{"kind":"field","field":"Name"}],"Alias":"ProductName"}"""));
+            """{"fields":[{"kind":"field","field":"Name"}],"alias":"ProductName"}"""));
         Assert.That(webJson, Is.EqualTo(
             """{"fields":[{"kind":"field","field":"Name"}],"alias":"ProductName"}"""));
     }

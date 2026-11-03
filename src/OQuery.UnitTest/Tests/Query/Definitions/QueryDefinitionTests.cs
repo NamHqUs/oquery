@@ -179,6 +179,7 @@ internal sealed class QueryDefinitionTests
         Assert.That(definition.Contexts, Is.Empty);
         Assert.That(definition.Recursive, Is.False);
     }
+
 }
 
 [TestFixture]
