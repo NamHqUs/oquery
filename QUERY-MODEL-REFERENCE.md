@@ -14,6 +14,10 @@ The format is covered by
 
 ## Query context graph
 
+`Sorts` is nullable on both the main query and context definitions. JSON
+`"sorts": null` means no ordering, just like an empty array. A non-null
+`sorts` value is a flat array of sort definitions, not an array of arrays.
+
 The query model stores context definitions in a dictionary. The dictionary key
 is the context name; context definitions do not repeat that name property.
 `relations` references contexts by name.
@@ -49,6 +53,13 @@ is the context name; context definitions do not repeat that name property.
 `joinType` defaults to `Left`. Legacy array-based contexts and
 `extraRelations`/`refContextId` input remain supported by the parser for
 backward compatibility.
+
+Canonical YAML uses the corresponding DTO names `Relations` and `RefContext`,
+with dictionary-shaped `Contexts`. Null relation properties are omitted,
+including `JoinType`: the YAML writer does not replace null with `Left`.
+Canonical YAML with an omitted `JoinType` parses back to null; explicit join
+types are preserved. Legacy `ExtraRelations`/`RefContextId` YAML remains
+readable with its historical `Left` default.
 
 ## Nodes and operators
 

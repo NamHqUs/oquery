@@ -141,6 +141,91 @@ internal sealed class QueryDefinitionTests
     }
 
     [Test]
+    public void YamlUsesDtoRelationNamesAndPreservesNullValues()
+    {
+        var definition = new QueryDefinition
+        {
+            Entity = "User",
+            Recursive = true,
+            Relations = [new("Managers", JoinType: null)],
+            Contexts = new()
+            {
+                ["Managers"] = new QueryDefinitionBase
+                {
+                    Entity = "User",
+                    Relations = [new("Managers", JoinType: null)]
+                }
+            }
+        };
+
+        var yaml = YamlQueryDefinitionParser.Write(definition);
+
+        Assert.That(yaml, Is.EqualTo(string.Join(Environment.NewLine,
+            "Entity: User",
+            "Recursive: true",
+            "Relations:",
+            "  - RefContext: Managers",
+            "Contexts:",
+            "  Managers:",
+            "    Entity: User",
+            "    Relations:",
+            "      - RefContext: Managers")));
+
+        var restored = YamlQueryDefinitionParser.Parse(yaml);
+        Assert.That(restored.Recursive, Is.True);
+        Assert.That(restored.Relations!.Single().Alias, Is.Null);
+        Assert.That(restored.Relations!.Single().JoinType, Is.Null);
+        Assert.That(restored.Contexts!["Managers"].Relations!.Single().JoinType, Is.Null);
+    }
+
+    [TestCase(QueryJoinType.Inner)]
+    [TestCase(QueryJoinType.Left)]
+    [TestCase(QueryJoinType.Right)]
+    [TestCase(QueryJoinType.Full)]
+    public void YamlPreservesExplicitJoinType(QueryJoinType joinType)
+    {
+        var definition = new QueryDefinition
+        {
+            Entity = "User",
+            Relations = [new("Managers", JoinType: joinType)],
+            Contexts = new() { ["Managers"] = new QueryDefinitionBase { Entity = "User" } }
+        };
+
+        var yaml = YamlQueryDefinitionParser.Write(definition);
+
+        Assert.That(yaml, Does.Contain($"JoinType: {joinType}"));
+        Assert.That(YamlQueryDefinitionParser.Parse(yaml).Relations!.Single().JoinType,
+            Is.EqualTo(joinType));
+    }
+
+    [Test]
+    public void YamlParsesDictionaryContextsUsingYamlSyntaxRatherThanLineHeuristics()
+    {
+        var definition = YamlQueryDefinitionParser.Parse("""
+            Entity: User
+            Contexts: # shared query definitions
+              Managers: { Entity: User }
+            Relations: [{ RefContext: Managers, JoinType: null }]
+            """);
+
+        Assert.That(definition.Contexts!["Managers"].Entity, Is.EqualTo("User"));
+        Assert.That(definition.Relations!.Single().RefContext, Is.EqualTo("Managers"));
+        Assert.That(definition.Relations!.Single().JoinType, Is.Null);
+    }
+
+    [Test]
+    public void YamlRejectsCanonicalRelationsReferencingUnknownContexts()
+    {
+        Assert.That(() => YamlQueryDefinitionParser.Parse("""
+            Entity: User
+            Contexts: {}
+            Relations:
+              - RefContext: Missing
+            """), Throws.TypeOf<FormatException>()
+            .With.Message.EqualTo("Query relation references unknown context [Missing]."));
+    }
+
+    [Test]
     public void JsonRejectsRelationsReferencingUnknownContexts()
     {
         Assert.That(
@@ -185,6 +270,39 @@ internal sealed class QueryDefinitionTests
 [TestFixture]
 internal sealed class QueryDefinitionDatabaseTests : TestBase
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public void NullSortsGenerateTheSameSqlAsEmptySorts(bool useContext)
+    {
+        var definition = new QueryDefinition
+        {
+            Entity = useContext ? "UsersContext" : "User",
+            Projection = [new("Id")],
+            Sorts = null,
+            Contexts = useContext ? new()
+            {
+                ["UsersContext"] = new QueryDefinitionBase
+                {
+                    Entity = "User",
+                    Projection = [new("Id")],
+                    Sorts = null
+                }
+            } : null
+        };
+        var expected = definition with
+        {
+            Sorts = [],
+            Contexts = useContext ? new()
+            {
+                ["UsersContext"] = definition.Contexts!["UsersContext"] with { Sorts = [] }
+            } : null
+        };
+
+        Assert.That(_db.Query(definition).ToSql().CommandText,
+            Is.EqualTo(_db.Query(expected).ToSql().CommandText));
+        Assert.That(YamlQueryDefinitionParser.Write(definition), Does.Not.Contain("Sorts:"));
+    }
+
     [Test]
     public void OperatorFieldsRespectArithmeticPrecedence()
     {

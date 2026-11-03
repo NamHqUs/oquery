@@ -42,7 +42,7 @@ internal static class DbQueryFromQueryDto
             query = query.Select(selection);
         }
 
-        foreach (var sortGroup in definition.Sorts.Select((sort, index) => (sort, index)))
+        foreach (var sortGroup in (definition.Sorts ?? []).Select((sort, index) => (sort, index)))
         {
             query = sortGroup.index == 0
                 ? sortGroup.sort.Direction == QuerySortDirection.Ascending

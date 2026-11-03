@@ -11,6 +11,8 @@ public record YamlQueryDefinition()
     public string? Sorts { get; set; }
     public int? Page { get; set; }
     public int? PageSize { get; set; }
+    public bool Recursive { get; set; }
+    public List<YamlQueryRelationDefinition>? Relations { get; set; }
     public List<YamlQueryRelationDefinition>? ExtraRelations { get; set; }
     public List<YamlQueryContextDefinition>? Contexts { get; set; }
 }
@@ -26,6 +28,7 @@ public record YamlQueryContextDefinition
     public string? Sorts { get; set; }
     public int? Page { get; set; }
     public int? PageSize { get; set; }
+    public List<YamlQueryRelationDefinition>? Relations { get; set; }
     public List<YamlQueryRelationDefinition>? ExtraRelations { get; set; }
     public YamlQueryDefinition? Query { get; set; }
     public string? Condition { get; set; }
@@ -35,6 +38,7 @@ public record YamlQueryContextDefinition
 
 public record YamlQueryRelationDefinition
 {
+    public string? RefContext { get; set; }
     public string? RefContextId { get; set; }
     public string? Alias { get; set; }
     public string? Condition { get; set; }

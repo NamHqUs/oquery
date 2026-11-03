@@ -46,6 +46,13 @@ definition. The parser still accepts the older nested `Contexts` and
 `ExtraRelations` forms and normalizes them into this graph. Missing context
 references and conflicting definitions are rejected during parsing.
 
+The YAML writer uses the DTO names `Relations` and `RefContext`, never
+`ExtraRelations` or `RefContextId`. Context names appear only as dictionary
+keys, not additional `Id` or `Name` properties. Null `Alias`, `Condition`,
+and `JoinType` properties are omitted. An omitted canonical YAML `JoinType`
+round-trips as null; an explicitly supplied `Left` remains `Left`.
+Legacy `ExtraRelations` input retains its historical default of `Left`.
+
 ## Core rules
 
 1. Start with the result grain: one row per user, policy, department, order,

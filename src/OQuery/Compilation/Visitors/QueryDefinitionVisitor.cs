@@ -230,7 +230,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         return definition.Projection.Any(projection =>
                 projection.Fields.Any(field => ContainsContextReference(field, contextName))) ||
             (definition.Filter is not null && ContainsContextReference(definition.Filter, contextName)) ||
-            definition.Sorts.Any(sort => ContainsContextReference(sort.Field, contextName));
+            (definition.Sorts?.Any(sort => ContainsContextReference(sort.Field, contextName)) ?? false);
     }
 
     private static bool ContainsContextReference(IFieldDefinition field, string contextName)
@@ -343,7 +343,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             table.EnsureDefaultProjection();
         }
 
-        foreach (var sort in definition.Sorts)
+        foreach (var sort in definition.Sorts ?? [])
             table.Orders.Add(new OrderExpression(
                 queryContext.ParseQueryExpression(table, sort.Field),
                 sort.Direction == QuerySortDirection.Descending));

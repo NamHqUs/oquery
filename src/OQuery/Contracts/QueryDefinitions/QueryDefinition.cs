@@ -15,7 +15,7 @@ public record QueryDefinitionBase
     public required string Entity { get; init; }
     public List<ProjectionDefinition> Projection { get; init; } = [];
     public ConditionDefinition? Filter { get; init; }
-    public List<SortDefinition> Sorts { get; init; } = [];
+    public List<SortDefinition>? Sorts { get; init; } = [];
     public int? Page { get; init; }
     public int? PageSize { get; init; }
     public List<RelationDefinition>? Relations { get; init; } = [];

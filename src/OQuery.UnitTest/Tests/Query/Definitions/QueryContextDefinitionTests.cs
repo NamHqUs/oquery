@@ -471,57 +471,45 @@ public sealed class QueryContextDefinitionTests : TestBase
     }
 
     [Test]
-    public void QueryDefinitionYaml_SerializesChainedReferencesAsExtraRelations()
+    public void QueryDefinitionYaml_SerializesChainedReferencesAsDtoRelations()
     {
-        const string json = """
+        var definition = new QueryDefinition
+        {
+            Entity = "User",
+            Relations = [new("UserContext1"), new("UserContext2")],
+            Contexts = new()
             {
-              "entity": "User",
-              "projection": [{ "field": { "kind": "field", "field": "Id" }, "alias": null }],
-              "contexts": [
+                ["UserContext1"] = new QueryDefinitionBase
                 {
-                  "id": "context-1",
-                  "name": "UserContext1",
-                  "query": {
-                    "entity": "Users",
-                    "projection": [{ "field": { "kind": "field", "field": "Id" }, "alias": null }]
-                  }
+                    Entity = "Users",
+                    Projection = [new("Id")]
                 },
+                ["UserContext2"] = new QueryDefinitionBase
                 {
-                  "id": "context-2",
-                  "name": "UserContext2",
-                  "query": {
-                    "entity": "User",
-                    "projection": [{ "field": { "kind": "field", "field": "Id" }, "alias": null }],
-                    "contexts": [
-                      {
-                        "id": "context-1",
-                        "name": "UserContext1",
-                        "alias": "Ref1From2",
-                        "condition": "ManagerId = Id",
-                        "query": {
-                          "entity": "Users",
-                          "projection": [{ "field": { "kind": "field", "field": "Id" }, "alias": null }]
-                        }
-                      }
-                    ]
-                  }
+                    Entity = "User",
+                    Projection = [new("Id")],
+                    Relations = [new("UserContext1", "Ref1From2",
+                        QueryDefinitionParser.ParseJoinCondition("ManagerId = Id"))]
                 }
-              ]
             }
-            """;
-
-        var definition = QueryDefinitionParser.Parse(json);
+        };
         var yaml = YamlQueryDefinitionParser.Write(definition);
 
-        Assert.That(yaml, Does.Contain("ExtraRelations:"));
-        Assert.That(yaml, Does.Contain("RefContextId: UserContext1"));
-        Assert.That(yaml, Does.Contain("RefContextId: UserContext2"));
+        Assert.That(yaml, Does.Contain("  UserContext1:"));
+        Assert.That(yaml, Does.Contain("  UserContext2:"));
+        Assert.That(yaml, Does.Not.Contain("Id: UserContext1"));
+        Assert.That(yaml, Does.Not.Contain("Name: UserContext1"));
+        Assert.That(yaml, Does.Contain("Relations:"));
+        Assert.That(yaml, Does.Contain("RefContext: UserContext1"));
+        Assert.That(yaml, Does.Contain("RefContext: UserContext2"));
+        Assert.That(yaml, Does.Not.Contain("ExtraRelations:"));
+        Assert.That(yaml, Does.Not.Contain("RefContextId:"));
         Assert.That(yaml, Does.Not.Contain("Query:"));
 
         var roundTripped = YamlQueryDefinitionParser.Parse(yaml);
         Assert.That(roundTripped.Contexts, Has.Count.EqualTo(2));
-        Assert.That(roundTripped.Contexts["UserContext2"].Relations, Has.Count.EqualTo(1));
-        Assert.That(roundTripped.Contexts["UserContext2"].Relations[0].RefContext, Is.EqualTo("UserContext1"));
+        Assert.That(roundTripped.Contexts!["UserContext2"].Relations, Has.Count.EqualTo(1));
+        Assert.That(roundTripped.Contexts!["UserContext2"].Relations![0].RefContext, Is.EqualTo("UserContext1"));
     }
 
     [Test]

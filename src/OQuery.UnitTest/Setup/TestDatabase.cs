@@ -51,7 +51,7 @@ internal sealed class TestDatabase
         if (isExisted != 1)
         {
             var script = new StringBuilder("ATTACH DATABASE ':memory:' AS dbo;");
-            script.Append(LoadScript("oquery-test.sqlite.sql", "northstar-demo.sqlite.sql"));
+            script.Append(LoadScript("unit-test.sqlite.sql", "northstar-demo.sqlite.sql"));
             ExecuteNonQuery(cn, script.ToString());
         }
 
@@ -132,7 +132,7 @@ internal sealed class TestDatabase
         if (isExisted != 1)
         {
             StringBuilder sb = new("ATTACH DATABASE ':memory:' AS dbo;");
-            sb.Append(LoadScript("oquery-test.sqlite.sql", "sale-demo.sqlite.sql"));
+            sb.Append(LoadScript("unit-test.sqlite.sql", "sale-demo.sqlite.sql"));
             ExecuteNonQuery(cn, sb.ToString());
         }
 
@@ -142,14 +142,14 @@ internal sealed class TestDatabase
     private static IDbConnection CreateSqlServerDbConnection()
         => CreateSqlServerInstance(
             "Server=localhost;Database=DynamicSqlTest;User Id=sa;Password=NoPassword123!;TrustServerCertificate=True;",
-            "oquery-test.sqlserver.sql",
+            "unit-test.sqlserver.sql",
             "sale-demo.sqlserver.sql",
             "northstar-demo.sqlserver.sql");
 
     private static IDbConnection CreatePostgresDbConnection()
         => CreatePostgresInstance(
             "Host=localhost;Port=5432;Database=DynamicSqlTest;Username=postgres;Password=NoPassword123!",
-            "oquery-test.postgres.sql",
+            "unit-test.postgres.sql",
             "sale-demo.postgres.sql");
 
     private static IDbConnection CreateDb2DbConnection()
