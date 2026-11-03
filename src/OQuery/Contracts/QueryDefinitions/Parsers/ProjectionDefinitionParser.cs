@@ -6,7 +6,9 @@ namespace OQuery.QueryDefinitions.Parsers;
 internal class ProjectionDefinitionParser
 {
     public static List<ProjectionDefinition> Parse(List<string?>? texts)
-        => texts?.Where(e => !string.IsNullOrWhiteSpace(e)).SelectMany(Parse!).ToList() ?? [];
+        => texts?.Where(e => !string.IsNullOrWhiteSpace(e))
+            .Select(e => FromText(e!))
+            .ToList() ?? [];
 
     public static List<ProjectionDefinition> Parse(string text)
         => string.IsNullOrWhiteSpace(text)

@@ -14,7 +14,6 @@ internal static class DbQueryFromQueryDto
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(definition);
-        ArgumentNullException.ThrowIfNull(definition.Projection);
 
         if (definition.Contexts is { Count: > 0 })
         {
@@ -28,10 +27,11 @@ internal static class DbQueryFromQueryDto
         if (definition.Filter is not null)
             query = query.Where(CreateFilter(definition.Filter));
 
-        if (definition.Projection.Count > 0)
+        var projections = definition.Projection ?? [];
+        if (projections.Count > 0)
         {
             var selection = new Dictionary<string, object?>();
-            foreach (var field in definition.Projection)
+            foreach (var field in projections)
             {
                 var alias = string.IsNullOrWhiteSpace(field.Alias)
                     ? field.ToText()

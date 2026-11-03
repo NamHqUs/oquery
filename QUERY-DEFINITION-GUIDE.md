@@ -13,6 +13,14 @@ backend JSON projection shape is documented in
 Complete sample requests and their YAML counterparts are stored in
 [`data-storage/queries`](./data-storage/queries).
 
+Projection fields can use either a block sequence or YAML's inline sequence
+syntax:
+
+```yaml
+Entity: Users
+Projection: [Id, Name]
+```
+
 ## Flat context graph
 
 Contexts are stored once in the `Contexts` dictionary. The dictionary key is

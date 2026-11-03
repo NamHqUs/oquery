@@ -141,6 +141,35 @@ internal sealed class QueryDefinitionTests
     }
 
     [Test]
+    public void YamlParsesInlineProjectionSequence()
+    {
+        var definition = YamlQueryDefinitionParser.Parse("""
+            Entity: Users
+            Projection: [Id, Name]
+            """);
+
+        Assert.That(definition.Entity, Is.EqualTo("Users"));
+        Assert.That(definition.Projection.Select(projection => projection.ToText()),
+            Is.EqualTo(["Id", "Name"]));
+    }
+
+    [Test]
+    public void YamlParsesProjectionSequenceItemsAndIgnoresEmptyItems()
+    {
+        var definition = YamlQueryDefinitionParser.Parse("""
+            Entity: Users
+            Projection:
+              -
+              - Concat(Name, < >) | DisplayName
+              -
+            """);
+
+        Assert.That(definition.Projection, Has.Count.EqualTo(1));
+        Assert.That(definition.Projection[0].ToText(),
+            Is.EqualTo("Concat(Name, < >) | DisplayName"));
+    }
+
+    [Test]
     public void JsonPreservesNullJoinTypesDespiteIgnoringOtherNullProperties()
     {
         var definition = new QueryDefinition
