@@ -5,13 +5,253 @@ The goal is not to reproduce SQL syntax. The goal is to preserve the same
 business context and result using entities, relation paths, projections,
 filters, aggregates, contexts, and controlled functions.
 
-The YAML below is intentionally abbreviated. It shows the semantic
-`QueryDefinition` shape, not a complete serialized request. The canonical
-backend JSON projection shape is documented in
+The legacy YAML examples below are intentionally abbreviated. They show the
+semantic `QueryDefinition` shape, not the current authoring format. The
+canonical backend JSON projection shape is documented in
 [`QUERY-MODEL-REFERENCE.md`](./QUERY-MODEL-REFERENCE.md).
 
-Complete sample requests and their YAML counterparts are stored in
+Complete sample requests and their serialized counterparts are stored in
 [`data-storage/queries`](./data-storage/queries).
+
+## OQuery text syntax
+
+Saved query definitions use the compact `.oqr` format. A query header uses the
+entity name as its default name:
+
+```text
+Users: Id, Name, BestMonth.Revenue
+  Where Status = <Active>
+  Order BestMonth.Revenue DESC
+  Take 25
+  Left Join BestMonth on Id = BestMonth.UserId
+```
+
+A reusable context puts its name before its source entity. If the names are
+the same, the source is omitted:
+
+```text
+BestMonth is Orders: UserId, MAX(Amount) | Revenue
+  Where Status = <Completed>
+```
+
+The header grammar is `[context-name] is [entity]: projection`. `where`, `order`,
+`skip`, `take`, and `join` are optional indented clauses. Join types are written
+before `join`, for example `left join` or `inner join`; a bare `join` defaults
+to `inner join`, matching SQL. A join condition is
+explicit because it describes how the consuming query uses the context; the
+context definition remains reusable by other queries. The parser resolves
+contexts after reading all blocks, so a context can be referenced before its
+definition.
+
+## OQuery syntax reference
+
+### Query headers
+
+```text
+Users: Id, Name
+```
+
+An entity-only query is the compact form of selecting every field exposed by
+the metadata:
+
+```text
+Users
+```
+
+Equivalent SQL intent:
+
+```sql
+SELECT *
+FROM Users;
+```
+
+The single name is both the query name and source entity. A reusable context
+whose name differs from its source uses `is`:
+
+```text
+BestMonth is Orders: UserId, MAX(Amount) | Revenue
+```
+
+The header grammar is:
+
+```text
+[ContextName] [is SourceEntity]: Projection
+```
+
+### Clauses
+
+Clauses are indented under their query header:
+
+```text
+Users: Id, Name
+  Where Status = <Active>
+  Order Name ASC
+  Skip 20
+  Take 25
+```
+
+Keywords are case-insensitive. The canonical writer uses `Where`, `Order`,
+`Skip`, `Take`, and join types such as `Left Join`.
+
+### Projection aliases
+
+Use the expression-to-name form consistently:
+
+```text
+Users: Id, Manager.Name | ManagerName, Count(Members.Id) | MemberCount
+```
+
+The expression is always on the left of `|`; the result alias is on the right.
+
+### Joins and aliases
+
+Explicit joins belong to the query that consumes the context:
+
+```text
+Products: Id, Name,
+    RevenueByMonth.Month | Month,
+    RevenueByMonth.Revenue | Revenue
+  Left Join RevenueByMonth On Id = RevenueByMonth.ProductId
+  Order Revenue DESC
+  Take 20
+
+RevenueByMonth is InvoiceLines: ProductId,
+    MonthKey(Invoice.IssueDate) | Month,
+    SUM(Quantity * UnitPrice) | Revenue,
+    CountDistinct(InvoiceId) | Orders
+  Where Invoice.Status = <Paid>
+```
+
+A reusable context can be joined more than once with a separate alias:
+
+```text
+User: Id, ref1.Name | Manager1, newRef1.Name | Manager2
+  Left Join ref1 On ManagerId = ref1.Id
+  Left Join ref1 newRef1 On ManagerId = newRef1.Id
+
+ref1 is User: Id, Name
+```
+
+`ref1` is the shared context name. `newRef1` is only the alias for the second
+join instance. A bare `Join` means `Inner Join`; use `Left Join`, `Right Join`,
+or `Full Join` explicitly when optional rows are required.
+
+### Multiline values
+
+Projection and clause values can continue on indented lines:
+
+```text
+Visits: Diagnosis.Name | Diagnosis,
+    Diagnosis.Category | DiagnosisCategory,
+    CountDistinct(Id) | VisitCount
+  Order VisitCount DESC,
+    Diagnosis.Name ASC
+  Left Join VisitLabs On Id = VisitLabs.VisitId
+```
+
+Continuation lines are joined until the next recognized clause or query
+header.
+
+## Automatic query behavior
+
+OQuery turns intent into relational operations using registered metadata.
+
+```text
+Users: Id, Name, Manager.Name
+```
+
+The relation path can generate the required join automatically.
+
+```text
+Users: Id, Name, Count(Members.Id) | TotalMembers
+```
+
+Mixing regular fields and aggregates establishes the result grain and derives
+the required `GROUP BY`.
+
+```text
+Users: Id, Name, Count(Members.Id) | TotalMembers
+  Where TotalMembers > 12
+```
+
+Aggregate predicates are routed to `HAVING`; row predicates remain `WHERE`.
+This lets users express the business condition without manually moving the
+predicate between SQL clauses.
+
+## Reusable contexts and isolated composition
+
+Contexts form a named dependency graph. A context owns the relationships it
+declares, and its definition can be reused by multiple consumers:
+
+```text
+Products: Id, RevenueByMonth.Revenue | Revenue
+  Left Join RevenueByMonth On Id = RevenueByMonth.ProductId
+
+RevenueByMonth is InvoiceLines: ProductId,
+    SUM(Quantity * UnitPrice) | Revenue
+  Where Invoice.Status = <Paid>
+```
+
+The engine emits dependent CTEs in declaration order. A context can be tested
+on its own by selecting only its block:
+
+```text
+ref1 is User: Id, Name
+```
+
+This supports an incremental workflow: test a context, test its dependent
+context, then execute the root query.
+
+## Application vocabulary
+
+Registered typed functions extend the language with domain concepts:
+
+```text
+Users: Id,
+    CountIf(Status = <Active>) | ActiveMembers,
+    AvgIf(Age, Status = <Active>) | AverageActiveAge
+```
+
+Functions can define typed arguments, validation, editor completion, and
+provider-specific SQL templates. This keeps business vocabulary such as
+`CountIf`, `AgeOn`, `MonthKey`, and `RiskScore` out of duplicated raw SQL.
+
+## Security and provider boundaries
+
+OQuery is designed for controlled read queries:
+
+1. Metadata defines the allowed entities, fields, relationships, and functions.
+2. Authorization is checked against the query metadata before SQL is trusted.
+3. Values become database parameters; user values are not concatenated into SQL.
+4. The selected SQL dialect renders quoting, paging, functions, and provider
+   differences.
+
+OQuery is not a replacement for DDL, DML, stored procedures, or database
+administration. Its scope is metadata-driven, parameterized read queries.
+
+## Using the UI
+
+1. Open **Data sources** and inspect entities, fields, and relationships.
+2. Open **Query Builder** and start with an entity such as `Users`.
+3. Switch to **OQuery** mode to edit the compact text directly.
+4. Use **Check OQuery** to parse and normalize the definition.
+5. Select a complete root or context block to execute only that query graph.
+6. Use **Get SQL** to inspect the generated statement and parameters.
+7. Save the query as a reusable report after the result is correct.
+
+The editor supports Tab and Shift+Tab indentation, selected-row deletion with
+Ctrl+X, undo with Ctrl+Z, and multiline projections and clauses.
+
+Long projections may continue on indented lines. Continuation lines are joined
+until the next recognized clause:
+
+```text
+Visits: Diagnosis.Name | Diagnosis,
+    Diagnosis.Category | DiagnosisCategory,
+    ROUND(<100> * SUM(Amount) / NULLIF(SUM(Total), <0>), <2>) | Percent
+  Where Status = <Completed>
+  Take 10
+```
 
 Projection fields can use either a block sequence or YAML's inline sequence
 syntax:

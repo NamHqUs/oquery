@@ -36,6 +36,63 @@ public sealed class QueryContextDefinitionTests : TestBase
         Assert.That(sql, Does.StartWith($"WITH{Environment.NewLine}[UserContext] AS ("));
         Assert.That(sql, Does.Contain($"),{Environment.NewLine}[UserContext1] AS ("));
     }
+
+    [Test]
+    public void NestedContextJoinBuildsDependentCtesInDeclarationOrder()
+    {
+        using var db = CreateContext(
+            new SqlServerDialect(),
+            new Entity(
+                "User",
+                [
+                    new Field("Id", "Id"),
+                    new Field("Name", "Name"),
+                    new Field("ManagerId", "ManagerId"),
+                ]));
+
+        var query = new QueryDefinition
+        {
+            Entity = "User",
+            Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["ref1"] = new QueryDefinitionBase
+                {
+                    Entity = "User",
+                    Projection = [new("Id"), new("Name")]
+                },
+                ["ref2"] = new QueryDefinitionBase
+                {
+                    Entity = "User",
+                    Projection = [new("Id"), new("Name"), new("ManagerId")],
+                    Relations =
+                    [
+                        new("ref1", Condition: QueryDefinitionParser.ParseJoinCondition(
+                            "ManagerId = ref1.Id"))
+                    ]
+                }
+            },
+            Relations =
+            [
+                new("ref1", Condition: QueryDefinitionParser.ParseJoinCondition("ManagerId = ref1.Id")),
+                new("ref2", Condition: QueryDefinitionParser.ParseJoinCondition("ManagerId = ref2.Id"))
+            ],
+            Projection =
+            [
+                new("Id"),
+                new("Name"),
+                new("ref1.Name", "Manager1"),
+                new("ref2.Name", "Manager2")
+            ]
+        };
+
+        var sql = db.Query(query).ToSql().CommandText;
+
+        Assert.That(sql, Does.Contain("[ref1] AS"));
+        Assert.That(sql, Does.Contain("[ref2] AS"));
+        Assert.That(sql, Does.Contain("LEFT JOIN [ref1]"));
+        Assert.That(sql, Does.Contain("LEFT JOIN [ref2]"));
+    }
+
     [Test]
     public void Sample_RendersCteProjectionAndLeftJoin()
     {

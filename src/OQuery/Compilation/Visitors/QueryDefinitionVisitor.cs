@@ -30,9 +30,6 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         if (contextBindings.Count == 0)
             contextBindings.AddRange(definition.Contexts!.Select(pair =>
                 new ContextBinding(pair.Key, pair.Value, new RelationDefinition(pair.Key))));
-        if (contextBindings.Any(context => context.Query.Relations is { Count: > 0 }))
-            throw new NotSupportedException("Nested query contexts are not supported.");
-
         var definitions = new Dictionary<string, ContextBinding>(StringComparer.OrdinalIgnoreCase);
         List<ContextBinding> cteDefinitions = [];
         HashSet<string> aliases = new(StringComparer.OrdinalIgnoreCase);
@@ -58,10 +55,19 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         {
             var context = cteDefinitions[index];
             if (!definitionIndexes.TryGetValue(context.Query.Entity, out var dependencyIndex))
+            {
+                foreach (var relation in context.Query.Relations ?? [])
+                {
+                    if (!definitionIndexes.TryGetValue(relation.RefContext, out var relationIndex) ||
+                        relationIndex == index)
+                        continue;
+                    if (relationIndex > index)
+                        throw new FormatException(
+                            $"Query context [{context.Name}] references [{relation.RefContext}], which must be declared first.");
+                }
                 continue;
-            if (dependencyIndex == index)
-                continue;
-            if (dependencyIndex > index)
+            }
+            if (dependencyIndex != index && dependencyIndex > index)
                 throw new FormatException(
                     $"Query context [{context.Name}] references [{context.Query.Entity}], which must be declared first.");
         }
@@ -319,7 +325,49 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         IReadOnlyDictionary<string, ContextBinding> definitions)
     {
         var table = CreateSource(definition.Entity, definitions);
+        table = AddContextJoins(definition, table, definitions);
         return BuildQueryBody(definition, table, definitions);
+    }
+
+    private TableExpression AddContextJoins(
+        QueryDefinitionBase definition,
+        TableExpression table,
+        IReadOnlyDictionary<string, ContextBinding> definitions)
+    {
+        if (definition.Relations is not { Count: > 0 })
+            return table;
+
+        var contextTables = new Dictionary<string, TableExpression>(StringComparer.OrdinalIgnoreCase);
+        foreach (var relation in definition.Relations)
+        {
+            if (!definitions.TryGetValue(relation.RefContext, out var context))
+                throw new FormatException(
+                    $"Query relation references unknown context [{relation.RefContext}].");
+
+            var alias = GetContextAlias(context);
+            var contextTable = new CteTableExpression(
+                context.Name,
+                CreateCteEntity(context, definitions),
+                queryContext.GetNextAlias(),
+                GetCteFields(context, definitions, new HashSet<string>(StringComparer.OrdinalIgnoreCase)));
+            contextTables.Add(alias, contextTable);
+            table.JoinedTables.Add(alias, contextTable);
+        }
+
+        foreach (var relation in definition.Relations)
+        {
+            var context = definitions[relation.RefContext];
+            var joinedTable = contextTables[GetContextAlias(context)];
+            if (relation.Condition is null)
+                continue;
+            table.Joins.Add(new JoinExpression(
+                joinedTable,
+                RenderJoinType(relation.JoinType ?? QueryJoinType.Left),
+                [new JoinConditionVisitor(queryContext, table, joinedTable, contextTables)
+                    .Parse(relation.Condition)]));
+        }
+
+        return table;
     }
 
     private TableExpression BuildQueryBody(
@@ -348,18 +396,23 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
                 queryContext.ParseQueryExpression(table, sort.Field),
                 sort.Direction == QuerySortDirection.Descending));
 
+        if (definition.Skip is < 0)
+            throw new ArgumentOutOfRangeException(nameof(definition.Skip), "Skip cannot be negative.");
         if (definition.PageSize is < 0)
             throw new ArgumentOutOfRangeException(nameof(definition.PageSize), "Page size cannot be negative.");
 
         if (definition.PageSize is > 0)
         {
-            var page = definition.Page ?? 1;
             var pageSize = definition.PageSize.Value;
-            if (page < 1)
-                throw new ArgumentOutOfRangeException(nameof(definition.Page), "Page must be at least 1.");
-
-            table = new SkipExpression(table, (page - 1) * pageSize);
+            var skip = definition.Skip ?? ((definition.Page ?? 1) - 1) * pageSize;
+            if (skip < 0)
+                throw new ArgumentOutOfRangeException(nameof(definition.Skip), "Skip cannot be negative.");
+            table = new SkipExpression(table, skip);
             table = new TakeExpression(table, pageSize);
+        }
+        else if (definition.Skip is not null)
+        {
+            table = new SkipExpression(table, definition.Skip.Value);
         }
 
         return table;

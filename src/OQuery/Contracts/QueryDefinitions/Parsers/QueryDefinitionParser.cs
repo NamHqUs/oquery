@@ -13,18 +13,39 @@ public static partial class QueryDefinitionParser
     {
         ArgumentNullException.ThrowIfNull(definition);
 
-        if (definition.Contexts is null)
-            return;
+        ValidateContextReferences(
+            definition,
+            definition.Contexts?.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase)
+                ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+    }
 
+    private static void ValidateContextReferences(
+        QueryDefinition definition,
+        HashSet<string> availableContexts)
+    {
         foreach (var relation in definition.Relations ?? [])
         {
-            if (!definition.Contexts.ContainsKey(relation.RefContext))
+            if (!availableContexts.Contains(relation.RefContext))
                 throw new FormatException(
                     $"Query relation references unknown context [{relation.RefContext}].");
         }
 
-        foreach (var context in definition.Contexts.Values.OfType<QueryDefinition>())
-            ValidateContextReferences(context);
+        foreach (var (name, context) in definition.Contexts ?? [])
+        {
+            var nestedAvailableContexts = new HashSet<string>(
+                availableContexts,
+                StringComparer.OrdinalIgnoreCase)
+            {
+                name
+            };
+            if (context is QueryDefinition nested)
+            {
+                if (nested.Contexts is not null)
+                    foreach (var nestedName in nested.Contexts.Keys)
+                        nestedAvailableContexts.Add(nestedName);
+                ValidateContextReferences(nested, nestedAvailableContexts);
+            }
+        }
     }
 
     public static string ToYml(QueryDefinition definition)
@@ -339,6 +360,7 @@ public static partial class QueryDefinitionParser
                 : [],
             Page = ReadInt(root, "page"),
             PageSize = ReadInt(root, "pageSize"),
+            Skip = ReadInt(root, "skip"),
         };
         if (TryGetProperty(root, "contexts", out var contextsElement))
         {

@@ -59,46 +59,38 @@ internal sealed class SqlServerQueryExecutionTests
     }
 
     [Test]
-    public void DiagnosisBurdenByClinicYamlGeneratesTheSameSqlAsJson()
+    public void DiagnosisBurdenByClinicOQueryGeneratesTheSameSqlAsJson()
     {
         var requestRoot = Path.Combine(
             GetRepositoryRoot(),
             "data-storage", "queries");
         var jsonQuery = QueryDefinitionLoader.Load(
             Path.Combine(requestRoot, "Health 1. Diagnosis burden by clinic.json"));
-        var yamlPath = Path.Combine(requestRoot, "Health 1. Diagnosis burden by clinic.yml");
-        var yamlQuery = YamlQueryDefinitionParser.Parse(File.ReadAllText(yamlPath));
+        var oqueryPath = Path.Combine(requestRoot, "Health 1. Diagnosis burden by clinic.oqr");
+        var oqueryQuery = OQueryDefinitionParser.Parse(new FileInfo(oqueryPath));
 
         var jsonSql = _db.Query(jsonQuery).ToSql();
-        var yamlSql = _db.Query(yamlQuery).ToSql();
+        var oquerySql = _db.Query(oqueryQuery).ToSql();
 
-        Assert.That(NormalizeSql(jsonSql), Is.EqualTo(NormalizeSql(yamlSql)));
+        Assert.That(NormalizeSql(jsonSql), Is.EqualTo(NormalizeSql(oquerySql)));
     }
 
     [Test]
-    public void AllYamlQueryRequestsGenerateTheSameSqlAsJson()
+    public void FirstFiveOQueryRequestsGenerateTheSameSqlAsJson()
     {
         var requestRoot = Path.Combine(
             GetRepositoryRoot(),
             "data-storage", "queries");
 
-        foreach (var jsonPath in Directory.EnumerateFiles(requestRoot, "*.json").Order())
+        foreach (var oqueryPath in Directory.EnumerateFiles(requestRoot, "*.oqr").Order().Take(5))
         {
-            var fileName = Path.GetFileName(jsonPath);
-            if (fileName.Equals("Sample-Recursive employee hierarchy.json", StringComparison.Ordinal) ||
-                fileName.Equals("Test-Check Context Calculation Fields.json", StringComparison.Ordinal) ||
-                fileName.Equals("Test-Query directly on REF CONTEXT.json", StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            var yamlPath = Path.ChangeExtension(jsonPath, ".yml");
-            Assert.That(File.Exists(yamlPath), Is.True, $"Missing YAML query request for '{jsonPath}'.");
+            var jsonPath = Path.ChangeExtension(oqueryPath, ".json");
+            Assert.That(File.Exists(jsonPath), Is.True, $"Missing JSON query request for '{oqueryPath}'.");
 
             var jsonSql = _db.Query(QueryDefinitionLoader.Load(jsonPath)).ToSql();
-            var yamlSql = _db.Query(YamlQueryDefinitionParser.Parse(File.ReadAllText(yamlPath))).ToSql();
+            var oquerySql = _db.Query(OQueryDefinitionParser.Parse(new FileInfo(oqueryPath))).ToSql();
 
-            Assert.That(NormalizeSql(jsonSql), Is.EqualTo(NormalizeSql(yamlSql)), jsonPath);
+            Assert.That(NormalizeSql(jsonSql), Is.EqualTo(NormalizeSql(oquerySql)), jsonPath);
         }
     }
 

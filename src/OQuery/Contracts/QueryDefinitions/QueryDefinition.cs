@@ -18,6 +18,7 @@ public record QueryDefinitionBase
     public List<SortDefinition>? Sorts { get; init; } = [];
     public int? Page { get; init; }
     public int? PageSize { get; init; }
+    public int? Skip { get; init; }
     public List<RelationDefinition>? Relations { get; init; } = [];
     public bool Recursive { get; set; }
 }

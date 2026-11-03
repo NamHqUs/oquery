@@ -154,6 +154,101 @@ internal sealed class QueryDefinitionTests
     }
 
     [Test]
+    public void OQueryParsesMultilineProjectionBeforeClauses()
+    {
+        var definition = OQueryDefinitionParser.Parse("""
+            Visits: Diagnosis.Name | Diagnosis,
+                Diagnosis.Category | DiagnosisCategory,
+                ROUND(<100> * SUM(Amount)
+                  / NULLIF(SUM(Total), <0>), <2>) | Percent
+              where Status = <Completed>
+              take 10
+            """);
+
+        Assert.That(definition.Projection.Select(field => field.ToText()),
+            Is.EqualTo([
+                "Diagnosis.Name | Diagnosis",
+                "Diagnosis.Category | DiagnosisCategory",
+                "ROUND(<100> * SUM(Amount) / NULLIF(SUM(Total), <0>), <2>) | Percent"
+            ]));
+        Assert.That(definition.PageSize, Is.EqualTo(10));
+    }
+
+    [Test]
+    public void OQueryParsesMultilineOrderAndContextProjection()
+    {
+        var definition = OQueryDefinitionParser.Parse("""
+            Visits: Diagnosis.Name | Diagnosis,
+                Diagnosis.Category | DiagnosisCategory
+              order VisitCount ASC,
+                Diagnosis.Name ASC
+              left join VisitLabs on Id = VisitLabs.VisitId
+            VisitLabs is LabResults: VisitId | VisitId,
+                COUNT(Id) | LabCount
+            """);
+
+        Assert.That(definition.Sorts.Select(sort => sort.Field.ToText()),
+            Is.EqualTo(["VisitCount", "Diagnosis.Name"]));
+        Assert.That(definition.Relations!.Single().RefContext, Is.EqualTo("VisitLabs"));
+        Assert.That(definition.Contexts!["VisitLabs"].Projection.Select(field => field.ToText()),
+            Is.EqualTo(["VisitId | VisitId", "COUNT(Id) | LabCount"]));
+    }
+
+    [Test]
+    public void OQueryInfersSelectedConsumingContextAsRoot()
+    {
+        var definition = OQueryDefinitionParser.Parse("""
+            UserContext1 is User: Id, Name
+            UserContext2 is User: Id, Name, ManagerId
+              Left Join UserContext1 on ManagerId = UserContext1.Id
+            """);
+
+        Assert.That(definition.Entity, Is.EqualTo("User"));
+        Assert.That(definition.Contexts, Does.ContainKey("UserContext1"));
+        Assert.That(definition.Relations!.Single().RefContext, Is.EqualTo("UserContext1"));
+        Assert.That(definition.Projection.Select(field => field.ToText()),
+            Is.EqualTo(["Id", "Name", "ManagerId"]));
+    }
+
+    [Test]
+    public void OQueryKeepsRootWhenSelectionIncludesAllRelatedContexts()
+    {
+        var definition = OQueryDefinitionParser.Parse("""
+            User: Id, Name
+              Left Join UserContext1 on ManagerId = UserContext1.Id
+              Left Join UserContext2 on ManagerId = UserContext2.Id
+            UserContext1 is User: Id, Name
+            UserContext2 is User: Id, Name, ManagerId
+              Left Join UserContext1 on ManagerId = UserContext1.Id
+            """);
+
+        Assert.That(definition.Entity, Is.EqualTo("User"));
+        Assert.That(definition.Relations!.Select(relation => relation.RefContext),
+            Is.EqualTo(["UserContext1", "UserContext2"]));
+        Assert.That(definition.Contexts!["UserContext2"].Relations!.Single().RefContext,
+            Is.EqualTo("UserContext1"));
+    }
+
+    [Test]
+    public void OQueryAllowsOneContextToBeJoinedMultipleTimesWithAliases()
+    {
+        var definition = OQueryDefinitionParser.Parse("""
+            User: Id, Name, ManagerId, ref1.Name | Manager1, newRef1.Name | Manager2
+              Left Join ref1 On ManagerId = ref1.Id
+              Left Join ref1 newRef1 On ManagerId = newRef1.Id
+            ref1 is User: Id, Name
+            """);
+
+        Assert.That(definition.Relations, Has.Count.EqualTo(2));
+        Assert.That(definition.Relations![0].RefContext, Is.EqualTo("ref1"));
+        Assert.That(definition.Relations[0].Alias, Is.Null);
+        Assert.That(definition.Relations[1].RefContext, Is.EqualTo("ref1"));
+        Assert.That(definition.Relations[1].Alias, Is.EqualTo("newRef1"));
+        Assert.That(() => QueryDefinitionParser.ValidateContextReferences(definition),
+            Throws.Nothing);
+    }
+
+    [Test]
     public void YamlParsesProjectionSequenceItemsAndIgnoresEmptyItems()
     {
         var definition = YamlQueryDefinitionParser.Parse("""
