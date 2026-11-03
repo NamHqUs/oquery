@@ -14,9 +14,12 @@ public static class JsonQueryDefinitionParser
     {
         var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
         {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             WriteIndented = writeIndented
         };
-        options.Converters.Add(new JsonStringEnumConverter());
+        options.Converters.Add(
+            new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
         Configure(options);
         return options;
     }

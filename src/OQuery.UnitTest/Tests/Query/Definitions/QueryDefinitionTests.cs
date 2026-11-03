@@ -160,6 +160,25 @@ internal sealed class QueryDefinitionTests
             Throws.TypeOf<FormatException>()
                 .With.Message.EqualTo("Query relation references unknown context [Missing]."));
     }
+
+    [Test]
+    public void JsonDeserializationUsesModelDefaultsForOmittedProperties()
+    {
+        var definition = JsonSerializer.Deserialize<QueryDefinition>(
+            """{"entity":"Orders"}""",
+            JsonQueryDefinitionParser.CreateSerializerOptions());
+
+        Assert.That(definition, Is.Not.Null);
+        Assert.That(definition!.Entity, Is.EqualTo("Orders"));
+        Assert.That(definition.Projection, Is.Empty);
+        Assert.That(definition.Filter, Is.Null);
+        Assert.That(definition.Sorts, Is.Empty);
+        Assert.That(definition.Page, Is.Null);
+        Assert.That(definition.PageSize, Is.Null);
+        Assert.That(definition.Relations, Is.Empty);
+        Assert.That(definition.Contexts, Is.Empty);
+        Assert.That(definition.Recursive, Is.False);
+    }
 }
 
 [TestFixture]
