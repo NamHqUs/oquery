@@ -80,12 +80,9 @@ var metadata = new[]
 var metadataProvider = new MetadataProvider(metadata);
 ```
 
-Metadata can also be loaded from the YAML array format used by the demo
-metadata files:
-
-```csharp
-var metadataProvider = MetadataProvider.FromYmlFile("metadata.yml");
-```
+Applications can deserialize metadata from their preferred format and pass the
+resulting entities to `MetadataProvider`. YAML loading is kept at the
+application boundary rather than in the core library.
 
 ### Entities
 
@@ -138,9 +135,8 @@ permission work to every renderer operation.
 When no permission provider is supplied, `MetadataProvider` intentionally
 defaults to allow-all behavior. Applications that require metadata
 authorization should always provide an explicit `IMetadataFieldAuthorizer`.
-This default applies to `new MetadataProvider(entities)` and to metadata
-loaded through `MetadataProvider.FromYml` or `FromYmlFile` without an
-explicit permission provider.
+This default applies to `new MetadataProvider(entities)` without an explicit
+permission provider.
 
 ```csharp
 var authorizer = new MetadataFieldAuthorizer(
@@ -161,20 +157,8 @@ field-specific key. Relation fields are checked after relation paths are
 resolved. Raw SQL and calculated fields are authorized by their logical
 metadata field name before their trusted SQL expression is rendered.
 
-Permissions can also be loaded from YAML:
-
-```csharp
-var authorizer = MetadataFieldAuthorizer.FromYml("""
-    - entityName: User
-      fields:
-      - Id
-      - DisplayName
-    - entityName: AuditLog
-    """);
-```
-
-Use `MetadataFieldAuthorizer.FromYmlFile(filePath)` when loading permissions
-from a file.
+Applications that store permissions as YAML should deserialize them into
+`MetadataFieldPermission` values before constructing the authorizer.
 
 ### Fields
 
