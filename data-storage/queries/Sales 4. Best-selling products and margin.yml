@@ -1,4 +1,4 @@
-Entity: NorthStarProducts
+Entity: Products
 Projection:
   - Id | ProductId
   - Name | Product

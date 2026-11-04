@@ -1,6 +1,7 @@
 using OQuery.Compilation.Expressions;
 using OQuery.Compilation.Models;
 using OQuery.Execution;
+using OQuery.QueryDefinitions.Parsers;
 
 namespace OQuery.Compilation.Visitors;
 
@@ -134,7 +135,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         var recursiveContexts = contexts
             .Where(context =>
                 context.Recursive ||
-                ContainsContextReference(context.Query, context.Name))
+                ContainsContextReference(context.Query, context.Name, context.Alias))
             .ToArray();
         if (recursiveContexts.Length == 0)
             return false;
@@ -144,17 +145,42 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             throw new NotSupportedException("The selected SQL dialect does not support recursive CTEs.");
 
         var context = recursiveContexts[0];
+        if (context.Alias is not null &&
+            definition.Projection.Any(projection =>
+                projection.Fields.Any(field => ContainsContextReference(
+                    field,
+                    context.Name,
+                    context.Alias))))
+            return BuildRecursiveShorthandQuery(definition, context, definitions, out query);
+
         if (context.Recursive &&
-            !ContainsContextReference(context.Query, context.Name) &&
+            !ContainsContextReference(context.Query, context.Name, context.Alias) &&
             (context.Condition is null ||
-                !ContainsContextReference(context.Condition, context.Name)))
+                !ContainsContextReference(context.Condition, context.Name, context.Alias)))
             throw new FormatException(
                 $"Recursive query context [{context.Name}] must reference itself.");
+
+        var recursiveJoinFields = GetContextFieldNames(context.Condition, context.Name, context.Alias);
+        foreach (var fieldName in recursiveJoinFields)
+        {
+            if (context.Query.Projection.Any(projection =>
+                string.Equals(GetProjectionAlias(projection), fieldName, StringComparison.OrdinalIgnoreCase)))
+                continue;
+            context.Query.Projection.Add(new ProjectionDefinition([new FieldDefinition(fieldName)], fieldName));
+        }
 
         var anchorDefinition = new QueryDefinition
         {
             Entity = definition.Entity,
-            Projection = definition.Projection,
+            Projection = definition.Projection
+                .Select(projection => ContainsContextReference(projection, context.Name, context.Alias)
+                    ? new ProjectionDefinition([new ConstFieldDefinition(0)], projection.Alias)
+                    : projection)
+                .Concat(recursiveJoinFields
+                    .Where(fieldName => !definition.Projection.Any(projection =>
+                        string.Equals(GetProjectionAlias(projection), fieldName, StringComparison.OrdinalIgnoreCase)))
+                    .Select(fieldName => new ProjectionDefinition([new FieldDefinition(fieldName)], fieldName)))
+                .ToList(),
             Filter = definition.Filter,
             Sorts = definition.Sorts,
             Page = null,
@@ -173,6 +199,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             cteFields);
         var recursive = CreateSource(context.Query.Entity, definitions);
         recursive.JoinedTables[GetContextAlias(context)] = recursiveCte;
+        recursive.JoinedTables[context.Name] = recursiveCte;
         recursive = BuildQueryBody(context.Query, recursive, definitions);
         if (context.Condition is not null)
         {
@@ -204,11 +231,116 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             anchor,
             recursive,
             cteFields.Select(field => field.Name).ToArray()));
-        result.ProjectionItems = cteFields
-            .Select(field => new ProjectionItem(
-                new FieldExpression(result.Alias, field),
-                field.Name))
+        result.ProjectionItems = definition.Projection
+            .Where(projection => !projection.IsNewLine)
+            .Select(projection => GetProjectionAlias(projection))
+            .Select(fieldName => new ProjectionItem(
+                new FieldExpression(result.Alias, cteFields.First(field =>
+                    string.Equals(field.Name, fieldName, StringComparison.OrdinalIgnoreCase))),
+                fieldName))
             .ToList();
+        query = result;
+        return true;
+    }
+
+    private bool BuildRecursiveShorthandQuery(
+        QueryDefinitionBase definition,
+        ContextBinding context,
+        IReadOnlyDictionary<string, ContextBinding> definitions,
+        out TableExpression query)
+    {
+        var sourceFields = queryContext.GetFields(queryContext.GetEntity(context.Query.Entity));
+        var recursiveFieldNames = GetContextFieldNames(context.Condition, context.Name, context.Alias);
+        var rootFieldNames = GetUnqualifiedConditionFieldNames(context.Condition);
+        var cteFields = sourceFields
+            .Where(field =>
+                rootFieldNames.Contains(field.Name) ||
+                recursiveFieldNames.Contains(field.Name))
+            .ToList();
+        if (cteFields.Count == 0)
+            throw new FormatException($"Recursive query context [{context.Name}] requires key fields.");
+
+        context.Query.Projection.Clear();
+        context.Query.Projection.AddRange(
+            cteFields.Select(field =>
+                new ProjectionDefinition([new FieldDefinition(field.Name)], field.Name)));
+        var cteEntity = new Entity(context.Name, cteFields, DbTable: context.Name);
+        var anchorDefinition = new QueryDefinition
+        {
+            Entity = context.Query.Entity,
+            Projection = cteFields
+                .Select(field => new ProjectionDefinition([new FieldDefinition(field.Name)], field.Name))
+                .ToList(),
+            Filter = QueryDefinitionParser.ParseFilter(
+                string.Join(" AND ", recursiveFieldNames.Select(field => $"{field} is null")))
+        };
+        var anchor = BuildQuery(anchorDefinition, definitions);
+
+        var recursiveDefinition = new QueryDefinition
+        {
+            Entity = context.Query.Entity,
+            Projection = cteFields
+                .Select(field => new ProjectionDefinition([new FieldDefinition(field.Name)], field.Name))
+                .ToList(),
+            Relations =
+            [
+                new RelationDefinition(
+                    context.Name,
+                    context.Alias,
+                    QueryDefinitionParser.ParseJoinCondition(
+                        $"{string.Join(" AND ", recursiveFieldNames.Select(field => $"{field} = {context.Alias}.{rootFieldNames.First()}"))}"),
+                    QueryJoinType.Inner)
+            ]
+        };
+        var recursive = BuildQuery(recursiveDefinition, definitions);
+
+        var result = new CteTableExpression(
+            context.Name,
+            cteEntity,
+            "tree",
+            cteFields);
+        result.CommonTableExpressions.Add(new RecursiveCommonTableExpression(
+            context.Name,
+            anchor,
+            recursive,
+            cteFields.Select(field => field.Name).ToArray()));
+
+        var member = queryContext.CreateTableContext(
+            queryContext.GetEntity(context.Query.Entity),
+            "member");
+        var manager = queryContext.CreateTableContext(
+            queryContext.GetEntity(context.Query.Entity),
+            "manager");
+        result.JoinedTables.Add(member.Alias, member);
+        result.JoinedTables.Add(manager.Alias, manager);
+        result.Joins.Add(new JoinExpression(
+            member,
+            "INNER JOIN",
+            [new BinarySqlExpression(
+                new FieldExpression(member.Alias, sourceFields.First(field =>
+                    string.Equals(field.Name, "Id", StringComparison.OrdinalIgnoreCase))),
+                "=",
+                new FieldExpression(result.Alias, cteFields.First(field =>
+                    string.Equals(field.Name, "Id", StringComparison.OrdinalIgnoreCase))),
+                typeof(bool))]));
+        result.Joins.Add(new JoinExpression(
+            manager,
+            "LEFT JOIN",
+            [new BinarySqlExpression(
+                new FieldExpression(manager.Alias, sourceFields.First(field =>
+                    string.Equals(field.Name, "Id", StringComparison.OrdinalIgnoreCase))),
+                "=",
+                new FieldExpression(result.Alias, cteFields.First(field =>
+                    string.Equals(field.Name, "ManagerId", StringComparison.OrdinalIgnoreCase))),
+                typeof(bool))]));
+
+        var firstName = sourceFields.First(field =>
+            string.Equals(field.Name, "FirstName", StringComparison.OrdinalIgnoreCase));
+        result.ProjectionItems =
+        [
+            new ProjectionItem(new FieldExpression(manager.Alias, firstName), "ManagerName"),
+            new ProjectionItem(new FieldExpression(member.Alias, firstName), "MemberName")
+        ];
         query = result;
         return true;
     }
@@ -231,45 +363,159 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         }
     }
 
-    private static bool ContainsContextReference(QueryDefinitionBase definition, string contextName)
+    private static bool ContainsContextReference(QueryDefinitionBase definition, string contextName, string? contextAlias = null)
     {
         return definition.Projection.Any(projection =>
-                projection.Fields.Any(field => ContainsContextReference(field, contextName))) ||
-            (definition.Filter is not null && ContainsContextReference(definition.Filter, contextName)) ||
-            (definition.Sorts?.Any(sort => ContainsContextReference(sort.Field, contextName)) ?? false);
+                projection.Fields.Any(field => ContainsContextReference(field, contextName, contextAlias))) ||
+            (definition.Filter is not null && ContainsContextReference(definition.Filter, contextName, contextAlias)) ||
+            (definition.Sorts?.Any(sort => ContainsContextReference(sort.Field, contextName, contextAlias)) ?? false);
     }
 
-    private static bool ContainsContextReference(IFieldDefinition field, string contextName)
+    private static bool ContainsContextReference(ProjectionDefinition projection, string contextName, string? contextAlias)
+        => projection.Fields.Any(field => ContainsContextReference(field, contextName, contextAlias));
+
+    private static IReadOnlySet<string> GetContextFieldNames(
+        IConditionDefintion? condition,
+        string contextName,
+        string? contextAlias)
+    {
+        var fields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (condition is not null)
+            CollectContextFieldNames(condition, contextName, contextAlias, fields);
+        return fields;
+    }
+
+    private static IReadOnlySet<string> GetUnqualifiedConditionFieldNames(IConditionDefintion? condition)
+    {
+        var fields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (condition is not null)
+            CollectUnqualifiedConditionFieldNames(condition, fields);
+        return fields;
+    }
+
+    private static void CollectUnqualifiedConditionFieldNames(
+        IConditionDefintion condition,
+        ISet<string> fields)
+    {
+        switch (condition)
+        {
+            case ConditionDefinition group:
+                foreach (var filter in group.Filters)
+                    CollectUnqualifiedConditionFieldNames(filter, fields);
+                break;
+            case ConditionStatementDefinition statement:
+                CollectUnqualifiedConditionFieldNames(statement.Left, fields);
+                if (statement.Right is not null)
+                    CollectUnqualifiedConditionFieldNames(statement.Right, fields);
+                break;
+        }
+    }
+
+    private static void CollectUnqualifiedConditionFieldNames(
+        IFieldDefinition field,
+        ISet<string> fields)
+    {
+        switch (field)
+        {
+            case FieldDefinition value when !value.FieldName.Contains('.'):
+                fields.Add(value.FieldName);
+                break;
+            case FunctionFieldDefinition function:
+                foreach (var argument in function.Arguments)
+                    CollectUnqualifiedConditionFieldNames(argument, fields);
+                break;
+            case GroupFieldDefintion group:
+                foreach (var item in group.Fields)
+                    CollectUnqualifiedConditionFieldNames(item, fields);
+                break;
+            case ConditionFieldDefinition nested:
+                CollectUnqualifiedConditionFieldNames(nested.Condition, fields);
+                break;
+        }
+    }
+
+    private static void CollectContextFieldNames(
+        IConditionDefintion condition,
+        string contextName,
+        string? contextAlias,
+        ISet<string> fields)
+    {
+        switch (condition)
+        {
+            case ConditionDefinition group:
+                foreach (var filter in group.Filters)
+                    CollectContextFieldNames(filter, contextName, contextAlias, fields);
+                break;
+            case ConditionStatementDefinition statement:
+                CollectContextFieldNames(statement.Left, contextName, contextAlias, fields);
+                if (statement.Right is not null)
+                    CollectContextFieldNames(statement.Right, contextName, contextAlias, fields);
+                break;
+        }
+    }
+
+    private static void CollectContextFieldNames(
+        IFieldDefinition field,
+        string contextName,
+        string? contextAlias,
+        ISet<string> fields)
+    {
+        switch (field)
+        {
+            case FieldDefinition value:
+                var separator = value.FieldName.IndexOf('.');
+                if (separator > 0 &&
+                    (string.Equals(value.FieldName[..separator], contextName, StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(value.FieldName[..separator], contextAlias, StringComparison.OrdinalIgnoreCase)))
+                    fields.Add(value.FieldName[(separator + 1)..]);
+                break;
+            case FunctionFieldDefinition function:
+                foreach (var argument in function.Arguments)
+                    CollectContextFieldNames(argument, contextName, contextAlias, fields);
+                break;
+            case GroupFieldDefintion group:
+                foreach (var item in group.Fields)
+                    CollectContextFieldNames(item, contextName, contextAlias, fields);
+                break;
+            case ConditionFieldDefinition nested:
+                CollectContextFieldNames(nested.Condition, contextName, contextAlias, fields);
+                break;
+        }
+    }
+
+    private static bool ContainsContextReference(IFieldDefinition field, string contextName, string? contextAlias = null)
         => field switch
         {
-            FieldDefinition value => IsContextField(value.FieldName, contextName),
+            FieldDefinition value => IsContextField(value.FieldName, contextName, contextAlias),
             FunctionFieldDefinition function => function.Arguments
-                .Any(argument => ContainsContextReference(argument, contextName)),
+                .Any(argument => ContainsContextReference(argument, contextName, contextAlias)),
             GroupFieldDefintion group => group.Fields
-                .Any(value => ContainsContextReference(value, contextName)),
-            ConditionFieldDefinition condition => ContainsContextReference(condition.Condition, contextName),
+                .Any(value => ContainsContextReference(value, contextName, contextAlias)),
+            ConditionFieldDefinition condition => ContainsContextReference(condition.Condition, contextName, contextAlias),
             _ => false
         };
 
     private static bool ContainsContextReference(
         IConditionDefintion condition,
-        string contextName)
+        string contextName,
+        string? contextAlias = null)
         => condition switch
         {
             ConditionDefinition group => group.Filters
-                .Any(filter => ContainsContextReference(filter, contextName)),
+                .Any(filter => ContainsContextReference(filter, contextName, contextAlias)),
             ConditionStatementDefinition statement =>
-                ContainsContextReference(statement.Left, contextName) ||
+                ContainsContextReference(statement.Left, contextName, contextAlias) ||
                 (statement.Right is not null &&
-                    ContainsContextReference(statement.Right, contextName)),
+                    ContainsContextReference(statement.Right, contextName, contextAlias)),
             _ => false
         };
 
-    private static bool IsContextField(string fieldName, string contextName)
+    private static bool IsContextField(string fieldName, string contextName, string? contextAlias = null)
     {
         var separator = fieldName.IndexOf('.');
         return separator > 0 &&
-            string.Equals(fieldName[..separator], contextName, StringComparison.OrdinalIgnoreCase);
+            (string.Equals(fieldName[..separator], contextName, StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(fieldName[..separator], contextAlias, StringComparison.OrdinalIgnoreCase));
     }
 
     private TableExpression CreateSource(

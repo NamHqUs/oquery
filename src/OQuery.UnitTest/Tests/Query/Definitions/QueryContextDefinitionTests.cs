@@ -9,6 +9,39 @@ namespace OQuery.UnitTest.Tests.Query.Definitions;
 public sealed class QueryContextDefinitionTests : TestBase
 {
     [Test]
+    public void OQuerySelfJoinedRootContextGeneratesRecursiveCte()
+    {
+        using var db = CreateContext(
+            new SqlServerDialect(),
+            new Entity(
+                "Employees",
+                [
+                    new Field("Id", "Id"),
+                    new Field("FirstName", "FirstName"),
+                    new Field("ManagerId", "ManagerId"),
+                ]));
+        var query = OQueryDefinitionParser.Parse("""
+            EmployeeTree is Employees: FirstName | ManagerName,
+                member.FirstName | MemberName
+              INNER JOIN EmployeeTree member on Id = member.ManagerId
+            """);
+
+        var sql = db.Query(query).ToSql().CommandText;
+
+        Assert.That(sql, Does.Contain("UNION ALL"));
+        Assert.That(sql, Does.Contain("[EmployeeTree]"));
+        Assert.That(sql, Does.Contain("[Id], [ManagerId]"));
+        Assert.That(sql, Does.Contain("[ManagerId] IS NULL"));
+        Assert.That(sql, Does.Contain("INNER JOIN [dbo].[Employees] member"));
+        Assert.That(sql, Does.Contain("LEFT JOIN [dbo].[Employees] manager"));
+        Assert.That(sql, Does.Contain("[FirstName] [ManagerName]"));
+        Assert.That(sql, Does.Contain("[FirstName] [MemberName]"));
+        Assert.That(
+            sql.IndexOf("[ManagerName]", StringComparison.Ordinal),
+            Is.LessThan(sql.IndexOf("[MemberName]", StringComparison.Ordinal)));
+    }
+
+    [Test]
     public void MultipleContexts_StartEachCteOnANewLine()
     {
         using var db = CreateContext(

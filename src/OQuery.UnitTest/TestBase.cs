@@ -18,7 +18,9 @@ public class TestBase
 
         var entities = MetadataLoader.UnitTestData
             .Concat(MetadataLoader.SaleDemoData)
-            .Concat(MetadataLoader.NorthStarDemoData);
+            .Concat(MetadataLoader.NorthStarDemoData)
+            .GroupBy(entity => entity.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.Last());
 
         _sqlDialect = SqlDialect.ForConnection(_connection);
         IMetadataProvider metaProvider = new MetadataProvider(entities);

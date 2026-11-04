@@ -79,7 +79,7 @@
   - { name: Status }
   relations:
   - { name: Employee, refEntity: Employees, type: Lookup, refKeys: [{ dbColumn: EmployeeId, refDbColumn: Id }] }
-- name: NorthStarProducts
+- name: Products
   dbSchema: sa
   dbTable: Products
   fields:
@@ -116,7 +116,7 @@
   - { name: DiscountAmount, dataType: Number }
   relations:
   - { name: Order, refEntity: Orders, type: Lookup, refKeys: [{ dbColumn: OrderId, refDbColumn: Id }] }
-  - { name: Product, refEntity: NorthStarProducts, type: Lookup, refKeys: [{ dbColumn: ProductId, refDbColumn: Id }] }
+  - { name: Product, refEntity: Products, type: Lookup, refKeys: [{ dbColumn: ProductId, refDbColumn: Id }] }
 - name: Diagnoses
   dbSchema: he
   dbTable: Diagnoses

@@ -1,7 +1,7 @@
 {
   "MainQuery": {
     "Name": "Sales 4. Best-selling products and margin",
-    "Entity": "NorthStarProducts",
+    "Entity": "Products",
     "Projection": [
       {
         "Fields": [
