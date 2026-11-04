@@ -1,0 +1,16 @@
+Policies: User.Id | MemberId,
+    Concat(User.FirstName, < >, User.LastName) | Member,
+    Plan.Name | Plan,
+    Status | PolicyStatus,
+    Coalesce(MemberClaims.Claims, <0>) | Claims,
+    ROUND(Coalesce(MemberPremiums.PremiumsCollected, <0>), <2>) | PremiumsCollected,
+    ROUND(Coalesce(MemberClaims.AllowedAmount, <0>), <2>) | AllowedAmount,
+    ROUND(Coalesce(MemberClaims.InsurerPaid, <0>), <2>) | InsurerPaid,
+    ROUND(<100.0> * Coalesce(MemberClaims.InsurerPaid, <0>) / NULLIF(MemberPremiums.PremiumsCollected, <0>), <2>) | MemberLossRatioPercent
+  Order MemberLossRatioPercent DESC, Claims DESC
+  Take 10
+  Left Join MemberPremiums MemberPremiums On UserId = MemberPremiums.UserId
+  Left Join MemberClaims MemberClaims On UserId = MemberClaims.UserId
+MemberPremiums is PremiumPayments: Policy.UserId | UserId, SUM(Amount) | PremiumsCollected
+  Where Status = <Paid>
+MemberClaims is Claims: Policy.UserId | UserId, COUNT(Id) | Claims, SUM(AllowedAmount) | AllowedAmount, SUM(PaidAmount) | InsurerPaid

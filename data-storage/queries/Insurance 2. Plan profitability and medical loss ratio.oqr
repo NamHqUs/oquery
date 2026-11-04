@@ -1,0 +1,15 @@
+InsurancePlans: Name | Plan,
+    Tier,
+    CountDistinct(Policies.Id) | PolicyCount,
+    ROUND(Coalesce(PremiumTotals.PremiumRevenue, <0>), <2>) | PremiumRevenue,
+    Coalesce(ClaimTotals.ClaimCount, <0>) | ClaimCount,
+    ROUND(Coalesce(ClaimTotals.ClaimsPaid, <0>), <2>) | ClaimsPaid,
+    MedicalLossRatio(ClaimTotals.ClaimsPaid, PremiumTotals.PremiumRevenue) | MedicalLossRatioPercent,
+    Coalesce(ClaimTotals.DeniedClaims, <0>) | DeniedClaims
+  Order MedicalLossRatioPercent DESC
+  Take 10
+  Left Join PremiumTotals PremiumTotals On Id = PremiumTotals.PlanId
+  Left Join ClaimTotals ClaimTotals On Id = ClaimTotals.PlanId
+PremiumTotals is PremiumPayments: Policy.PlanId | PlanId, SUM(Amount) | PremiumRevenue
+  Where Status = <Paid>
+ClaimTotals is Claims: Policy.PlanId | PlanId, SUM(PaidAmount) | ClaimsPaid, COUNT(Id) | ClaimCount, CountIf(Status = <Denied>) | DeniedClaims

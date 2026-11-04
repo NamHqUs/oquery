@@ -1,0 +1,2 @@
+Employees: DepartmentId, Id | EmployeeId, Salary, Rank(DepartmentId, Salary) | DepartmentRank
+  Order DepartmentId ASC, DepartmentRank ASC, EmployeeId ASC

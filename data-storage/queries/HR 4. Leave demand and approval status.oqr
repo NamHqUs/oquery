@@ -1,0 +1,9 @@
+LeaveRequests: Employee.Department.Name | Department,
+    LeaveType,
+    Status,
+    COUNT(Id) | Requests,
+    SUM(Days) | DaysRequested,
+    ROUND(AVG(Days), <1>) | AverageRequestDays,
+    CountDistinct(Employee.Id) | EmployeesRequesting
+  Order DaysRequested DESC, Requests DESC, Department ASC, LeaveType ASC, Status ASC
+  Take 10

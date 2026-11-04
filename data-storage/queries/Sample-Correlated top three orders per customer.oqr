@@ -1,0 +1,16 @@
+Users: Id | CustomerId,
+    Concat(FirstName, < >, LastName) | Customer,
+    RecentOrders.Id | OrderId,
+    RecentOrders.OrderDate | OrderDate,
+    RecentOrders.OrderAmount | OrderAmount
+  Where RecentOrders.OrderRank <= <3>
+  Order CustomerId ASC, RecentOrders.OrderDate DESC, OrderId ASC
+  Inner Join RankedOrders RankedOrders
+  Left Join RecentOrders RecentOrders On Id = RecentOrders.UserId
+RankedOrders is Orders: UserId | UserId,
+    Id | Id,
+    OrderDate | OrderDate,
+    SUM(Items.Quantity * Items.UnitPrice - Items.DiscountAmount) | OrderAmount,
+    RowNumber(UserId, OrderDate) | OrderRank
+  Where Status = <Completed>
+RecentOrders is RankedOrders: UserId | UserId, Id | Id, OrderDate | OrderDate, OrderAmount | OrderAmount, OrderRank | OrderRank

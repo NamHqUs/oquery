@@ -1,0 +1,9 @@
+Users: State | Region, AVG(CustomerBestMonth.BestMonthRevenue) | AverageBestMonth
+  Inner Join CustomerMonth CustomerMonth
+  Inner Join CustomerBestMonth CustomerBestMonth On Id = CustomerBestMonth.UserId
+CustomerMonth is Orders: UserId | UserId,
+    Year(OrderDate) | SalesYear,
+    Month(OrderDate) | SalesMonth,
+    SUM(Items.Quantity * Items.UnitPrice - Items.DiscountAmount) | MonthlyRevenue
+  Where Status = <Completed>
+CustomerBestMonth is CustomerMonth: UserId | UserId, MAX(MonthlyRevenue) | BestMonthRevenue

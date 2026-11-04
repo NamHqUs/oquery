@@ -23,6 +23,9 @@ internal class ProjectionDefinitionParser
         var separatorIndex = text.IndexOf('|');
         var fieldText = separatorIndex < 0 ? text.Trim() : text[..separatorIndex].Trim();
         var alias = separatorIndex < 0 ? null : text[(separatorIndex + 1)..].Trim();
+        if (fieldText.Length == 0 &&
+            string.Equals(alias, ProjectionDefinition.NewLineAlias, StringComparison.OrdinalIgnoreCase))
+            return new ProjectionDefinition([], ProjectionDefinition.NewLineAlias);
         return new ProjectionDefinition(FieldDefinitionParser.ParseExpression(fieldText), alias);
     }
 }

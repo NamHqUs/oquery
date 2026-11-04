@@ -1,0 +1,11 @@
+Employees: Department.Name | Department,
+    COUNT(Id) | Headcount,
+    ROUND(AVG(Salary), <2>) | AverageSalary,
+    ROUND(SUM(Salary), <2>) | AnnualPayroll,
+    ROUND(AVG(ReviewSummary.AverageRating), <2>) | AverageRating,
+    ROUND(SUM(Coalesce(ReviewSummary.Bonuses, <0>)), <2>) | TotalBonuses
+  Order AnnualPayroll DESC
+  Take 10
+  Left Join ReviewSummary ReviewSummary On Id = ReviewSummary.EmployeeId
+ReviewSummary is PerformanceReviews: EmployeeId | EmployeeId, AVG(Rating) | AverageRating, SUM(BonusAmount) | Bonuses
+  Where ReviewYear = <2025>

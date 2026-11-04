@@ -1,0 +1,19 @@
+Query is OrderCategory: Category,
+    Channel,
+    COUNT(OrderId) | OrdersContainingCategory,
+    SUM(UnitsSold) | UnitsSold,
+    SUM(NetRevenue) | NetRevenue,
+    SUM(Discounts) | Discounts,
+    SUM(GrossProfit) | GrossProfit,
+    AVG(NetRevenue) | AverageCategoryRevenuePerOrder
+  Order GrossProfit DESC
+  Take 10
+  Inner Join OrderCategory OrderCategory
+OrderCategory is OrderItems: OrderId | OrderId,
+    Product.Category | Category,
+    Order.Channel | Channel,
+    SUM(Quantity) | UnitsSold,
+    SUM(Quantity * UnitPrice - DiscountAmount) | NetRevenue,
+    SUM(DiscountAmount) | Discounts,
+    SUM(Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount) | GrossProfit
+  Where Order.Status = <Completed>

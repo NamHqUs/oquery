@@ -1,12 +1,21 @@
-Employees: Id | DoctorId, Concat(FirstName, < >, LastName) | Physician, Department.Name | Department, Location.City | ClinicCity, DoctorVisits.VisitCount | VisitCount, DoctorVisits.PatientCount | PatientCount, ROUND(DoctorVisits.AverageVisitMinutes, <1>) | AverageVisitMinutes, ROUND(DoctorVisits.Charges, <2>) | Charges, ROUND(<100.0> * SUM(Coalesce(DoctorLabs.AbnormalCount, <0>)) / NULLIF(SUM(Coalesce(DoctorLabs.LabCount, <0>)), <0>), <2>) | AbnormalLabPercent
+Employees: Id | DoctorId,
+    Concat(FirstName, < >, LastName) | Physician,
+    Department.Name | Department,
+    Location.City | ClinicCity,
+    DoctorVisits.VisitCount | VisitCount,
+    DoctorVisits.PatientCount | PatientCount,
+    ROUND(DoctorVisits.AverageVisitMinutes, <1>) | AverageVisitMinutes,
+    ROUND(DoctorVisits.Charges, <2>) | Charges,
+    ROUND(<100.0> * SUM(Coalesce(DoctorLabs.AbnormalCount, <0>)) / NULLIF(SUM(Coalesce(DoctorLabs.LabCount, <0>)), <0>), <2>) | AbnormalLabPercent
   Where Department.Name = <Primary Care> OR Department.Name = <Specialty Care> OR Department.Name = <Emergency Medicine>
   Order VisitCount DESC, Charges DESC
-  Skip 0
   Take 10
-  Left Join DoctorVisits on Id = DoctorVisits.DoctorId
-  Left Join DoctorLabs on Id = DoctorLabs.DoctorId
-
-DoctorVisits is Visits: DoctorId | DoctorId, CountDistinct(Id) | VisitCount, CountDistinct(UserId) | PatientCount, AVG(DurationMinutes) | AverageVisitMinutes, SUM(Charge) | Charges
+  Left Join DoctorVisits DoctorVisits On Id = DoctorVisits.DoctorId
+  Left Join DoctorLabs DoctorLabs On Id = DoctorLabs.DoctorId
+DoctorVisits is Visits: DoctorId | DoctorId,
+    CountDistinct(Id) | VisitCount,
+    CountDistinct(UserId) | PatientCount,
+    AVG(DurationMinutes) | AverageVisitMinutes,
+    SUM(Charge) | Charges
   Where Status = <Completed>
-
 DoctorLabs is LabResults: Visit.DoctorId | DoctorId, COUNT(Id) | LabCount, CountIf(IsAbnormal = <True>) | AbnormalCount

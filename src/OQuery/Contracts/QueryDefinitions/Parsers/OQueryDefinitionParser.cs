@@ -86,7 +86,10 @@ public static class OQueryDefinitionParser
         ArgumentNullException.ThrowIfNull(definition);
 
         var lines = new List<string>();
-        WriteBlock(lines, definition.Entity, definition.Entity, definition, string.Empty);
+        var rootName = definition.Contexts?.ContainsKey(definition.Entity) == true
+            ? GetUniqueRootName(definition.Contexts)
+            : definition.Entity;
+        WriteBlock(lines, rootName, definition.Entity, definition, string.Empty);
         foreach (var (name, context) in definition.Contexts ?? [])
             WriteBlock(lines, name, GetSourceEntity(context, name), context, string.Empty);
         return string.Join(Environment.NewLine, lines);
@@ -162,17 +165,20 @@ public static class OQueryDefinitionParser
         var onIndex = join.IndexOf(" on ", StringComparison.OrdinalIgnoreCase);
         var target = onIndex < 0 ? join.Trim() : join[..onIndex].Trim();
         var condition = onIndex < 0 ? null : join[(onIndex + 4)..].Trim();
-        var targetParts = target.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        var name = targetParts.FirstOrDefault();
-        var alias = targetParts.Length > 1 ? targetParts[1] : null;
-        if (targetParts.Length > 2 ||
-            string.Equals(alias, "as", StringComparison.OrdinalIgnoreCase))
+        var targetMatch = System.Text.RegularExpressions.Regex.Match(
+            target,
+            "^(?:\"(?<name>[^\"]+)\"|(?<name>[A-Za-z_][A-Za-z0-9_]*))" +
+            "(?:\\s+(?:as\\s+)?(?<alias>[A-Za-z_][A-Za-z0-9_]*))?$",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (!targetMatch.Success)
+            throw new FormatException($"Invalid join target [{target}].");
+        var name = targetMatch.Groups["name"].Value;
+        var alias = targetMatch.Groups["alias"].Success
+            ? targetMatch.Groups["alias"].Value
+            : null;
+        if (string.Equals(alias, "as", StringComparison.OrdinalIgnoreCase))
         {
-            if (targetParts.Length == 3 &&
-                string.Equals(targetParts[1], "as", StringComparison.OrdinalIgnoreCase))
-                alias = targetParts[2];
-            else
-                throw new FormatException($"Invalid join target [{target}].");
+            throw new FormatException($"Invalid join target [{target}].");
         }
         if (string.IsNullOrWhiteSpace(name))
             throw new FormatException("A join requires a context name.");
@@ -203,13 +209,18 @@ public static class OQueryDefinitionParser
                 var projection = line[(separator + 1)..].Trim();
                 var headerMatch = System.Text.RegularExpressions.Regex.Match(
                     header,
-                    "^(?<name>[A-Za-z_][A-Za-z0-9_]*)(?:\\s+is\\s+(?<entity>[A-Za-z_][A-Za-z0-9_]*))?$",
+                    "^(?:\"(?<nameQuoted>[^\"]+)\"|(?<name>[A-Za-z_][A-Za-z0-9_]*))" +
+                    "(?:\\s+is\\s+(?:\"(?<entityQuoted>[^\"]+)\"|(?<entity>[A-Za-z_][A-Za-z0-9_]*)))?$",
                     System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                 if (!headerMatch.Success)
                     throw new FormatException($"Invalid OQuery header [{header}].");
-                var name = headerMatch.Groups["name"].Value;
-                var entity = headerMatch.Groups["entity"].Success
-                    ? headerMatch.Groups["entity"].Value
+                var name = headerMatch.Groups["nameQuoted"].Success
+                    ? headerMatch.Groups["nameQuoted"].Value
+                    : headerMatch.Groups["name"].Value;
+                var entity = headerMatch.Groups["entityQuoted"].Success
+                    ? headerMatch.Groups["entityQuoted"].Value
+                    : headerMatch.Groups["entity"].Success
+                        ? headerMatch.Groups["entity"].Value
                     : name;
                 current = new QueryBlock(name, entity, projection);
                 blocks.Add(current);
@@ -266,8 +277,8 @@ public static class OQueryDefinitionParser
         string indent)
     {
         var header = string.Equals(name, entity, StringComparison.OrdinalIgnoreCase)
-            ? name
-            : $"{name} is {entity}";
+            ? FormatIdentifier(name)
+            : $"{FormatIdentifier(name)} is {FormatIdentifier(entity)}";
         var projections = definition.Projection.Select(field => field.ToText()).ToArray();
         var projectionText = string.Join(", ", projections);
         if (projectionText.Length <= 120 || projections.Length < 2)
@@ -284,7 +295,7 @@ public static class OQueryDefinitionParser
             }
         }
         if (definition.Filter is not null)
-            lines.Add($"{indent}  Where {definition.Filter.ToText()}");
+            lines.Add($"{indent}  Where {definition.Filter.ToText().Replace(" <NULL>", string.Empty, StringComparison.Ordinal)}");
         if (definition.Sorts is { Count: > 0 })
             lines.Add($"{indent}  Order {string.Join(", ", definition.Sorts.Select(FormatSort))}");
         var skip = definition.Skip ?? (
@@ -298,7 +309,7 @@ public static class OQueryDefinitionParser
         foreach (var relation in definition.Relations ?? [])
         {
             var joinType = relation.JoinType?.ToString() ?? nameof(QueryJoinType.Left);
-            var join = $"{joinType} Join {relation.RefContext}";
+            var join = $"{joinType} Join {FormatIdentifier(relation.RefContext)}";
             if (!string.IsNullOrWhiteSpace(relation.Alias))
                 join += $" {relation.Alias}";
             if (relation.Condition is not null)
@@ -313,9 +324,28 @@ public static class OQueryDefinitionParser
     private static bool IsClauseLine(string line)
         => System.Text.RegularExpressions.Regex.IsMatch(
             line,
-            "^(where|order|orderby|skip|take|join)\\b|" +
+            "^(where|order|orderby|skip|take|join)(?:\\s|$)|" +
             "^(left|inner|right|full)\\s+join\\b",
             System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+    private static string FormatIdentifier(string value)
+        => System.Text.RegularExpressions.Regex.IsMatch(
+            value,
+            "^[A-Za-z_][A-Za-z0-9_]*$",
+            System.Text.RegularExpressions.RegexOptions.CultureInvariant)
+            ? value
+            : $"\"{value.Replace("\"", "\"\"", StringComparison.Ordinal)}\"";
+
+    private static string GetUniqueRootName(
+        IReadOnlyDictionary<string, QueryDefinitionBase> contexts)
+    {
+        const string baseName = "Query";
+        var name = baseName;
+        var suffix = 1;
+        while (contexts.ContainsKey(name))
+            name = $"{baseName}{suffix++}";
+        return name;
+    }
 
     private static string FormatSort(SortDefinition sort)
         => $"{sort.Field.ToText()} {(sort.Direction == QuerySortDirection.Descending ? "DESC" : "ASC")}";

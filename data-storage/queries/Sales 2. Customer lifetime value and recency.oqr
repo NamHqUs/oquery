@@ -1,0 +1,9 @@
+Users: Id | UserId,
+    Concat(FirstName, < >, LastName) | Customer,
+    CountDistinct(Orders.Id) | OrderCount,
+    ROUND(SUM(Orders.Items.Quantity * Orders.Items.UnitPrice - Orders.Items.DiscountAmount), <2>) | LifetimeValue,
+    MAX(Orders.OrderDate) | LastOrderDate,
+    CountDistinct(Orders.Channel) | ChannelsUsed
+  Where Orders.Status = <Completed>
+  Order LifetimeValue DESC, LastOrderDate DESC
+  Take 10

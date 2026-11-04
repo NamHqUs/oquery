@@ -36,7 +36,9 @@ internal sealed class SqlServerQueryExecutionTests
 
         var metadata = MetadataLoader.UnitTestData
             .Concat(MetadataLoader.SaleDemoData)
-            .Concat(MetadataLoader.NorthStarDemoData);
+            .Concat(MetadataLoader.NorthStarDemoData)
+            .GroupBy(entity => entity.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.Last());
 
         _db = new OQueryEngine(
             _connection,
@@ -76,7 +78,7 @@ internal sealed class SqlServerQueryExecutionTests
     }
 
     [Test]
-    public void FirstFiveOQueryRequestsGenerateTheSameSqlAsJson()
+    public void AllOQueryRequestsGenerateTheSameSqlAsJson()
     {
         var requestRoot = Path.Combine(
             GetRepositoryRoot(),
@@ -95,36 +97,39 @@ internal sealed class SqlServerQueryExecutionTests
     }
 
     [Test]
-    public void RecursiveEmployeeHierarchyYamlMatchesJsonDefinition()
+    public void RecursiveEmployeeHierarchyOQueryMatchesJsonDefinition()
     {
         var requestRoot = Path.Combine(
             GetRepositoryRoot(),
             "data-storage", "queries");
         var jsonPath = Path.Combine(requestRoot, "Sample-Recursive employee hierarchy.json");
-        var yamlPath = Path.ChangeExtension(jsonPath, ".yml");
+        var oqueryPath = Path.ChangeExtension(jsonPath, ".oqr");
 
         var jsonDefinition = QueryDefinitionLoader.Load(jsonPath);
-        var yamlDefinition = YamlQueryDefinitionParser.Parse(File.ReadAllText(yamlPath));
+        var oqueryDefinition = OQueryDefinitionParser.Parse(new FileInfo(oqueryPath));
 
-        Assert.That(YamlQueryDefinitionParser.Write(yamlDefinition),
-            Is.EqualTo(YamlQueryDefinitionParser.Write(jsonDefinition)));
+        Assert.That(
+            _db.Query(oqueryDefinition).ToSql().CommandText,
+            Is.EqualTo(_db.Query(jsonDefinition).ToSql().CommandText));
     }
 
     [TestCase("Test-Check Context Calculation Fields.json")]
     [TestCase("Test-Query directly on REF CONTEXT.json")]
-    public void RefContextYamlMatchesJsonDefinition(string fileName)
+    public void RefContextOQueryMatchesJsonDefinition(string fileName)
     {
         var requestRoot = Path.Combine(
             GetRepositoryRoot(),
             "data-storage", "queries");
         var jsonPath = Path.Combine(requestRoot, fileName);
-        var yamlPath = Path.ChangeExtension(jsonPath, ".yml");
+        var oqueryPath = Path.ChangeExtension(jsonPath, ".oqr");
 
         var jsonDefinition = QueryDefinitionLoader.Load(jsonPath);
-        var yamlDefinition = YamlQueryDefinitionParser.Parse(File.ReadAllText(yamlPath));
+        var oqueryDefinition = OQueryDefinitionParser.Parse(new FileInfo(oqueryPath));
 
-        Assert.That(YamlQueryDefinitionParser.Write(yamlDefinition),
-            Is.EqualTo(YamlQueryDefinitionParser.Write(jsonDefinition)), fileName);
+        Assert.That(
+            _db.Query(oqueryDefinition).ToSql().CommandText,
+            Is.EqualTo(_db.Query(jsonDefinition).ToSql().CommandText),
+            fileName);
     }
 
     [Test]

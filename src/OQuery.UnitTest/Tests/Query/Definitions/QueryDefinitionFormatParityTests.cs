@@ -16,10 +16,9 @@ internal sealed class QueryDefinitionFormatParityTests : TestBase
 
         var oqueryFiles = Directory.EnumerateFiles(queryDirectory, "*.oqr")
             .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
-            .Take(5)
             .ToArray();
 
-        Assert.That(oqueryFiles, Has.Length.EqualTo(5));
+        Assert.That(oqueryFiles, Has.Length.EqualTo(30));
 
         var failures = new List<string>();
         foreach (var oqueryPath in oqueryFiles)
@@ -31,17 +30,22 @@ internal sealed class QueryDefinitionFormatParityTests : TestBase
                 continue;
             }
 
-            var oquery = OQueryDefinitionParser.Parse(new FileInfo(oqueryPath));
-            var jsonQuery = QueryDefinitionLoader.Load(jsonPath);
-            var oquerySql = _db.Query(oquery).ToSql().CommandText;
-            var jsonSql = _db.Query(jsonQuery).ToSql().CommandText;
-
-            if (!string.Equals(oquerySql, jsonSql, StringComparison.Ordinal))
+            try
             {
-                failures.Add(
-                    $"{Path.GetFileName(oqueryPath)}:{Environment.NewLine}" +
-                    $"OQuery: {oquerySql}{Environment.NewLine}" +
-                    $"JSON: {jsonSql}");
+                var oquery = OQueryDefinitionParser.Parse(new FileInfo(oqueryPath));
+                var jsonQuery = QueryDefinitionLoader.Load(jsonPath);
+                var oquerySql = _db.Query(oquery).ToSql().CommandText;
+                var jsonSql = _db.Query(jsonQuery).ToSql().CommandText;
+
+                if (!string.Equals(oquerySql, jsonSql, StringComparison.Ordinal))
+                    failures.Add(
+                        $"{Path.GetFileName(oqueryPath)}:{Environment.NewLine}" +
+                        $"OQuery: {oquerySql}{Environment.NewLine}" +
+                        $"JSON: {jsonSql}");
+            }
+            catch (Exception exception)
+            {
+                failures.Add($"{Path.GetFileName(oqueryPath)}: {exception.Message}");
             }
         }
 
@@ -58,7 +62,7 @@ internal sealed class QueryDefinitionFormatParityTests : TestBase
             GetRepositoryRoot(),
             "data-storage", "queries");
 
-        foreach (var oqueryPath in Directory.EnumerateFiles(queryDirectory, "*.oqr").Order().Take(5))
+        foreach (var oqueryPath in Directory.EnumerateFiles(queryDirectory, "*.oqr").Order())
         {
             var jsonPath = Path.ChangeExtension(oqueryPath, ".json");
             Assert.That(File.Exists(jsonPath), Is.True, $"Missing JSON query request for '{oqueryPath}'.");

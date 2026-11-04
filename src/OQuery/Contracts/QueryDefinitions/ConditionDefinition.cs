@@ -59,7 +59,10 @@ public record ConditionStatementDefinition(
     public string? CustomSqlTemplate { get; init; }
 
     public string ToText()
-        => $"{Left.ToText()} {OperatorId ?? FormatOperator(Operator)} {Right?.ToText() ?? "<NULL>"}";
+        => $"{Left.ToText()} {OperatorId ?? FormatOperator(Operator)}" +
+            (Operator is BinaryOperator.IsNull or BinaryOperator.IsNotNull
+                ? string.Empty
+                : $" {Right?.ToText() ?? "<NULL>"}");
 
     private static string FormatOperator(BinaryOperator operation)
         => operation switch
