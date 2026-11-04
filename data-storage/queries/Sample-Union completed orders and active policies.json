@@ -1,99 +1,96 @@
 {
-  "MainQuery": {
-    "Name": "Sample-Union completed orders and active policies",
-    "Entity": "Users",
-    "Projection": [
+  "Name": "Sample-Union completed orders and active policies",
+  "Entity": "Users",
+  "Projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "Alias": "UserId"
+    }
+  ],
+  "Filter": {
+    "logicalOperation": 1,
+    "filters": [
       {
-        "field": {
+        "logicalOperator": 0,
+        "left": {
           "kind": "field",
-          "field": "Id"
+          "field": "CompletedOrders.UserId"
         },
-        "Alias": "UserId"
-      }
-    ],
-    "Filters": {
-      "logicalOperation": 1,
-      "filters": [
-        {
-          "logicalOperator": 0,
-          "left": {
-            "kind": "field",
-            "field": "CompletedOrders.UserId"
-          },
-          "operation": 13,
-          "right": null,
-          "parameterized": true
-        },
-        {
-          "logicalOperator": 1,
-          "left": {
-            "kind": "field",
-            "field": "ActivePolicies.UserId"
-          },
-          "operation": 13,
-          "right": null,
-          "parameterized": true
-        }
-      ]
-    },
-    "Sorts": null,
-    "Page": null,
-    "PageSize": null,
-    "Id": "Sample-Union completed orders and active policies",
-    "ExtraRelations": [
-      {
-        "RefContextId": "legacy-CompletedOrders",
-        "Alias": "CompletedOrders",
-        "Condition": {
-          "logicalOperation": 0,
-          "filters": [
-            {
-              "logicalOperator": 0,
-              "left": {
-                "kind": "field",
-                "field": "Id"
-              },
-              "operation": 0,
-              "right": {
-                "kind": "field",
-                "field": "CompletedOrders.UserId"
-              },
-              "parameterized": true
-            }
-          ]
-        },
-        "JoinType": "Left"
+        "operation": 13,
+        "right": null,
+        "parameterized": true
       },
       {
-        "RefContextId": "legacy-ActivePolicies",
-        "Alias": "ActivePolicies",
-        "Condition": {
-          "logicalOperation": 0,
-          "filters": [
-            {
-              "logicalOperator": 0,
-              "left": {
-                "kind": "field",
-                "field": "Id"
-              },
-              "operation": 0,
-              "right": {
-                "kind": "field",
-                "field": "ActivePolicies.UserId"
-              },
-              "parameterized": true
-            }
-          ]
+        "logicalOperator": 1,
+        "left": {
+          "kind": "field",
+          "field": "ActivePolicies.UserId"
         },
-        "JoinType": "Left"
+        "operation": 13,
+        "right": null,
+        "parameterized": true
       }
     ]
   },
-  "Contexts": [
+  "Sorts": null,
+  "Take": null,
+  "Skip": null,
+  "Joins": [
     {
-      "Name": "CompletedOrders",
+      "Alias": "CompletedOrders",
+      "Condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Id"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "CompletedOrders.UserId"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "JoinType": "Left",
+      "RefContext": "CompletedOrders"
+    },
+    {
+      "Alias": "ActivePolicies",
+      "Condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Id"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "ActivePolicies.UserId"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "JoinType": "Left",
+      "RefContext": "ActivePolicies"
+    }
+  ],
+  "Id": "Sample-Union completed orders and active policies",
+  "Contexts": {
+    "CompletedOrders": {
       "Entity": "Orders",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "field",
@@ -115,7 +112,7 @@
           "Alias": "MatchCount"
         }
       ],
-      "Filters": {
+      "Filter": {
         "logicalOperation": 0,
         "filters": [
           {
@@ -134,15 +131,13 @@
         ]
       },
       "Sorts": null,
-      "Page": null,
-      "PageSize": null,
-      "Id": "legacy-CompletedOrders",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     },
-    {
-      "Name": "ActivePolicies",
+    "ActivePolicies": {
       "Entity": "Policies",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "field",
@@ -164,7 +159,7 @@
           "Alias": "MatchCount"
         }
       ],
-      "Filters": {
+      "Filter": {
         "logicalOperation": 0,
         "filters": [
           {
@@ -183,11 +178,10 @@
         ]
       },
       "Sorts": null,
-      "Page": null,
-      "PageSize": null,
-      "Id": "legacy-ActivePolicies",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     }
-  ],
+  },
   "IsBuiltin": false
 }

@@ -1,210 +1,205 @@
 {
-  "MainQuery": {
-    "Name": "Insurance 2. Plan profitability and medical loss ratio",
-    "Entity": "InsurancePlans",
-    "Projection": [
-      {
-        "field": {
-          "kind": "field",
-          "field": "Name"
-        },
-        "Alias": "Plan"
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": "Tier"
-        },
-        "Alias": null
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "CountDistinct",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "Policies.Id"
-            }
-          ]
-        },
-        "Alias": "PolicyCount"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "ROUND",
-          "arguments": [
-            {
-              "kind": "function",
-              "function": "Coalesce",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "PremiumTotals.PremiumRevenue"
-                },
-                {
-                  "kind": "value",
-                  "value": 0
-                }
-              ]
-            },
-            {
-              "kind": "value",
-              "value": 2
-            }
-          ]
-        },
-        "Alias": "PremiumRevenue"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "Coalesce",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "ClaimTotals.ClaimCount"
-            },
-            {
-              "kind": "value",
-              "value": 0
-            }
-          ]
-        },
-        "Alias": "ClaimCount"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "ROUND",
-          "arguments": [
-            {
-              "kind": "function",
-              "function": "Coalesce",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "ClaimTotals.ClaimsPaid"
-                },
-                {
-                  "kind": "value",
-                  "value": 0
-                }
-              ]
-            },
-            {
-              "kind": "value",
-              "value": 2
-            }
-          ]
-        },
-        "Alias": "ClaimsPaid"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "MedicalLossRatio",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "ClaimTotals.ClaimsPaid"
-            },
-            {
-              "kind": "field",
-              "field": "PremiumTotals.PremiumRevenue"
-            }
-          ]
-        },
-        "Alias": "MedicalLossRatioPercent"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "Coalesce",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "ClaimTotals.DeniedClaims"
-            },
-            {
-              "kind": "value",
-              "value": 0
-            }
-          ]
-        },
-        "Alias": "DeniedClaims"
-      }
-    ],
-    "Filters": null,
-    "Sorts": [
-      [
-        {
-          "Field": {
-            "kind": "field",
-            "field": "MedicalLossRatioPercent"
-          },
-          "Direction": "Descending"
-        }
-      ]
-    ],
-    "Page": 1,
-    "PageSize": 10,
-    "Id": "Insurance 2. Plan profitability and medical loss ratio",
-    "ExtraRelations": [
-      {
-        "RefContextId": "legacy-PremiumTotals",
-        "Alias": "PremiumTotals",
-        "Condition": {
-          "logicalOperation": 0,
-          "filters": [
-            {
-              "logicalOperator": 0,
-              "left": {
-                "kind": "field",
-                "field": "Id"
-              },
-              "operation": 0,
-              "right": {
-                "kind": "field",
-                "field": "PremiumTotals.PlanId"
-              },
-              "parameterized": true
-            }
-          ]
-        },
-        "JoinType": "Left"
-      },
-      {
-        "RefContextId": "legacy-ClaimTotals",
-        "Alias": "ClaimTotals",
-        "Condition": {
-          "logicalOperation": 0,
-          "filters": [
-            {
-              "logicalOperator": 0,
-              "left": {
-                "kind": "field",
-                "field": "Id"
-              },
-              "operation": 0,
-              "right": {
-                "kind": "field",
-                "field": "ClaimTotals.PlanId"
-              },
-              "parameterized": true
-            }
-          ]
-        },
-        "JoinType": "Left"
-      }
-    ]
-  },
-  "Contexts": [
+  "Name": "Insurance 2. Plan profitability and medical loss ratio",
+  "Entity": "InsurancePlans",
+  "Projections": [
     {
-      "Name": "PremiumTotals",
+      "field": {
+        "kind": "field",
+        "field": "Name"
+      },
+      "Alias": "Plan"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Tier"
+      },
+      "Alias": null
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "CountDistinct",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Policies.Id"
+          }
+        ]
+      },
+      "Alias": "PolicyCount"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "ROUND",
+        "arguments": [
+          {
+            "kind": "function",
+            "function": "Coalesce",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "PremiumTotals.PremiumRevenue"
+              },
+              {
+                "kind": "value",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "kind": "value",
+            "value": 2
+          }
+        ]
+      },
+      "Alias": "PremiumRevenue"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Coalesce",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "ClaimTotals.ClaimCount"
+          },
+          {
+            "kind": "value",
+            "value": 0
+          }
+        ]
+      },
+      "Alias": "ClaimCount"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "ROUND",
+        "arguments": [
+          {
+            "kind": "function",
+            "function": "Coalesce",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "ClaimTotals.ClaimsPaid"
+              },
+              {
+                "kind": "value",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "kind": "value",
+            "value": 2
+          }
+        ]
+      },
+      "Alias": "ClaimsPaid"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "MedicalLossRatio",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "ClaimTotals.ClaimsPaid"
+          },
+          {
+            "kind": "field",
+            "field": "PremiumTotals.PremiumRevenue"
+          }
+        ]
+      },
+      "Alias": "MedicalLossRatioPercent"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Coalesce",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "ClaimTotals.DeniedClaims"
+          },
+          {
+            "kind": "value",
+            "value": 0
+          }
+        ]
+      },
+      "Alias": "DeniedClaims"
+    }
+  ],
+  "Filter": null,
+  "Sorts": [
+    {
+      "Field": {
+        "kind": "field",
+        "field": "MedicalLossRatioPercent"
+      },
+      "Direction": "Descending"
+    }
+  ],
+  "Take": 10,
+  "Skip": 0,
+  "Joins": [
+    {
+      "Alias": "PremiumTotals",
+      "Condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Id"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "PremiumTotals.PlanId"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "JoinType": "Left",
+      "RefContext": "PremiumTotals"
+    },
+    {
+      "Alias": "ClaimTotals",
+      "Condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Id"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "ClaimTotals.PlanId"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "JoinType": "Left",
+      "RefContext": "ClaimTotals"
+    }
+  ],
+  "Id": "Insurance 2. Plan profitability and medical loss ratio",
+  "Contexts": {
+    "PremiumTotals": {
       "Entity": "PremiumPayments",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "field",
@@ -226,7 +221,7 @@
           "Alias": "PremiumRevenue"
         }
       ],
-      "Filters": {
+      "Filter": {
         "logicalOperation": 0,
         "filters": [
           {
@@ -245,15 +240,13 @@
         ]
       },
       "Sorts": null,
-      "Page": null,
-      "PageSize": null,
-      "Id": "legacy-PremiumTotals",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     },
-    {
-      "Name": "ClaimTotals",
+    "ClaimTotals": {
       "Entity": "Claims",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "field",
@@ -318,13 +311,12 @@
           "Alias": "DeniedClaims"
         }
       ],
-      "Filters": null,
+      "Filter": null,
       "Sorts": null,
-      "Page": null,
-      "PageSize": null,
-      "Id": "legacy-ClaimTotals",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     }
-  ],
+  },
   "IsBuiltin": false
 }

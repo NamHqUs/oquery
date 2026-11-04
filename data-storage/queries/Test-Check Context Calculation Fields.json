@@ -1,35 +1,32 @@
 {
-  "MainQuery": {
-    "Name": "Test - Check Context Calculation Fields",
-    "Entity": "User Context",
-    "Projection": [
-      {
-        "field": {
-          "kind": "field",
-          "field": "Id"
-        },
-        "Alias": null
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": "Name"
-        },
-        "Alias": null
-      }
-    ],
-    "Filters": null,
-    "Sorts": null,
-    "Page": 1,
-    "PageSize": 50,
-    "Id": "Test-Check Context Calculation Fields",
-    "ExtraRelations": []
-  },
-  "Contexts": [
+  "Name": "Test - Check Context Calculation Fields",
+  "Entity": "User Context",
+  "Projections": [
     {
-      "Name": "User Context",
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "Alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Name"
+      },
+      "Alias": null
+    }
+  ],
+  "Filter": null,
+  "Sorts": null,
+  "Take": 50,
+  "Skip": 0,
+  "Joins": [],
+  "Id": "Test-Check Context Calculation Fields",
+  "Contexts": {
+    "User Context": {
       "Entity": "User",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "field",
@@ -58,13 +55,12 @@
           "Alias": "Total Members"
         }
       ],
-      "Filters": null,
+      "Filter": null,
       "Sorts": null,
-      "Page": 1,
-      "PageSize": null,
-      "Id": "context-04aea06d-ae76-4075-9f41-8032dace5e6b",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     }
-  ],
+  },
   "IsBuiltin": false
 }

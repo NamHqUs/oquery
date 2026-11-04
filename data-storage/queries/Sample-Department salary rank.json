@@ -1,78 +1,74 @@
 {
-  "MainQuery": {
-    "Name": "Sample-Department salary rank",
-    "Entity": "Employees",
-    "Projection": [
-      {
-        "field": {
-          "kind": "field",
-          "field": "DepartmentId"
-        },
-        "Alias": null
+  "Name": "Sample-Department salary rank",
+  "Entity": "Employees",
+  "Projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "DepartmentId"
       },
-      {
-        "field": {
-          "kind": "field",
-          "field": "Id"
-        },
-        "Alias": "EmployeeId"
+      "Alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
       },
-      {
-        "field": {
-          "kind": "field",
-          "field": "Salary"
-        },
-        "Alias": null
+      "Alias": "EmployeeId"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Salary"
       },
-      {
-        "field": {
-          "kind": "function",
-          "function": "Rank",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "DepartmentId"
-            },
-            {
-              "kind": "field",
-              "field": "Salary"
-            }
-          ]
-        },
-        "Alias": "DepartmentRank"
-      }
-    ],
-    "Filters": null,
-    "Sorts": [
-      [
-        {
-          "Field": {
+      "Alias": null
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Rank",
+        "arguments": [
+          {
             "kind": "field",
             "field": "DepartmentId"
           },
-          "Direction": "Ascending"
-        },
-        {
-          "Field": {
+          {
             "kind": "field",
-            "field": "DepartmentRank"
-          },
-          "Direction": "Ascending"
-        },
-        {
-          "Field": {
-            "kind": "field",
-            "field": "EmployeeId"
-          },
-          "Direction": "Ascending"
-        }
-      ]
-    ],
-    "Page": null,
-    "PageSize": null,
-    "Id": "Sample-Department salary rank",
-    "ExtraRelations": null
-  },
-  "Contexts": [],
+            "field": "Salary"
+          }
+        ]
+      },
+      "Alias": "DepartmentRank"
+    }
+  ],
+  "Filter": null,
+  "Sorts": [
+    {
+      "Field": {
+        "kind": "field",
+        "field": "DepartmentId"
+      },
+      "Direction": "Ascending"
+    },
+    {
+      "Field": {
+        "kind": "field",
+        "field": "DepartmentRank"
+      },
+      "Direction": "Ascending"
+    },
+    {
+      "Field": {
+        "kind": "field",
+        "field": "EmployeeId"
+      },
+      "Direction": "Ascending"
+    }
+  ],
+  "Take": null,
+  "Skip": null,
+  "Joins": null,
+  "Id": "Sample-Department salary rank",
+  "Contexts": {},
   "IsBuiltin": false
 }

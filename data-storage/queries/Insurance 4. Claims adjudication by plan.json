@@ -1,246 +1,242 @@
 {
-  "MainQuery": {
-    "Name": "Insurance 4. Claims adjudication by plan",
-    "Entity": "Claims",
-    "Projection": [
-      {
-        "field": {
-          "kind": "field",
-          "field": "Policy.Plan.Name"
-        },
-        "Alias": "Plan"
+  "Name": "Insurance 4. Claims adjudication by plan",
+  "Entity": "Claims",
+  "Projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Policy.Plan.Name"
       },
-      {
-        "field": {
-          "kind": "field",
-          "field": "Policy.Plan.Tier"
-        },
-        "Alias": "Tier"
+      "Alias": "Plan"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Policy.Plan.Tier"
       },
-      {
-        "field": {
-          "kind": "function",
-          "function": "COUNT",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "Id"
-            }
-          ]
-        },
-        "Alias": "ClaimsReceived"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "CountIf",
-          "arguments": [
-            {
-              "kind": "condition",
-              "condition": {
-                "logicalOperation": 0,
-                "filters": [
-                  {
-                    "logicalOperator": 0,
-                    "left": {
-                      "kind": "field",
-                      "field": "Status"
-                    },
-                    "operation": 0,
-                    "right": {
-                      "kind": "value",
-                      "value": "Paid"
-                    },
-                    "parameterized": true
-                  }
-                ]
-              }
-            }
-          ]
-        },
-        "Alias": "PaidClaims"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "CountIf",
-          "arguments": [
-            {
-              "kind": "condition",
-              "condition": {
-                "logicalOperation": 0,
-                "filters": [
-                  {
-                    "logicalOperator": 0,
-                    "left": {
-                      "kind": "field",
-                      "field": "Status"
-                    },
-                    "operation": 0,
-                    "right": {
-                      "kind": "value",
-                      "value": "Denied"
-                    },
-                    "parameterized": true
-                  }
-                ]
-              }
-            }
-          ]
-        },
-        "Alias": "DeniedClaims"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "ROUND",
-          "arguments": [
-            {
-              "kind": "group",
-              "fields": [
-                {
-                  "kind": "value",
-                  "value": 100.0
-                },
-                {
-                  "oper": "*",
-                  "kind": "function",
-                  "function": "CountIf",
-                  "arguments": [
-                    {
-                      "kind": "condition",
-                      "condition": {
-                        "logicalOperation": 0,
-                        "filters": [
-                          {
-                            "logicalOperator": 0,
-                            "left": {
-                              "kind": "field",
-                              "field": "Status"
-                            },
-                            "operation": 0,
-                            "right": {
-                              "kind": "value",
-                              "value": "Denied"
-                            },
-                            "parameterized": true
-                          }
-                        ]
-                      }
-                    }
-                  ]
-                },
-                {
-                  "oper": "/",
-                  "kind": "function",
-                  "function": "COUNT",
-                  "arguments": [
-                    {
-                      "kind": "field",
-                      "field": "Id"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "kind": "value",
-              "value": 2
-            }
-          ]
-        },
-        "Alias": "DenialPercent"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "ROUND",
-          "arguments": [
-            {
-              "kind": "function",
-              "function": "AvgIf",
-              "arguments": [
-                {
-                  "kind": "function",
-                  "function": "DateSub",
-                  "arguments": [
-                    {
-                      "kind": "field",
-                      "field": "ClaimDate"
-                    },
-                    {
-                      "kind": "field",
-                      "field": "ProcessedDate"
-                    }
-                  ]
-                },
-                {
-                  "kind": "condition",
-                  "condition": {
-                    "logicalOperation": 0,
-                    "filters": [
-                      {
-                        "logicalOperator": 0,
-                        "left": {
-                          "kind": "field",
-                          "field": "ProcessedDate"
-                        },
-                        "operation": 13
-                      }
-                    ]
-                  }
-                }
-              ]
-            },
-            {
-              "kind": "value",
-              "value": 1
-            }
-          ]
-        },
-        "Alias": "AverageProcessingDays"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "ROUND",
-          "arguments": [
-            {
-              "kind": "function",
-              "function": "SUM",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "PaidAmount"
-                }
-              ]
-            },
-            {
-              "kind": "value",
-              "value": 2
-            }
-          ]
-        },
-        "Alias": "TotalPaid"
-      }
-    ],
-    "Filters": null,
-    "Sorts": [
-      [
-        {
-          "Field": {
+      "Alias": "Tier"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "COUNT",
+        "arguments": [
+          {
             "kind": "field",
-            "field": "ClaimsReceived"
+            "field": "Id"
+          }
+        ]
+      },
+      "Alias": "ClaimsReceived"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "CountIf",
+        "arguments": [
+          {
+            "kind": "condition",
+            "condition": {
+              "logicalOperation": 0,
+              "filters": [
+                {
+                  "logicalOperator": 0,
+                  "left": {
+                    "kind": "field",
+                    "field": "Status"
+                  },
+                  "operation": 0,
+                  "right": {
+                    "kind": "value",
+                    "value": "Paid"
+                  },
+                  "parameterized": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "Alias": "PaidClaims"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "CountIf",
+        "arguments": [
+          {
+            "kind": "condition",
+            "condition": {
+              "logicalOperation": 0,
+              "filters": [
+                {
+                  "logicalOperator": 0,
+                  "left": {
+                    "kind": "field",
+                    "field": "Status"
+                  },
+                  "operation": 0,
+                  "right": {
+                    "kind": "value",
+                    "value": "Denied"
+                  },
+                  "parameterized": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "Alias": "DeniedClaims"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "ROUND",
+        "arguments": [
+          {
+            "kind": "group",
+            "fields": [
+              {
+                "kind": "value",
+                "value": 100.0
+              },
+              {
+                "oper": "*",
+                "kind": "function",
+                "function": "CountIf",
+                "arguments": [
+                  {
+                    "kind": "condition",
+                    "condition": {
+                      "logicalOperation": 0,
+                      "filters": [
+                        {
+                          "logicalOperator": 0,
+                          "left": {
+                            "kind": "field",
+                            "field": "Status"
+                          },
+                          "operation": 0,
+                          "right": {
+                            "kind": "value",
+                            "value": "Denied"
+                          },
+                          "parameterized": true
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "oper": "/",
+                "kind": "function",
+                "function": "COUNT",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "Id"
+                  }
+                ]
+              }
+            ]
           },
-          "Direction": "Descending"
-        }
-      ]
-    ],
-    "Page": 1,
-    "PageSize": 10,
-    "Id": "Insurance 4. Claims adjudication by plan",
-    "ExtraRelations": null
-  },
-  "Contexts": [],
+          {
+            "kind": "value",
+            "value": 2
+          }
+        ]
+      },
+      "Alias": "DenialPercent"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "ROUND",
+        "arguments": [
+          {
+            "kind": "function",
+            "function": "AvgIf",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "DateSub",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "ClaimDate"
+                  },
+                  {
+                    "kind": "field",
+                    "field": "ProcessedDate"
+                  }
+                ]
+              },
+              {
+                "kind": "condition",
+                "condition": {
+                  "logicalOperation": 0,
+                  "filters": [
+                    {
+                      "logicalOperator": 0,
+                      "left": {
+                        "kind": "field",
+                        "field": "ProcessedDate"
+                      },
+                      "operation": 13
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "kind": "value",
+            "value": 1
+          }
+        ]
+      },
+      "Alias": "AverageProcessingDays"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "ROUND",
+        "arguments": [
+          {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "PaidAmount"
+              }
+            ]
+          },
+          {
+            "kind": "value",
+            "value": 2
+          }
+        ]
+      },
+      "Alias": "TotalPaid"
+    }
+  ],
+  "Filter": null,
+  "Sorts": [
+    {
+      "Field": {
+        "kind": "field",
+        "field": "ClaimsReceived"
+      },
+      "Direction": "Descending"
+    }
+  ],
+  "Take": 10,
+  "Skip": 0,
+  "Joins": null,
+  "Id": "Insurance 4. Claims adjudication by plan",
+  "Contexts": {},
   "IsBuiltin": false
 }

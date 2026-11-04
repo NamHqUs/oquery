@@ -1,257 +1,252 @@
 {
-  "MainQuery": {
-    "Name": "Insurance 3. Agent portfolio and premium collection",
-    "Entity": "Employees",
-    "Projection": [
-      {
-        "field": {
-          "kind": "field",
-          "field": "Id"
-        },
-        "Alias": "AgentId"
+  "Name": "Insurance 3. Agent portfolio and premium collection",
+  "Entity": "Employees",
+  "Projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
       },
-      {
-        "field": {
-          "kind": "function",
-          "function": "Concat",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "FirstName"
-            },
-            {
-              "kind": "value",
-              "value": " "
-            },
-            {
-              "kind": "field",
-              "field": "LastName"
-            }
-          ]
-        },
-        "Alias": "Agent"
+      "Alias": "AgentId"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Concat",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "FirstName"
+          },
+          {
+            "kind": "value",
+            "value": " "
+          },
+          {
+            "kind": "field",
+            "field": "LastName"
+          }
+        ]
       },
-      {
-        "field": {
-          "kind": "field",
-          "field": "Location.City"
-        },
-        "Alias": "OfficeCity"
+      "Alias": "Agent"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Location.City"
       },
-      {
-        "field": {
-          "kind": "function",
-          "function": "CountDistinct",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "AgentPolicies.Id"
-            }
-          ]
-        },
-        "Alias": "PoliciesSold"
+      "Alias": "OfficeCity"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "CountDistinct",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "AgentPolicies.Id"
+          }
+        ]
       },
-      {
-        "field": {
-          "kind": "function",
-          "function": "CountIf",
-          "arguments": [
-            {
-              "kind": "condition",
-              "condition": {
-                "logicalOperation": 0,
-                "filters": [
-                  {
-                    "logicalOperator": 0,
-                    "left": {
-                      "kind": "field",
-                      "field": "AgentPolicies.Status"
-                    },
-                    "operation": 0,
-                    "right": {
-                      "kind": "value",
-                      "value": "Active"
-                    },
-                    "parameterized": true
-                  }
-                ]
-              }
-            }
-          ]
-        },
-        "Alias": "ActivePolicies"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "ROUND",
-          "arguments": [
-            {
-              "kind": "function",
-              "function": "Coalesce",
-              "arguments": [
+      "Alias": "PoliciesSold"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "CountIf",
+        "arguments": [
+          {
+            "kind": "condition",
+            "condition": {
+              "logicalOperation": 0,
+              "filters": [
                 {
-                  "kind": "field",
-                  "field": "PaidPayments.PaidPremiums"
-                },
-                {
-                  "kind": "value",
-                  "value": 0
+                  "logicalOperator": 0,
+                  "left": {
+                    "kind": "field",
+                    "field": "AgentPolicies.Status"
+                  },
+                  "operation": 0,
+                  "right": {
+                    "kind": "value",
+                    "value": "Active"
+                  },
+                  "parameterized": true
                 }
               ]
-            },
-            {
-              "kind": "value",
-              "value": 2
             }
-          ]
-        },
-        "Alias": "PaidPremiums"
+          }
+        ]
       },
-      {
-        "field": {
-          "kind": "function",
-          "function": "Coalesce",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "LatePayments.LatePayments"
-            },
-            {
-              "kind": "value",
-              "value": 0
-            }
-          ]
-        },
-        "Alias": "LatePayments"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "Coalesce",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "MissedPayments.MissedPayments"
-            },
-            {
-              "kind": "value",
-              "value": 0
-            }
-          ]
-        },
-        "Alias": "MissedPayments"
-      }
-    ],
-    "Filters": {
-      "logicalOperation": 0,
-      "filters": [
-        {
-          "logicalOperator": 0,
-          "left": {
-            "kind": "field",
-            "field": "Department.Name"
-          },
-          "operation": 0,
-          "right": {
-            "kind": "value",
-            "value": "Insurance Agency"
-          },
-          "parameterized": true
-        }
-      ]
+      "Alias": "ActivePolicies"
     },
-    "Sorts": [
-      [
-        {
-          "Field": {
-            "kind": "field",
-            "field": "PaidPremiums"
+    {
+      "field": {
+        "kind": "function",
+        "function": "ROUND",
+        "arguments": [
+          {
+            "kind": "function",
+            "function": "Coalesce",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "PaidPayments.PaidPremiums"
+              },
+              {
+                "kind": "value",
+                "value": 0
+              }
+            ]
           },
-          "Direction": "Descending"
-        }
-      ]
-    ],
-    "Page": 1,
-    "PageSize": 10,
-    "Id": "Insurance 3. Agent portfolio and premium collection",
-    "ExtraRelations": [
-      {
-        "RefContextId": "legacy-PaidPayments",
-        "Alias": "PaidPayments",
-        "Condition": {
-          "logicalOperation": 0,
-          "filters": [
-            {
-              "logicalOperator": 0,
-              "left": {
-                "kind": "field",
-                "field": "Id"
-              },
-              "operation": 0,
-              "right": {
-                "kind": "field",
-                "field": "PaidPayments.AgentId"
-              },
-              "parameterized": true
-            }
-          ]
-        },
-        "JoinType": "Left"
+          {
+            "kind": "value",
+            "value": 2
+          }
+        ]
       },
-      {
-        "RefContextId": "legacy-LatePayments",
-        "Alias": "LatePayments",
-        "Condition": {
-          "logicalOperation": 0,
-          "filters": [
-            {
-              "logicalOperator": 0,
-              "left": {
-                "kind": "field",
-                "field": "Id"
-              },
-              "operation": 0,
-              "right": {
-                "kind": "field",
-                "field": "LatePayments.AgentId"
-              },
-              "parameterized": true
-            }
-          ]
-        },
-        "JoinType": "Left"
+      "Alias": "PaidPremiums"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Coalesce",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "LatePayments.LatePayments"
+          },
+          {
+            "kind": "value",
+            "value": 0
+          }
+        ]
       },
+      "Alias": "LatePayments"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Coalesce",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "MissedPayments.MissedPayments"
+          },
+          {
+            "kind": "value",
+            "value": 0
+          }
+        ]
+      },
+      "Alias": "MissedPayments"
+    }
+  ],
+  "Filter": {
+    "logicalOperation": 0,
+    "filters": [
       {
-        "RefContextId": "legacy-MissedPayments",
-        "Alias": "MissedPayments",
-        "Condition": {
-          "logicalOperation": 0,
-          "filters": [
-            {
-              "logicalOperator": 0,
-              "left": {
-                "kind": "field",
-                "field": "Id"
-              },
-              "operation": 0,
-              "right": {
-                "kind": "field",
-                "field": "MissedPayments.AgentId"
-              },
-              "parameterized": true
-            }
-          ]
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "Department.Name"
         },
-        "JoinType": "Left"
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "Insurance Agency"
+        },
+        "parameterized": true
       }
     ]
   },
-  "Contexts": [
+  "Sorts": [
     {
-      "Name": "PaidPayments",
+      "Field": {
+        "kind": "field",
+        "field": "PaidPremiums"
+      },
+      "Direction": "Descending"
+    }
+  ],
+  "Take": 10,
+  "Skip": 0,
+  "Joins": [
+    {
+      "Alias": "PaidPayments",
+      "Condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Id"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "PaidPayments.AgentId"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "JoinType": "Left",
+      "RefContext": "PaidPayments"
+    },
+    {
+      "Alias": "LatePayments",
+      "Condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Id"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "LatePayments.AgentId"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "JoinType": "Left",
+      "RefContext": "LatePayments"
+    },
+    {
+      "Alias": "MissedPayments",
+      "Condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Id"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "MissedPayments.AgentId"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "JoinType": "Left",
+      "RefContext": "MissedPayments"
+    }
+  ],
+  "Id": "Insurance 3. Agent portfolio and premium collection",
+  "Contexts": {
+    "PaidPayments": {
       "Entity": "PremiumPayments",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "field",
@@ -273,7 +268,7 @@
           "Alias": "PaidPremiums"
         }
       ],
-      "Filters": {
+      "Filter": {
         "logicalOperation": 0,
         "filters": [
           {
@@ -292,15 +287,13 @@
         ]
       },
       "Sorts": null,
-      "Page": null,
-      "PageSize": null,
-      "Id": "legacy-PaidPayments",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     },
-    {
-      "Name": "LatePayments",
+    "LatePayments": {
       "Entity": "PremiumPayments",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "field",
@@ -322,7 +315,7 @@
           "Alias": "LatePayments"
         }
       ],
-      "Filters": {
+      "Filter": {
         "logicalOperation": 0,
         "filters": [
           {
@@ -341,15 +334,13 @@
         ]
       },
       "Sorts": null,
-      "Page": null,
-      "PageSize": null,
-      "Id": "legacy-LatePayments",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     },
-    {
-      "Name": "MissedPayments",
+    "MissedPayments": {
       "Entity": "PremiumPayments",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "field",
@@ -371,7 +362,7 @@
           "Alias": "MissedPayments"
         }
       ],
-      "Filters": {
+      "Filter": {
         "logicalOperation": 0,
         "filters": [
           {
@@ -390,11 +381,10 @@
         ]
       },
       "Sorts": null,
-      "Page": null,
-      "PageSize": null,
-      "Id": "legacy-MissedPayments",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     }
-  ],
+  },
   "IsBuiltin": false
 }

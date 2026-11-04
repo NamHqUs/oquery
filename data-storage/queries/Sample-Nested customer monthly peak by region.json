@@ -1,71 +1,68 @@
 {
-  "MainQuery": {
-    "Name": "Sample-Nested customer monthly peak by region",
-    "Entity": "Users",
-    "Projection": [
-      {
-        "field": {
-          "kind": "field",
-          "field": "State"
-        },
-        "Alias": "Region"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "AVG",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "CustomerBestMonth.BestMonthRevenue"
-            }
-          ]
-        },
-        "Alias": "AverageBestMonth"
-      }
-    ],
-    "Filters": null,
-    "Sorts": null,
-    "Page": null,
-    "PageSize": null,
-    "Id": "Sample-Nested customer monthly peak by region",
-    "ExtraRelations": [
-      {
-        "RefContextId": "legacy-CustomerMonth",
-        "Alias": "CustomerMonth",
-        "Condition": null,
-        "JoinType": "Inner"
-      },
-      {
-        "RefContextId": "legacy-CustomerBestMonth",
-        "Alias": "CustomerBestMonth",
-        "Condition": {
-          "logicalOperation": 0,
-          "filters": [
-            {
-              "logicalOperator": 0,
-              "left": {
-                "kind": "field",
-                "field": "Id"
-              },
-              "operation": 0,
-              "right": {
-                "kind": "field",
-                "field": "CustomerBestMonth.UserId"
-              },
-              "parameterized": true
-            }
-          ]
-        },
-        "JoinType": "Inner"
-      }
-    ]
-  },
-  "Contexts": [
+  "Name": "Sample-Nested customer monthly peak by region",
+  "Entity": "Users",
+  "Projections": [
     {
-      "Name": "CustomerMonth",
+      "field": {
+        "kind": "field",
+        "field": "State"
+      },
+      "Alias": "Region"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "AVG",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "CustomerBestMonth.BestMonthRevenue"
+          }
+        ]
+      },
+      "Alias": "AverageBestMonth"
+    }
+  ],
+  "Filter": null,
+  "Sorts": null,
+  "Take": null,
+  "Skip": null,
+  "Joins": [
+    {
+      "Alias": "CustomerMonth",
+      "Condition": null,
+      "JoinType": "Inner",
+      "RefContext": "CustomerMonth"
+    },
+    {
+      "Alias": "CustomerBestMonth",
+      "Condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Id"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "CustomerBestMonth.UserId"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "JoinType": "Inner",
+      "RefContext": "CustomerBestMonth"
+    }
+  ],
+  "Id": "Sample-Nested customer monthly peak by region",
+  "Contexts": {
+    "CustomerMonth": {
       "Entity": "Orders",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "field",
@@ -128,7 +125,7 @@
           "Alias": "MonthlyRevenue"
         }
       ],
-      "Filters": {
+      "Filter": {
         "logicalOperation": 0,
         "filters": [
           {
@@ -147,15 +144,13 @@
         ]
       },
       "Sorts": null,
-      "Page": null,
-      "PageSize": null,
-      "Id": "legacy-CustomerMonth",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     },
-    {
-      "Name": "CustomerBestMonth",
+    "CustomerBestMonth": {
       "Entity": "CustomerMonth",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "field",
@@ -177,13 +172,12 @@
           "Alias": "BestMonthRevenue"
         }
       ],
-      "Filters": null,
+      "Filter": null,
       "Sorts": null,
-      "Page": null,
-      "PageSize": null,
-      "Id": "legacy-CustomerBestMonth",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     }
-  ],
+  },
   "IsBuiltin": false
 }

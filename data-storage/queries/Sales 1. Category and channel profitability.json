@@ -1,130 +1,125 @@
 {
-  "MainQuery": {
-    "Name": "Sales 1. Category and channel profitability",
-    "Entity": "OrderCategory",
-    "Projection": [
-      {
-        "field": {
-          "kind": "field",
-          "field": "Category"
-        },
-        "Alias": null
+  "Name": "Sales 1. Category and channel profitability",
+  "Entity": "OrderCategory",
+  "Projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Category"
       },
-      {
-        "field": {
-          "kind": "field",
-          "field": "Channel"
-        },
-        "Alias": null
+      "Alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Channel"
       },
-      {
-        "field": {
-          "kind": "function",
-          "function": "COUNT",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "OrderId"
-            }
-          ]
-        },
-        "Alias": "OrdersContainingCategory"
+      "Alias": null
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "COUNT",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "OrderId"
+          }
+        ]
       },
-      {
-        "field": {
-          "kind": "function",
-          "function": "SUM",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "UnitsSold"
-            }
-          ]
-        },
-        "Alias": "UnitsSold"
+      "Alias": "OrdersContainingCategory"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "SUM",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "UnitsSold"
+          }
+        ]
       },
-      {
-        "field": {
-          "kind": "function",
-          "function": "SUM",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "NetRevenue"
-            }
-          ]
-        },
-        "Alias": "NetRevenue"
+      "Alias": "UnitsSold"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "SUM",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "NetRevenue"
+          }
+        ]
       },
-      {
-        "field": {
-          "kind": "function",
-          "function": "SUM",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "Discounts"
-            }
-          ]
-        },
-        "Alias": "Discounts"
+      "Alias": "NetRevenue"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "SUM",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Discounts"
+          }
+        ]
       },
-      {
-        "field": {
-          "kind": "function",
-          "function": "SUM",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "GrossProfit"
-            }
-          ]
-        },
-        "Alias": "GrossProfit"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "AVG",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "NetRevenue"
-            }
-          ]
-        },
-        "Alias": "AverageCategoryRevenuePerOrder"
-      }
-    ],
-    "Filters": null,
-    "Sorts": [
-      [
-        {
-          "Field": {
+      "Alias": "Discounts"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "SUM",
+        "arguments": [
+          {
             "kind": "field",
             "field": "GrossProfit"
-          },
-          "Direction": "Descending"
-        }
-      ]
-    ],
-    "Page": 1,
-    "PageSize": 10,
-    "Id": "Sales 1. Category and channel profitability",
-    "ExtraRelations": [
-      {
-        "RefContextId": "legacy-OrderCategory",
-        "Alias": "OrderCategory",
-        "Condition": null,
-        "JoinType": "Inner"
-      }
-    ]
-  },
-  "Contexts": [
+          }
+        ]
+      },
+      "Alias": "GrossProfit"
+    },
     {
-      "Name": "OrderCategory",
+      "field": {
+        "kind": "function",
+        "function": "AVG",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "NetRevenue"
+          }
+        ]
+      },
+      "Alias": "AverageCategoryRevenuePerOrder"
+    }
+  ],
+  "Filter": null,
+  "Sorts": [
+    {
+      "Field": {
+        "kind": "field",
+        "field": "GrossProfit"
+      },
+      "Direction": "Descending"
+    }
+  ],
+  "Take": 10,
+  "Skip": 0,
+  "Joins": [
+    {
+      "Alias": "OrderCategory",
+      "Condition": null,
+      "JoinType": "Inner",
+      "RefContext": "OrderCategory"
+    }
+  ],
+  "Id": "Sales 1. Category and channel profitability",
+  "Contexts": {
+    "OrderCategory": {
       "Entity": "OrderItems",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "field",
@@ -239,7 +234,7 @@
           "Alias": "GrossProfit"
         }
       ],
-      "Filters": {
+      "Filter": {
         "logicalOperation": 0,
         "filters": [
           {
@@ -258,11 +253,10 @@
         ]
       },
       "Sorts": null,
-      "Page": null,
-      "PageSize": null,
-      "Id": "legacy-OrderCategory",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     }
-  ],
+  },
   "IsBuiltin": false
 }

@@ -1,139 +1,134 @@
 {
-  "MainQuery": {
-    "Name": "HR 3. Workforce composition by location",
-    "Entity": "Locations",
-    "Projection": [
-      {
-        "field": {
-          "kind": "field",
-          "field": "City"
-        },
-        "Alias": "OfficeCity"
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": "State"
-        },
-        "Alias": null
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": "LocationStaff.Headcount"
-        },
-        "Alias": "Headcount"
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": "LocationStaff.DepartmentsRepresented"
-        },
-        "Alias": "DepartmentsRepresented"
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": "LocationStaff.FullTime"
-        },
-        "Alias": "FullTime"
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": "LocationStaff.PartTime"
-        },
-        "Alias": "PartTime"
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": "LocationStaff.Contractors"
-        },
-        "Alias": "Contractors"
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": "LocationStaff.AverageTenureYears"
-        },
-        "Alias": "AverageTenureYears"
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": "LocationStaff.AnnualPayroll"
-        },
-        "Alias": "AnnualPayroll"
-      }
-    ],
-    "Filters": null,
-    "Sorts": [
-      [
-        {
-          "Field": {
-            "kind": "field",
-            "field": "Headcount"
-          },
-          "Direction": "Descending"
-        },
-        {
-          "Field": {
-            "kind": "field",
-            "field": "AnnualPayroll"
-          },
-          "Direction": "Descending"
-        },
-        {
-          "Field": {
-            "kind": "field",
-            "field": "OfficeCity"
-          },
-          "Direction": "Ascending"
-        },
-        {
-          "Field": {
-            "kind": "field",
-            "field": "State"
-          },
-          "Direction": "Ascending"
-        }
-      ]
-    ],
-    "Page": 1,
-    "PageSize": 10,
-    "Id": "HR 3. Workforce composition by location",
-    "ExtraRelations": [
-      {
-        "RefContextId": "legacy-LocationStaff",
-        "Alias": "LocationStaff",
-        "Condition": {
-          "logicalOperation": 0,
-          "filters": [
-            {
-              "logicalOperator": 0,
-              "left": {
-                "kind": "field",
-                "field": "Id"
-              },
-              "operation": 0,
-              "right": {
-                "kind": "field",
-                "field": "LocationStaff.LocationId"
-              },
-              "parameterized": true
-            }
-          ]
-        },
-        "JoinType": "Inner"
-      }
-    ]
-  },
-  "Contexts": [
+  "Name": "HR 3. Workforce composition by location",
+  "Entity": "Locations",
+  "Projections": [
     {
-      "Name": "LocationStaff",
+      "field": {
+        "kind": "field",
+        "field": "City"
+      },
+      "Alias": "OfficeCity"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "State"
+      },
+      "Alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "LocationStaff.Headcount"
+      },
+      "Alias": "Headcount"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "LocationStaff.DepartmentsRepresented"
+      },
+      "Alias": "DepartmentsRepresented"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "LocationStaff.FullTime"
+      },
+      "Alias": "FullTime"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "LocationStaff.PartTime"
+      },
+      "Alias": "PartTime"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "LocationStaff.Contractors"
+      },
+      "Alias": "Contractors"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "LocationStaff.AverageTenureYears"
+      },
+      "Alias": "AverageTenureYears"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "LocationStaff.AnnualPayroll"
+      },
+      "Alias": "AnnualPayroll"
+    }
+  ],
+  "Filter": null,
+  "Sorts": [
+    {
+      "Field": {
+        "kind": "field",
+        "field": "Headcount"
+      },
+      "Direction": "Descending"
+    },
+    {
+      "Field": {
+        "kind": "field",
+        "field": "AnnualPayroll"
+      },
+      "Direction": "Descending"
+    },
+    {
+      "Field": {
+        "kind": "field",
+        "field": "OfficeCity"
+      },
+      "Direction": "Ascending"
+    },
+    {
+      "Field": {
+        "kind": "field",
+        "field": "State"
+      },
+      "Direction": "Ascending"
+    }
+  ],
+  "Take": 10,
+  "Skip": 0,
+  "Joins": [
+    {
+      "Alias": "LocationStaff",
+      "Condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Id"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "LocationStaff.LocationId"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "JoinType": "Inner",
+      "RefContext": "LocationStaff"
+    }
+  ],
+  "Id": "HR 3. Workforce composition by location",
+  "Contexts": {
+    "LocationStaff": {
       "Entity": "Employees",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "field",
@@ -324,13 +319,12 @@
           "Alias": "AnnualPayroll"
         }
       ],
-      "Filters": null,
+      "Filter": null,
       "Sorts": null,
-      "Page": null,
-      "PageSize": null,
-      "Id": "legacy-LocationStaff",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     }
-  ],
+  },
   "IsBuiltin": false
 }

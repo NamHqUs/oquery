@@ -1,83 +1,80 @@
 {
-  "MainQuery": {
-    "Name": "Sample-Recursive employee hierarchy",
-    "Entity": "Employees",
-    "Projection": [
+  "Name": "Sample-Recursive employee hierarchy",
+  "Entity": "Employees",
+  "Projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "Alias": "Id"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "ManagerId"
+      },
+      "Alias": "ManagerId"
+    },
+    {
+      "field": {
+        "kind": "value",
+        "value": 0
+      },
+      "Alias": "Level"
+    }
+  ],
+  "Filter": {
+    "logicalOperation": 0,
+    "filters": [
       {
-        "field": {
+        "logicalOperator": 0,
+        "left": {
           "kind": "field",
           "field": "Id"
         },
-        "Alias": "Id"
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": "ManagerId"
-        },
-        "Alias": "ManagerId"
-      },
-      {
-        "field": {
+        "operation": 0,
+        "right": {
           "kind": "value",
-          "value": 0
+          "value": 1
         },
-        "Alias": "Level"
-      }
-    ],
-    "Filters": {
-      "logicalOperation": 0,
-      "filters": [
-        {
-          "logicalOperator": 0,
-          "left": {
-            "kind": "field",
-            "field": "Id"
-          },
-          "operation": 0,
-          "right": {
-            "kind": "value",
-            "value": 1
-          },
-          "parameterized": true
-        }
-      ]
-    },
-    "Sorts": null,
-    "Page": null,
-    "PageSize": null,
-    "Id": "Sample-Recursive employee hierarchy",
-    "ExtraRelations": [
-      {
-        "RefContextId": "legacy-EmployeeTree",
-        "Alias": "EmployeeTree",
-        "Condition": {
-          "logicalOperation": 0,
-          "filters": [
-            {
-              "logicalOperator": 0,
-              "left": {
-                "kind": "field",
-                "field": "ManagerId"
-              },
-              "operation": 0,
-              "right": {
-                "kind": "field",
-                "field": "EmployeeTree.Id"
-              },
-              "parameterized": true
-            }
-          ]
-        },
-        "JoinType": "Inner"
+        "parameterized": true
       }
     ]
   },
-  "Contexts": [
+  "Sorts": null,
+  "Take": null,
+  "Skip": null,
+  "Joins": [
     {
-      "Name": "EmployeeTree",
+      "Alias": "EmployeeTree",
+      "Condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "ManagerId"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "EmployeeTree.Id"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "JoinType": "Inner",
+      "RefContext": "EmployeeTree"
+    }
+  ],
+  "Id": "Sample-Recursive employee hierarchy",
+  "Contexts": {
+    "EmployeeTree": {
       "Entity": "Employees",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "field",
@@ -110,13 +107,12 @@
           "Alias": "Level"
         }
       ],
-      "Filters": null,
+      "Filter": null,
       "Sorts": null,
-      "Page": null,
-      "PageSize": null,
-      "Id": "legacy-EmployeeTree",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     }
-  ],
+  },
   "IsBuiltin": false
 }

@@ -1,103 +1,100 @@
 {
-  "MainQuery": {
-    "Name": "Test - Multiple Contexts",
-    "Entity": "User",
-    "Projection": [
-      {
-        "field": {
-          "kind": "field",
-          "field": "Name"
-        },
-        "Alias": null
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": ""
-        },
-        "Alias": "NEW_LINE"
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": "Manager1.Name"
-        },
-        "Alias": null
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": ""
-        },
-        "Alias": "NEW_LINE"
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": "Manager2.Age"
-        },
-        "Alias": null
-      }
-    ],
-    "Filters": null,
-    "Sorts": null,
-    "Page": null,
-    "PageSize": null,
-    "Id": "Test-Multiple Contexts",
-    "ExtraRelations": [
-      {
-        "RefContextId": "context-04364f3b-b860-4c94-9d6f-b14238ac60d7",
-        "Alias": "Manager1",
-        "Condition": {
-          "logicalOperation": 0,
-          "filters": [
-            {
-              "logicalOperator": 0,
-              "left": {
-                "kind": "field",
-                "field": "ManagerId"
-              },
-              "operation": 0,
-              "right": {
-                "kind": "field",
-                "field": "Id"
-              },
-              "parameterized": false
-            }
-          ]
-        },
-        "JoinType": "Left"
-      },
-      {
-        "RefContextId": "context-04364f3b-b860-4c94-9d6f-b14238ac60d7",
-        "Alias": "Manager2",
-        "Condition": {
-          "logicalOperation": 0,
-          "filters": [
-            {
-              "logicalOperator": 0,
-              "left": {
-                "kind": "field",
-                "field": "ManagerId"
-              },
-              "operation": 0,
-              "right": {
-                "kind": "field",
-                "field": "Id"
-              },
-              "parameterized": false
-            }
-          ]
-        },
-        "JoinType": "Left"
-      }
-    ]
-  },
-  "Contexts": [
+  "Name": "Test - Multiple Contexts",
+  "Entity": "User",
+  "Projections": [
     {
-      "Name": "User Context",
+      "field": {
+        "kind": "field",
+        "field": "Name"
+      },
+      "Alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": ""
+      },
+      "Alias": "NEW_LINE"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Manager1.Name"
+      },
+      "Alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": ""
+      },
+      "Alias": "NEW_LINE"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Manager2.Age"
+      },
+      "Alias": null
+    }
+  ],
+  "Filter": null,
+  "Sorts": null,
+  "Take": null,
+  "Skip": null,
+  "Joins": [
+    {
+      "Alias": "Manager1",
+      "Condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "ManagerId"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "Id"
+            },
+            "parameterized": false
+          }
+        ]
+      },
+      "JoinType": "Left",
+      "RefContext": "User Context"
+    },
+    {
+      "Alias": "Manager2",
+      "Condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "ManagerId"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "Id"
+            },
+            "parameterized": false
+          }
+        ]
+      },
+      "JoinType": "Left",
+      "RefContext": "User Context"
+    }
+  ],
+  "Id": "Test-Multiple Contexts",
+  "Contexts": {
+    "User Context": {
       "Entity": "User",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "field",
@@ -120,13 +117,12 @@
           "Alias": null
         }
       ],
-      "Filters": null,
+      "Filter": null,
       "Sorts": null,
-      "Page": null,
-      "PageSize": null,
-      "Id": "context-04364f3b-b860-4c94-9d6f-b14238ac60d7",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     }
-  ],
+  },
   "IsBuiltin": false
 }

@@ -1,100 +1,95 @@
 {
-  "MainQuery": {
-    "Name": "Sample-Correlated revenue since policy start",
-    "Entity": "Policies",
-    "Projection": [
-      {
-        "field": {
-          "kind": "field",
-          "field": "Id"
-        },
-        "Alias": "PolicyId"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "Concat",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "User.FirstName"
-            },
-            {
-              "kind": "value",
-              "value": " "
-            },
-            {
-              "kind": "field",
-              "field": "User.LastName"
-            }
-          ]
-        },
-        "Alias": "Member"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "Coalesce",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "RevenueSinceStart.PremiumRevenue"
-            },
-            {
-              "kind": "value",
-              "value": 0
-            }
-          ]
-        },
-        "Alias": "RevenueSinceSignup"
-      }
-    ],
-    "Filters": null,
-    "Sorts": [
-      [
-        {
-          "Field": {
-            "kind": "field",
-            "field": "PolicyId"
-          },
-          "Direction": "Ascending"
-        }
-      ]
-    ],
-    "Page": null,
-    "PageSize": null,
-    "Id": "Sample-Correlated revenue since policy start",
-    "ExtraRelations": [
-      {
-        "RefContextId": "legacy-RevenueSinceStart",
-        "Alias": "RevenueSinceStart",
-        "Condition": {
-          "logicalOperation": 0,
-          "filters": [
-            {
-              "logicalOperator": 0,
-              "left": {
-                "kind": "field",
-                "field": "Id"
-              },
-              "operation": 0,
-              "right": {
-                "kind": "field",
-                "field": "RevenueSinceStart.PolicyId"
-              },
-              "parameterized": true
-            }
-          ]
-        },
-        "JoinType": "Left"
-      }
-    ]
-  },
-  "Contexts": [
+  "Name": "Sample-Correlated revenue since policy start",
+  "Entity": "Policies",
+  "Projections": [
     {
-      "Name": "RevenueSinceStart",
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "Alias": "PolicyId"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Concat",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "User.FirstName"
+          },
+          {
+            "kind": "value",
+            "value": " "
+          },
+          {
+            "kind": "field",
+            "field": "User.LastName"
+          }
+        ]
+      },
+      "Alias": "Member"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Coalesce",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "RevenueSinceStart.PremiumRevenue"
+          },
+          {
+            "kind": "value",
+            "value": 0
+          }
+        ]
+      },
+      "Alias": "RevenueSinceSignup"
+    }
+  ],
+  "Filter": null,
+  "Sorts": [
+    {
+      "Field": {
+        "kind": "field",
+        "field": "PolicyId"
+      },
+      "Direction": "Ascending"
+    }
+  ],
+  "Take": null,
+  "Skip": null,
+  "Joins": [
+    {
+      "Alias": "RevenueSinceStart",
+      "Condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Id"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "RevenueSinceStart.PolicyId"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "JoinType": "Left",
+      "RefContext": "RevenueSinceStart"
+    }
+  ],
+  "Id": "Sample-Correlated revenue since policy start",
+  "Contexts": {
+    "RevenueSinceStart": {
       "Entity": "PremiumPayments",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "field",
@@ -116,7 +111,7 @@
           "Alias": "PremiumRevenue"
         }
       ],
-      "Filters": {
+      "Filter": {
         "logicalOperation": 0,
         "filters": [
           {
@@ -148,11 +143,10 @@
         ]
       },
       "Sorts": null,
-      "Page": null,
-      "PageSize": null,
-      "Id": "legacy-RevenueSinceStart",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     }
-  ],
+  },
   "IsBuiltin": false
 }

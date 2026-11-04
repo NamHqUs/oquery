@@ -1,141 +1,136 @@
 {
-  "MainQuery": {
-    "Name": "Sample-Correlated top three orders per customer",
-    "Entity": "Users",
-    "Projection": [
-      {
-        "field": {
-          "kind": "field",
-          "field": "Id"
-        },
-        "Alias": "CustomerId"
+  "Name": "Sample-Correlated top three orders per customer",
+  "Entity": "Users",
+  "Projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
       },
-      {
-        "field": {
-          "kind": "function",
-          "function": "Concat",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "FirstName"
-            },
-            {
-              "kind": "value",
-              "value": " "
-            },
-            {
-              "kind": "field",
-              "field": "LastName"
-            }
-          ]
-        },
-        "Alias": "Customer"
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": "RecentOrders.Id"
-        },
-        "Alias": "OrderId"
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": "RecentOrders.OrderDate"
-        },
-        "Alias": "OrderDate"
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": "RecentOrders.OrderAmount"
-        },
-        "Alias": "OrderAmount"
-      }
-    ],
-    "Filters": {
-      "logicalOperation": 0,
-      "filters": [
-        {
-          "logicalOperator": 0,
-          "left": {
-            "kind": "field",
-            "field": "RecentOrders.OrderRank"
-          },
-          "operation": 7,
-          "right": {
-            "kind": "value",
-            "value": 3
-          },
-          "parameterized": true
-        }
-      ]
+      "Alias": "CustomerId"
     },
-    "Sorts": [
-      [
-        {
-          "Field": {
+    {
+      "field": {
+        "kind": "function",
+        "function": "Concat",
+        "arguments": [
+          {
             "kind": "field",
-            "field": "CustomerId"
+            "field": "FirstName"
           },
-          "Direction": "Ascending"
-        },
-        {
-          "Field": {
+          {
+            "kind": "value",
+            "value": " "
+          },
+          {
             "kind": "field",
-            "field": "RecentOrders.OrderDate"
-          },
-          "Direction": "Descending"
-        },
-        {
-          "Field": {
-            "kind": "field",
-            "field": "OrderId"
-          },
-          "Direction": "Ascending"
-        }
-      ]
-    ],
-    "Page": null,
-    "PageSize": null,
-    "Id": "Sample-Correlated top three orders per customer",
-    "ExtraRelations": [
-      {
-        "RefContextId": "legacy-RankedOrders",
-        "Alias": "RankedOrders",
-        "Condition": null,
-        "JoinType": "Inner"
+            "field": "LastName"
+          }
+        ]
       },
+      "Alias": "Customer"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "RecentOrders.Id"
+      },
+      "Alias": "OrderId"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "RecentOrders.OrderDate"
+      },
+      "Alias": "OrderDate"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "RecentOrders.OrderAmount"
+      },
+      "Alias": "OrderAmount"
+    }
+  ],
+  "Filter": {
+    "logicalOperation": 0,
+    "filters": [
       {
-        "RefContextId": "legacy-RecentOrders",
-        "Alias": "RecentOrders",
-        "Condition": {
-          "logicalOperation": 0,
-          "filters": [
-            {
-              "logicalOperator": 0,
-              "left": {
-                "kind": "field",
-                "field": "Id"
-              },
-              "operation": 0,
-              "right": {
-                "kind": "field",
-                "field": "RecentOrders.UserId"
-              },
-              "parameterized": true
-            }
-          ]
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "RecentOrders.OrderRank"
         },
-        "JoinType": "Left"
+        "operation": 7,
+        "right": {
+          "kind": "value",
+          "value": 3
+        },
+        "parameterized": true
       }
     ]
   },
-  "Contexts": [
+  "Sorts": [
     {
-      "Name": "RankedOrders",
+      "Field": {
+        "kind": "field",
+        "field": "CustomerId"
+      },
+      "Direction": "Ascending"
+    },
+    {
+      "Field": {
+        "kind": "field",
+        "field": "RecentOrders.OrderDate"
+      },
+      "Direction": "Descending"
+    },
+    {
+      "Field": {
+        "kind": "field",
+        "field": "OrderId"
+      },
+      "Direction": "Ascending"
+    }
+  ],
+  "Take": null,
+  "Skip": null,
+  "Joins": [
+    {
+      "Alias": "RankedOrders",
+      "Condition": null,
+      "JoinType": "Inner",
+      "RefContext": "RankedOrders"
+    },
+    {
+      "Alias": "RecentOrders",
+      "Condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Id"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "RecentOrders.UserId"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "JoinType": "Left",
+      "RefContext": "RecentOrders"
+    }
+  ],
+  "Id": "Sample-Correlated top three orders per customer",
+  "Contexts": {
+    "RankedOrders": {
       "Entity": "Orders",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "field",
@@ -203,7 +198,7 @@
           "Alias": "OrderRank"
         }
       ],
-      "Filters": {
+      "Filter": {
         "logicalOperation": 0,
         "filters": [
           {
@@ -222,15 +217,13 @@
         ]
       },
       "Sorts": null,
-      "Page": null,
-      "PageSize": null,
-      "Id": "legacy-RankedOrders",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     },
-    {
-      "Name": "RecentOrders",
+    "RecentOrders": {
       "Entity": "RankedOrders",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "field",
@@ -267,13 +260,12 @@
           "Alias": "OrderRank"
         }
       ],
-      "Filters": null,
+      "Filter": null,
       "Sorts": null,
-      "Page": null,
-      "PageSize": null,
-      "Id": "legacy-RecentOrders",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     }
-  ],
+  },
   "IsBuiltin": false
 }

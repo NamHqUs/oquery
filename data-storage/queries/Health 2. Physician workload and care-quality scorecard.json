@@ -1,292 +1,287 @@
 {
-  "MainQuery": {
-    "Name": "Health 2. Physician workload and care-quality scorecard",
-    "Entity": "Employees",
-    "Projection": [
-      {
-        "field": {
-          "kind": "field",
-          "field": "Id"
-        },
-        "Alias": "DoctorId"
+  "Name": "Health 2. Physician workload and care-quality scorecard",
+  "Entity": "Employees",
+  "Projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
       },
-      {
-        "field": {
-          "kind": "function",
-          "function": "Concat",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "FirstName"
-            },
-            {
-              "kind": "value",
-              "value": " "
-            },
-            {
-              "kind": "field",
-              "field": "LastName"
-            }
-          ]
-        },
-        "Alias": "Physician"
+      "Alias": "DoctorId"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Concat",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "FirstName"
+          },
+          {
+            "kind": "value",
+            "value": " "
+          },
+          {
+            "kind": "field",
+            "field": "LastName"
+          }
+        ]
       },
+      "Alias": "Physician"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Department.Name"
+      },
+      "Alias": "Department"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Location.City"
+      },
+      "Alias": "ClinicCity"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "DoctorVisits.VisitCount"
+      },
+      "Alias": "VisitCount"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "DoctorVisits.PatientCount"
+      },
+      "Alias": "PatientCount"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "ROUND",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "DoctorVisits.AverageVisitMinutes"
+          },
+          {
+            "kind": "value",
+            "value": 1
+          }
+        ]
+      },
+      "Alias": "AverageVisitMinutes"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "ROUND",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "DoctorVisits.Charges"
+          },
+          {
+            "kind": "value",
+            "value": 2
+          }
+        ]
+      },
+      "Alias": "Charges"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "ROUND",
+        "arguments": [
+          {
+            "kind": "group",
+            "fields": [
+              {
+                "kind": "value",
+                "value": 100.0
+              },
+              {
+                "oper": "*",
+                "kind": "function",
+                "function": "SUM",
+                "arguments": [
+                  {
+                    "kind": "function",
+                    "function": "Coalesce",
+                    "arguments": [
+                      {
+                        "kind": "field",
+                        "field": "DoctorLabs.AbnormalCount"
+                      },
+                      {
+                        "kind": "value",
+                        "value": 0
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "oper": "/",
+                "kind": "function",
+                "function": "NULLIF",
+                "arguments": [
+                  {
+                    "kind": "function",
+                    "function": "SUM",
+                    "arguments": [
+                      {
+                        "kind": "function",
+                        "function": "Coalesce",
+                        "arguments": [
+                          {
+                            "kind": "field",
+                            "field": "DoctorLabs.LabCount"
+                          },
+                          {
+                            "kind": "value",
+                            "value": 0
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "value",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "value",
+            "value": 2
+          }
+        ]
+      },
+      "Alias": "AbnormalLabPercent"
+    }
+  ],
+  "Filter": {
+    "logicalOperation": 1,
+    "filters": [
       {
-        "field": {
+        "logicalOperator": 0,
+        "left": {
           "kind": "field",
           "field": "Department.Name"
         },
-        "Alias": "Department"
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "Primary Care"
+        },
+        "parameterized": true
       },
       {
-        "field": {
+        "logicalOperator": 1,
+        "left": {
           "kind": "field",
-          "field": "Location.City"
+          "field": "Department.Name"
         },
-        "Alias": "ClinicCity"
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "Specialty Care"
+        },
+        "parameterized": true
       },
       {
-        "field": {
+        "logicalOperator": 1,
+        "left": {
           "kind": "field",
-          "field": "DoctorVisits.VisitCount"
+          "field": "Department.Name"
         },
-        "Alias": "VisitCount"
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": "DoctorVisits.PatientCount"
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "Emergency Medicine"
         },
-        "Alias": "PatientCount"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "ROUND",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "DoctorVisits.AverageVisitMinutes"
-            },
-            {
-              "kind": "value",
-              "value": 1
-            }
-          ]
-        },
-        "Alias": "AverageVisitMinutes"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "ROUND",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "DoctorVisits.Charges"
-            },
-            {
-              "kind": "value",
-              "value": 2
-            }
-          ]
-        },
-        "Alias": "Charges"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "ROUND",
-          "arguments": [
-            {
-              "kind": "group",
-              "fields": [
-                {
-                  "kind": "value",
-                  "value": 100.0
-                },
-                {
-                  "oper": "*",
-                  "kind": "function",
-                  "function": "SUM",
-                  "arguments": [
-                    {
-                      "kind": "function",
-                      "function": "Coalesce",
-                      "arguments": [
-                        {
-                          "kind": "field",
-                          "field": "DoctorLabs.AbnormalCount"
-                        },
-                        {
-                          "kind": "value",
-                          "value": 0
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "oper": "/",
-                  "kind": "function",
-                  "function": "NULLIF",
-                  "arguments": [
-                    {
-                      "kind": "function",
-                      "function": "SUM",
-                      "arguments": [
-                        {
-                          "kind": "function",
-                          "function": "Coalesce",
-                          "arguments": [
-                            {
-                              "kind": "field",
-                              "field": "DoctorLabs.LabCount"
-                            },
-                            {
-                              "kind": "value",
-                              "value": 0
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "kind": "value",
-                      "value": 0
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "kind": "value",
-              "value": 2
-            }
-          ]
-        },
-        "Alias": "AbnormalLabPercent"
-      }
-    ],
-    "Filters": {
-      "logicalOperation": 1,
-      "filters": [
-        {
-          "logicalOperator": 0,
-          "left": {
-            "kind": "field",
-            "field": "Department.Name"
-          },
-          "operation": 0,
-          "right": {
-            "kind": "value",
-            "value": "Primary Care"
-          },
-          "parameterized": true
-        },
-        {
-          "logicalOperator": 1,
-          "left": {
-            "kind": "field",
-            "field": "Department.Name"
-          },
-          "operation": 0,
-          "right": {
-            "kind": "value",
-            "value": "Specialty Care"
-          },
-          "parameterized": true
-        },
-        {
-          "logicalOperator": 1,
-          "left": {
-            "kind": "field",
-            "field": "Department.Name"
-          },
-          "operation": 0,
-          "right": {
-            "kind": "value",
-            "value": "Emergency Medicine"
-          },
-          "parameterized": true
-        }
-      ]
-    },
-    "Sorts": [
-      [
-        {
-          "Field": {
-            "kind": "field",
-            "field": "VisitCount"
-          },
-          "Direction": "Descending"
-        },
-        {
-          "Field": {
-            "kind": "field",
-            "field": "Charges"
-          },
-          "Direction": "Descending"
-        }
-      ]
-    ],
-    "Page": 1,
-    "PageSize": 10,
-    "Id": "Health 2. Physician workload and care-quality scorecard",
-    "ExtraRelations": [
-      {
-        "RefContextId": "legacy-DoctorVisits",
-        "Alias": "DoctorVisits",
-        "Condition": {
-          "logicalOperation": 0,
-          "filters": [
-            {
-              "logicalOperator": 0,
-              "left": {
-                "kind": "field",
-                "field": "Id"
-              },
-              "operation": 0,
-              "right": {
-                "kind": "field",
-                "field": "DoctorVisits.DoctorId"
-              },
-              "parameterized": true
-            }
-          ]
-        },
-        "JoinType": "Left"
-      },
-      {
-        "RefContextId": "legacy-DoctorLabs",
-        "Alias": "DoctorLabs",
-        "Condition": {
-          "logicalOperation": 0,
-          "filters": [
-            {
-              "logicalOperator": 0,
-              "left": {
-                "kind": "field",
-                "field": "Id"
-              },
-              "operation": 0,
-              "right": {
-                "kind": "field",
-                "field": "DoctorLabs.DoctorId"
-              },
-              "parameterized": true
-            }
-          ]
-        },
-        "JoinType": "Left"
+        "parameterized": true
       }
     ]
   },
-  "Contexts": [
+  "Sorts": [
     {
-      "Name": "DoctorVisits",
+      "Field": {
+        "kind": "field",
+        "field": "VisitCount"
+      },
+      "Direction": "Descending"
+    },
+    {
+      "Field": {
+        "kind": "field",
+        "field": "Charges"
+      },
+      "Direction": "Descending"
+    }
+  ],
+  "Take": 10,
+  "Skip": 0,
+  "Joins": [
+    {
+      "Alias": "DoctorVisits",
+      "Condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Id"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "DoctorVisits.DoctorId"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "JoinType": "Left",
+      "RefContext": "DoctorVisits"
+    },
+    {
+      "Alias": "DoctorLabs",
+      "Condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Id"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "DoctorLabs.DoctorId"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "JoinType": "Left",
+      "RefContext": "DoctorLabs"
+    }
+  ],
+  "Id": "Health 2. Physician workload and care-quality scorecard",
+  "Contexts": {
+    "DoctorVisits": {
       "Entity": "Visits",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "field",
@@ -347,7 +342,7 @@
           "Alias": "Charges"
         }
       ],
-      "Filters": {
+      "Filter": {
         "logicalOperation": 0,
         "filters": [
           {
@@ -366,15 +361,13 @@
         ]
       },
       "Sorts": null,
-      "Page": null,
-      "PageSize": null,
-      "Id": "legacy-DoctorVisits",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     },
-    {
-      "Name": "DoctorLabs",
+    "DoctorLabs": {
       "Entity": "LabResults",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "field",
@@ -426,13 +419,12 @@
           "Alias": "AbnormalCount"
         }
       ],
-      "Filters": null,
+      "Filter": null,
       "Sorts": null,
-      "Page": null,
-      "PageSize": null,
-      "Id": "legacy-DoctorLabs",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     }
-  ],
+  },
   "IsBuiltin": false
 }

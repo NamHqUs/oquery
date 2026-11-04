@@ -1,177 +1,172 @@
 {
-  "MainQuery": {
-    "Name": "HR 1. Department compensation and performance",
-    "Entity": "Employees",
-    "Projection": [
-      {
-        "field": {
-          "kind": "field",
-          "field": "Department.Name"
-        },
-        "Alias": "Department"
+  "Name": "HR 1. Department compensation and performance",
+  "Entity": "Employees",
+  "Projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Department.Name"
       },
-      {
-        "field": {
-          "kind": "function",
-          "function": "COUNT",
-          "arguments": [
-            {
+      "Alias": "Department"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "COUNT",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ]
+      },
+      "Alias": "Headcount"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "ROUND",
+        "arguments": [
+          {
+            "kind": "function",
+            "function": "AVG",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Salary"
+              }
+            ]
+          },
+          {
+            "kind": "value",
+            "value": 2
+          }
+        ]
+      },
+      "Alias": "AverageSalary"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "ROUND",
+        "arguments": [
+          {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Salary"
+              }
+            ]
+          },
+          {
+            "kind": "value",
+            "value": 2
+          }
+        ]
+      },
+      "Alias": "AnnualPayroll"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "ROUND",
+        "arguments": [
+          {
+            "kind": "function",
+            "function": "AVG",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "ReviewSummary.AverageRating"
+              }
+            ]
+          },
+          {
+            "kind": "value",
+            "value": 2
+          }
+        ]
+      },
+      "Alias": "AverageRating"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "ROUND",
+        "arguments": [
+          {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "Coalesce",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "ReviewSummary.Bonuses"
+                  },
+                  {
+                    "kind": "value",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "value",
+            "value": 2
+          }
+        ]
+      },
+      "Alias": "TotalBonuses"
+    }
+  ],
+  "Filter": null,
+  "Sorts": [
+    {
+      "Field": {
+        "kind": "field",
+        "field": "AnnualPayroll"
+      },
+      "Direction": "Descending"
+    }
+  ],
+  "Take": 10,
+  "Skip": 0,
+  "Joins": [
+    {
+      "Alias": "ReviewSummary",
+      "Condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
               "kind": "field",
               "field": "Id"
-            }
-          ]
-        },
-        "Alias": "Headcount"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "ROUND",
-          "arguments": [
-            {
-              "kind": "function",
-              "function": "AVG",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Salary"
-                }
-              ]
             },
-            {
-              "kind": "value",
-              "value": 2
-            }
-          ]
-        },
-        "Alias": "AverageSalary"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "ROUND",
-          "arguments": [
-            {
-              "kind": "function",
-              "function": "SUM",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Salary"
-                }
-              ]
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "ReviewSummary.EmployeeId"
             },
-            {
-              "kind": "value",
-              "value": 2
-            }
-          ]
-        },
-        "Alias": "AnnualPayroll"
+            "parameterized": true
+          }
+        ]
       },
-      {
-        "field": {
-          "kind": "function",
-          "function": "ROUND",
-          "arguments": [
-            {
-              "kind": "function",
-              "function": "AVG",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "ReviewSummary.AverageRating"
-                }
-              ]
-            },
-            {
-              "kind": "value",
-              "value": 2
-            }
-          ]
-        },
-        "Alias": "AverageRating"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "ROUND",
-          "arguments": [
-            {
-              "kind": "function",
-              "function": "SUM",
-              "arguments": [
-                {
-                  "kind": "function",
-                  "function": "Coalesce",
-                  "arguments": [
-                    {
-                      "kind": "field",
-                      "field": "ReviewSummary.Bonuses"
-                    },
-                    {
-                      "kind": "value",
-                      "value": 0
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "kind": "value",
-              "value": 2
-            }
-          ]
-        },
-        "Alias": "TotalBonuses"
-      }
-    ],
-    "Filters": null,
-    "Sorts": [
-      [
-        {
-          "Field": {
-            "kind": "field",
-            "field": "AnnualPayroll"
-          },
-          "Direction": "Descending"
-        }
-      ]
-    ],
-    "Page": 1,
-    "PageSize": 10,
-    "Id": "HR 1. Department compensation and performance",
-    "ExtraRelations": [
-      {
-        "RefContextId": "legacy-ReviewSummary",
-        "Alias": "ReviewSummary",
-        "Condition": {
-          "logicalOperation": 0,
-          "filters": [
-            {
-              "logicalOperator": 0,
-              "left": {
-                "kind": "field",
-                "field": "Id"
-              },
-              "operation": 0,
-              "right": {
-                "kind": "field",
-                "field": "ReviewSummary.EmployeeId"
-              },
-              "parameterized": true
-            }
-          ]
-        },
-        "JoinType": "Left"
-      }
-    ]
-  },
-  "Contexts": [
-    {
-      "Name": "ReviewSummary",
+      "JoinType": "Left",
+      "RefContext": "ReviewSummary"
+    }
+  ],
+  "Id": "HR 1. Department compensation and performance",
+  "Contexts": {
+    "ReviewSummary": {
       "Entity": "PerformanceReviews",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "field",
@@ -206,7 +201,7 @@
           "Alias": "Bonuses"
         }
       ],
-      "Filters": {
+      "Filter": {
         "logicalOperation": 0,
         "filters": [
           {
@@ -225,11 +220,10 @@
         ]
       },
       "Sorts": null,
-      "Page": null,
-      "PageSize": null,
-      "Id": "legacy-ReviewSummary",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     }
-  ],
+  },
   "IsBuiltin": false
 }

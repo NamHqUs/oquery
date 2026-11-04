@@ -1,168 +1,163 @@
 {
-  "MainQuery": {
-    "Name": "Sales 5. Monthly sales trend and momentum",
-    "Entity": "MonthlySales",
-    "Projection": [
-      {
-        "field": {
-          "kind": "field",
-          "field": "SalesMonth"
-        },
-        "Alias": null
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "ROUND",
-          "arguments": [
-            {
-              "kind": "field",
-              "field": "Revenue"
-            },
-            {
-              "kind": "value",
-              "value": 2
-            }
-          ]
-        },
-        "Alias": "Revenue"
-      },
-      {
-        "field": {
-          "kind": "field",
-          "field": "OrderCount"
-        },
-        "Alias": null
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "ROUND",
-          "arguments": [
-            {
-              "kind": "function",
-              "function": "Lag",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Revenue"
-                },
-                {
-                  "kind": "value",
-                  "value": 1
-                },
-                {
-                  "kind": "field",
-                  "field": "SalesMonth"
-                }
-              ]
-            },
-            {
-              "kind": "value",
-              "value": 2
-            }
-          ]
-        },
-        "Alias": "PriorMonthRevenue"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "ROUND",
-          "arguments": [
-            {
-              "kind": "function",
-              "function": "Difference",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Revenue"
-                },
-                {
-                  "kind": "function",
-                  "function": "Lag",
-                  "arguments": [
-                    {
-                      "kind": "field",
-                      "field": "Revenue"
-                    },
-                    {
-                      "kind": "value",
-                      "value": 1
-                    },
-                    {
-                      "kind": "field",
-                      "field": "SalesMonth"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "kind": "value",
-              "value": 2
-            }
-          ]
-        },
-        "Alias": "RevenueChange"
-      },
-      {
-        "field": {
-          "kind": "function",
-          "function": "ROUND",
-          "arguments": [
-            {
-              "kind": "function",
-              "function": "WindowSum",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Revenue"
-                },
-                {
-                  "kind": "field",
-                  "field": "SalesMonth"
-                }
-              ]
-            },
-            {
-              "kind": "value",
-              "value": 2
-            }
-          ]
-        },
-        "Alias": "RunningRevenue"
-      }
-    ],
-    "Filters": null,
-    "Sorts": [
-      [
-        {
-          "Field": {
-            "kind": "field",
-            "field": "SalesMonth"
-          },
-          "Direction": "Descending"
-        }
-      ]
-    ],
-    "Page": 1,
-    "PageSize": 10,
-    "Id": "Sales 5. Monthly sales trend and momentum",
-    "ExtraRelations": [
-      {
-        "RefContextId": "legacy-MonthlySales",
-        "Alias": "MonthlySales",
-        "Condition": null,
-        "JoinType": "Inner"
-      }
-    ]
-  },
-  "Contexts": [
+  "Name": "Sales 5. Monthly sales trend and momentum",
+  "Entity": "MonthlySales",
+  "Projections": [
     {
-      "Name": "MonthlySales",
+      "field": {
+        "kind": "field",
+        "field": "SalesMonth"
+      },
+      "Alias": null
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "ROUND",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Revenue"
+          },
+          {
+            "kind": "value",
+            "value": 2
+          }
+        ]
+      },
+      "Alias": "Revenue"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "OrderCount"
+      },
+      "Alias": null
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "ROUND",
+        "arguments": [
+          {
+            "kind": "function",
+            "function": "Lag",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Revenue"
+              },
+              {
+                "kind": "value",
+                "value": 1
+              },
+              {
+                "kind": "field",
+                "field": "SalesMonth"
+              }
+            ]
+          },
+          {
+            "kind": "value",
+            "value": 2
+          }
+        ]
+      },
+      "Alias": "PriorMonthRevenue"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "ROUND",
+        "arguments": [
+          {
+            "kind": "function",
+            "function": "Difference",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Revenue"
+              },
+              {
+                "kind": "function",
+                "function": "Lag",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "Revenue"
+                  },
+                  {
+                    "kind": "value",
+                    "value": 1
+                  },
+                  {
+                    "kind": "field",
+                    "field": "SalesMonth"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "value",
+            "value": 2
+          }
+        ]
+      },
+      "Alias": "RevenueChange"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "ROUND",
+        "arguments": [
+          {
+            "kind": "function",
+            "function": "WindowSum",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Revenue"
+              },
+              {
+                "kind": "field",
+                "field": "SalesMonth"
+              }
+            ]
+          },
+          {
+            "kind": "value",
+            "value": 2
+          }
+        ]
+      },
+      "Alias": "RunningRevenue"
+    }
+  ],
+  "Filter": null,
+  "Sorts": [
+    {
+      "Field": {
+        "kind": "field",
+        "field": "SalesMonth"
+      },
+      "Direction": "Descending"
+    }
+  ],
+  "Take": 10,
+  "Skip": 0,
+  "Joins": [
+    {
+      "Alias": "MonthlySales",
+      "Condition": null,
+      "JoinType": "Inner",
+      "RefContext": "MonthlySales"
+    }
+  ],
+  "Id": "Sales 5. Monthly sales trend and momentum",
+  "Contexts": {
+    "MonthlySales": {
       "Entity": "Orders",
-      "Projection": [
+      "Projections": [
         {
           "field": {
             "kind": "function",
@@ -218,7 +213,7 @@
           "Alias": "OrderCount"
         }
       ],
-      "Filters": {
+      "Filter": {
         "logicalOperation": 0,
         "filters": [
           {
@@ -237,11 +232,10 @@
         ]
       },
       "Sorts": null,
-      "Page": null,
-      "PageSize": null,
-      "Id": "legacy-MonthlySales",
-      "ExtraRelations": null
+      "Take": null,
+      "Skip": null,
+      "Joins": null
     }
-  ],
+  },
   "IsBuiltin": false
 }
