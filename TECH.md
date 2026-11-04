@@ -142,7 +142,7 @@ var db = new OQueryEngine(connection, metadata, dialect);
 It exposes:
 
 - `Query(entityName)`
-- `QueryYml(yml)`
+- `QueryOqr(oqr)`
 
 The context owns the supplied connection.
 

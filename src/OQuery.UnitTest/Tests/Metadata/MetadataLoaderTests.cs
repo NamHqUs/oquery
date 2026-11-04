@@ -48,6 +48,8 @@ public sealed class MetadataLoaderTests
         var entities = MetadataLoader.UnitTestData
             .Concat(MetadataLoader.SaleDemoData)
             .Concat(MetadataLoader.NorthStarDemoData)
+            .GroupBy(entity => entity.Name)
+            .Select(group => group.Last())
             .ToArray();
 
         Assert.That(entities, Is.Not.Empty);

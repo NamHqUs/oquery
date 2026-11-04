@@ -315,7 +315,7 @@ public sealed class QueryExpressionTests
         Assert.That(sql.CommandText, Does.Match(@"ORDER BY[\s\S]*DESC"));
         Assert.That(sql.Parameters.Select(parameter => parameter.Value),
             Is.EquivalentTo(new object?[] { 100m, 0m, 2m }));
-        var definitionText = YamlQueryDefinitionParser.Write(definition);
+        var definitionText = OQueryDefinitionParser.Write(definition);
         Assert.That(definitionText, Does.Not.Contain("GroupBy"));
         Assert.That(definitionText, Does.Contain("ROUND("));
 

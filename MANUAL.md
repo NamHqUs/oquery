@@ -393,20 +393,16 @@ name an authorized field. Query expressions can also aggregate over related
 collections, for example `Members.COUNT(Id)`, without adding a synthetic
 aggregate field to entity metadata.
 
-## YAML queries
+## OQuery queries
 
-Use `QueryYml` when a screen, API, or report supplies query rules at runtime:
+Use `QueryOqr` when a screen, API, or report supplies query rules at runtime:
 
 ```csharp
-var rows = db.QueryYml("""
-Entity: User
-Projection:
-  - Name
-  - Manager.Name | Manager-Name
-Filter: "[Name] like 'Dav%' && ([Manager.Name] == 'Alice' || [Age] < 12)"
-Sorts: Manager.Name DESC
-Page: 1
-PageSize: 50
+var rows = db.QueryOqr("""
+User: Name, Manager.Name | Manager-Name
+  Where Name like <Dav%> AND (Manager.Name = <Alice> OR Age < <12>)
+  Order Manager.Name DESC
+  Take 50
 """).ToList();
 ```
 
@@ -414,7 +410,7 @@ Supported properties:
 
 - `entity`: metadata entity name.
 - `projection`: projection expressions; use `|` to specify an output alias.
-- Legacy YAML and JSON definitions using `Fields` remain readable.
+- JSON definitions using `Fields` remain readable.
 - Saved queries use `QueryDto`, which inherits the core `QueryDefinition`
   model. `Contexts` stores each distinct context once and `Relations`
   references contexts by dictionary key rather than embedding query copies.
@@ -614,21 +610,15 @@ functions and arithmetic expressions can be supplied as arguments. Built-in
 date function templates map friendly function names to provider-specific SQL,
 and `GETDATE()` renders the provider's current date and time.
 
-## YAML query definitions
+## OQuery query definitions
 
-`YamlQueryDefinitionParser.Parse` accepts YAML text or a `FileInfo`:
+`OQueryDefinitionParser.Parse` accepts OQuery text:
 
 ```csharp
-var query = YamlQueryDefinitionParser.Parse("""
-Name: Product totals
-Entity: InvoiceItems
-Projection:
-  - Product.Name|Product
-  - Count()|ItemCount
-Sorts: ItemCount DESC
+var query = OQueryDefinitionParser.Parse("""
+InvoiceItems: Product.Name | Product, Count() | ItemCount
+  Order ItemCount DESC
 """);
-
-var fileQuery = YamlQueryDefinitionParser.Parse(new FileInfo("query.yml"));
 ```
 
 JSON definitions are parsed through `JsonQueryDefinitionParser.Parse`. When
@@ -642,7 +632,7 @@ var query = JsonSerializer.Deserialize<QueryDefinition>(json, options);
 `QueryDefinition` and its related records are plain model types; parsing and
 serialization behavior belongs to the parser namespace.
 
-YAML query definitions use the same properties as `QueryDefinition`. Sorts are
+OQuery definitions use the same properties as `QueryDefinition`. Sorts are
 plain-text expressions parsed by the sort definition parser. Projection and
 filters use the existing query expression syntax. Projection is a list of
 expressions, and sorts are a comma-separated string with an optional `ASC` or
@@ -702,7 +692,7 @@ another context query remain unsupported.
 Inspect generated SQL without executing it:
 
 ```csharp
-var sql = db.QueryYml(yml).ToSql();
+var sql = db.QueryOqr(oqr).ToSql();
 
 Console.WriteLine(sql.CommandText);
 

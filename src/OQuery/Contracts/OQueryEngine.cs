@@ -44,8 +44,8 @@ public class OQueryEngine(
         return new DbQueryable(queryProvider);
     }
 
-    public IOQuery QueryYml(string yml)
-        => DbQueryFromQueryDto.BuildQueryable(this, yml);
+    public IOQuery QueryOqr(string oqr)
+        => DbQueryFromQueryDto.BuildQueryable(this, oqr);
 
     public IOQuery Query(QueryDefinition queryRequest)
         => DbQueryFromQueryDto.BuildQueryable(this, queryRequest);

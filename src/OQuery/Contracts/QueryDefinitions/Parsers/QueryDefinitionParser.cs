@@ -1,9 +1,7 @@
-using OQuery;
+﻿using OQuery;
 using OQuery.QueryBuilderDto.Parsers;
 using OQuery.QueryDefinitions.Parsers.JsonConverters;
 using System.Text.Json;
-using YamlDotNet.RepresentationModel;
-using YamlDotNet.Serialization;
 
 namespace OQuery.QueryDefinitions.Parsers;
 
@@ -48,272 +46,10 @@ public static partial class QueryDefinitionParser
         }
     }
 
-    public static string ToYml(QueryDefinition definition)
-    {
-        ArgumentNullException.ThrowIfNull(definition);
-
-        var lines = new List<string>();
-        WriteYamlDefinition(lines, definition, string.Empty);
-        return string.Join(Environment.NewLine, lines);
-    }
-
-    private static void WriteYamlDefinition(
-        List<string> lines, QueryDefinitionBase definition, string indent)
-    {
-        lines.Add($"{indent}Entity: {definition.Entity}");
-        if (definition.Projection.Count > 0)
-        {
-            lines.Add($"{indent}Projection:");
-            lines.AddRange(definition.Projection.Select(field => $"{indent}  - {field.ToText()}"));
-        }
-        if (definition.Filter is not null)
-            lines.Add($"{indent}Filter: {definition.Filter.ToText().Replace(" <NULL>", string.Empty, StringComparison.Ordinal)}");
-        if (definition.Sorts is { Count: > 0 })
-            lines.Add($"{indent}Sorts: {string.Join(", ", definition.Sorts.Select(FormatSort))}");
-        if (definition.Page is not null) lines.Add($"{indent}Page: {definition.Page}");
-        if (definition.PageSize is not null) lines.Add($"{indent}PageSize: {definition.PageSize}");
-        if (definition.Recursive) lines.Add($"{indent}Recursive: true");
-
-        if (definition.Relations is { Count: > 0 })
-        {
-            lines.Add($"{indent}Relations:");
-            foreach (var relation in definition.Relations)
-            {
-                lines.Add($"{indent}  - RefContext: {relation.RefContext}");
-                if (relation.Alias is not null)
-                    lines.Add($"{indent}    Alias: {relation.Alias}");
-                if (relation.Condition is not null)
-                    lines.Add($"{indent}    Condition: {JsonSerializer.Serialize(FormatCondition(relation.Condition))}");
-                if (relation.JoinType is not null)
-                    lines.Add($"{indent}    JoinType: {relation.JoinType}");
-            }
-        }
-
-        if (definition is QueryDefinition { Contexts: { Count: > 0 } contexts })
-        {
-            lines.Add($"{indent}Contexts:");
-            foreach (var (name, context) in contexts)
-            {
-                lines.Add($"{indent}  {name}:");
-                WriteYamlDefinition(lines, context, indent + "    ");
-            }
-        }
-    }
-
-    private static string FormatSort(SortDefinition sort) =>
-        $"{sort.Field.ToText()} {(sort.Direction == QuerySortDirection.Descending ? "DESC" : "ASC")}";
-
-    private static string FormatCondition(IConditionDefintion condition) => condition switch
-    {
-        ConditionDefinition group => string.Join(" ", group.Filters.Select(FormatCondition)),
-        ConditionStatementDefinition statement when statement.Right is GroupFieldDefintion group &&
-            statement.Operator is BinaryOperator.Between or BinaryOperator.NotBetween or BinaryOperator.In or BinaryOperator.NotIn =>
-            $"{statement.Left.ToText()} {statement.Operator} <{string.Join(", ", group.Fields.Select(field => field.ToText()))}>",
-        ConditionStatementDefinition statement => statement.ToText(),
-        _ => condition.ToText()
-    };
-
-    public static QueryDefinition ParseFromYml(string yml)
-    {
-        ArgumentNullException.ThrowIfNull(yml);
-
-        var stream = new YamlStream();
-        stream.Load(new StringReader(yml));
-        if (stream.Documents.Count != 1 || stream.Documents[0].RootNode is not YamlMappingNode root)
-            throw new FormatException("The YAML query definition must be a single mapping.");
-        NormalizeYamlContexts(root);
-        using var normalized = new StringWriter();
-        stream.Save(normalized, assignAnchors: false);
-        var definition = new DeserializerBuilder().Build()
-            .Deserialize<YamlQueryDefinition>(normalized.ToString());
-
-        return Parse(definition
-            ?? throw new FormatException("The YAML query definition cannot be null."));
-    }
-
-    private static void NormalizeYamlContexts(YamlMappingNode definition)
-    {
-        if (!definition.Children.TryGetValue(new YamlScalarNode("Contexts"), out var contexts))
-            return;
-        if (contexts is YamlMappingNode dictionary)
-        {
-            var sequence = new YamlSequenceNode();
-            foreach (var (key, value) in dictionary.Children)
-            {
-                if (key is not YamlScalarNode { Value: { Length: > 0 } name } ||
-                    value is not YamlMappingNode context)
-                    throw new FormatException("A query context requires a name and a query mapping.");
-                context.Add("Id", name);
-                context.Add("Name", name);
-                sequence.Add(context);
-            }
-            definition.Children[new YamlScalarNode("Contexts")] = sequence;
-            contexts = sequence;
-        }
-        if (contexts is YamlSequenceNode list)
-            foreach (var context in list.Children.OfType<YamlMappingNode>())
-                if (context.Children.TryGetValue(new YamlScalarNode("Query"), out var query) &&
-                    query is YamlMappingNode nested)
-                    NormalizeYamlContexts(nested);
-    }
-
-    public static QueryDefinition Parse(YamlQueryDefinition definition)
-    {
-        ArgumentNullException.ThrowIfNull(definition);
-
-        var query = new QueryDefinition
-        {
-            Entity = !string.IsNullOrWhiteSpace(definition.Entity)
-                ? definition.Entity
-                : throw new FormatException("The YAML query definition requires an entity."),
-            Projection = ProjectionDefinitionParser.Parse(definition.Projection ?? []),
-            Filter = ConditionDefinitionParser.Parse(definition.Filter),
-            Sorts = SortDefinitionParser.Parse(definition.Sorts),
-            Page = definition.Page,
-            PageSize = definition.PageSize,
-            Recursive = definition.Recursive,
-            Contexts = ParseContexts(definition, out var relations)
-        };
-        query.Relations!.AddRange(relations);
-        query.Relations.AddRange(definition.Relations?.Select(relation =>
-            CreateRelation(relation, query.Contexts!)) ?? []);
-        return query;
-    }
-
-    private static Dictionary<string, QueryDefinitionBase> ParseContexts(
-        YamlQueryDefinition definition, out List<RelationDefinition> relations)
-    {
-        relations = [];
-        if (definition.Contexts is null)
-            return new(StringComparer.OrdinalIgnoreCase);
-
-        if (definition.Contexts.Any(context => context.Query is null))
-        {
-            var yaml = definition.Contexts.ToDictionary(
-                context => Required(context.Id, "A flat query context requires an id."));
-            var contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase);
-            foreach (var context in yaml.Values)
-            {
-                var name = Required(context.Name, "A flat query context requires a name.");
-                var parsed = ParseFlatContext(context);
-                if (contexts.TryGetValue(name, out var existing))
-                {
-                    continue;
-                }
-
-                contexts.Add(name, parsed);
-            }
-            foreach (var (id, context) in yaml)
-            {
-                contexts[Required(context.Name, "A flat query context requires a name.")].Relations!.AddRange(
-                    context.ExtraRelations?.Select(r => CreateRelation(r, contexts, yaml)) ?? []);
-                contexts[context.Name!].Relations!.AddRange(
-                    context.Relations?.Select(r => CreateRelation(r, contexts)) ?? []);
-            }
-            relations.AddRange(definition.ExtraRelations?.Select(r => CreateRelation(r, contexts, yaml)) ?? []);
-            return contexts;
-        }
-
-        var nested = definition.Contexts.Select(ParseNestedContext).ToDictionary(
-            context => context.Name!, context => (QueryDefinitionBase)context.Query!,
-            StringComparer.OrdinalIgnoreCase);
-        relations.AddRange(definition.Contexts.Select(context => new RelationDefinition(
-            Required(context.Name, "A query context requires a name."),
-            context.Alias,
-            ConditionDefinitionParser.ParseJoinCondition(context.Condition),
-            context.JoinType ?? QueryJoinType.Left)));
-        FlattenContexts(nested);
-        return nested;
-    }
-
-    private static void FlattenContexts(Dictionary<string, QueryDefinitionBase> contexts)
-    {
-        foreach (var context in contexts.Values.ToArray())
-        {
-            if (context is not QueryDefinition query || query.Contexts is not { Count: > 0 })
-                continue;
-            var children = query.Contexts!.ToArray();
-            query.Contexts.Clear();
-            foreach (var child in children)
-            {
-                contexts.TryAdd(child.Key, child.Value);
-                FlattenContextInto(contexts, child.Value);
-            }
-        }
-    }
-
-    private static void FlattenContextInto(
-        Dictionary<string, QueryDefinitionBase> destination,
-        QueryDefinitionBase context)
-    {
-        if (context is not QueryDefinition query || query.Contexts is not { Count: > 0 })
-            return;
-        var children = query.Contexts!.ToArray();
-        query.Contexts.Clear();
-        foreach (var child in children)
-        {
-            destination.TryAdd(child.Key, child.Value);
-            FlattenContextInto(destination, child.Value);
-        }
-    }
-
-    private static (string? Name, QueryDefinition? Query) ParseNestedContext(YamlQueryContextDefinition context)
-    {
-        if (string.IsNullOrWhiteSpace(context.Name))
-            throw new FormatException("A query context requires a name.");
-        if (context.Query is null)
-            throw new FormatException($"Query context [{context.Name}] requires a query.");
-
-        var query = Parse(context.Query);
-        query.Recursive = context.Recursive;
-        return (context.Name, query);
-    }
-
-    private static QueryDefinition ParseFlatContext(YamlQueryContextDefinition context)
-    {
-        if (string.IsNullOrWhiteSpace(context.Name))
-            throw new FormatException("A query context requires a name.");
-        var query = new YamlQueryDefinition
-        {
-            Entity = context.Entity,
-            Projection = context.Projection,
-            Filter = context.Filter,
-            Sorts = context.Sorts,
-            Page = context.Page,
-            PageSize = context.PageSize
-        };
-
-        var parsed = Parse(query);
-        parsed.Recursive = context.Recursive;
-        return parsed;
-    }
-    private static RelationDefinition CreateRelation(
-        YamlQueryRelationDefinition relation,
-        IReadOnlyDictionary<string, QueryDefinitionBase> contexts,
-        IReadOnlyDictionary<string, YamlQueryContextDefinition>? legacyContexts = null)
-    {
-        var id = Required(relation.RefContext ?? relation.RefContextId, "A query relation requires a referenced context id.");
-        var reference = legacyContexts?.TryGetValue(id, out var legacyContext) == true
-            ? Required(legacyContext.Name, "A flat query context requires a name.")
-            : id;
-        if (!contexts.ContainsKey(reference))
-            throw new FormatException($"Query relation references unknown context [{id}].");
-
-        return new RelationDefinition(reference, relation.Alias,
-            ConditionDefinitionParser.ParseJoinCondition(relation.Condition),
-            relation.RefContext is not null ? relation.JoinType : relation.JoinType ?? QueryJoinType.Left);
-    }
-
     private static string Required(string? value, string message)
         => !string.IsNullOrWhiteSpace(value)
             ? value
             : throw new FormatException(message);
-
-    public static QueryDefinition ParseFromYml(FileInfo file)
-    {
-        ArgumentNullException.ThrowIfNull(file);
-        return ParseFromYml(File.ReadAllText(file.FullName));
-    }
 
     public static QueryDefinition Parse(string json)
     {
@@ -406,6 +142,37 @@ public static partial class QueryDefinitionParser
         FlattenContexts(result.Contexts!);
         ValidateContextReferences(result);
         return result;
+    }
+
+    private static void FlattenContexts(Dictionary<string, QueryDefinitionBase> contexts)
+    {
+        foreach (var context in contexts.Values.ToArray())
+        {
+            if (context is not QueryDefinition query || query.Contexts is not { Count: > 0 })
+                continue;
+            var children = query.Contexts.ToArray();
+            query.Contexts.Clear();
+            foreach (var child in children)
+            {
+                contexts.TryAdd(child.Key, child.Value);
+                FlattenContextInto(contexts, child.Value);
+            }
+        }
+    }
+
+    private static void FlattenContextInto(
+        Dictionary<string, QueryDefinitionBase> destination,
+        QueryDefinitionBase context)
+    {
+        if (context is not QueryDefinition query || query.Contexts is not { Count: > 0 })
+            return;
+        var children = query.Contexts.ToArray();
+        query.Contexts.Clear();
+        foreach (var child in children)
+        {
+            destination.TryAdd(child.Key, child.Value);
+            FlattenContextInto(destination, child.Value);
+        }
     }
 
     private static IConditionDefintion? ParseJsonCondition(JsonElement element) =>

@@ -2,7 +2,7 @@
 
 Build powerful database screens without creating a CLR class for every table.
 
-`OQuery` turns runtime metadata, C# expressions, or YAML definitions into
+`OQuery` turns runtime metadata, C# expressions, or OQuery definitions into
 safe, provider-specific SQL. The same query engine can power a data grid,
 report builder, admin screen, or API endpoint even when the fields and
 relationships are selected at runtime.
@@ -10,15 +10,11 @@ relationships are selected at runtime.
 ## A query defined by data
 
 ```csharp
-var rows = db.QueryYml("""
-Entity: User
-Projection:
-  - Name
-  - Manager.Name | Manager-Name
-Filter: "[Name] like 'Dav%' && [Age] >= 18"
-Sorts: Manager.Name DESC
-Page: 1
-PageSize: 50
+var rows = db.QueryOqr("""
+User: Name, Manager.Name | Manager-Name
+  Where Name like <Dav%> AND Age >= <18>
+  Order Manager.Name DESC
+  Take 50
 """).ToList();
 ```
 
@@ -36,7 +32,7 @@ var rows = db.Query("User")
 ## Why it is different
 
 - Runtime entities, fields, relationships, and aggregates.
-- One compiler for C# expressions and YAML queries.
+- One compiler for C# expressions and OQuery queries.
 - Relationship paths such as `Manager.Name` and `Members.Name`.
 - Dynamic projections and aliases without CLR models.
 - SQL Server, SQLite, PostgreSQL, CockroachDB, Firebird, MySQL/MariaDB, Oracle,
@@ -45,7 +41,7 @@ var rows = db.Query("User")
 - A dialect-independent SQL expression intermediate representation.
 
 ```csharp
-var sql = db.QueryYml(yml).ToSql();
+var sql = db.QueryOqr(oqr).ToSql();
 Console.WriteLine(sql.CommandText);
 ```
 
@@ -54,7 +50,7 @@ the complete text can be copied directly into a query window.
 
 ## Start here
 
-- Read the [user manual](./MANUAL.md) for installation, metadata, queries, YAML,
+- Read the [user manual](./MANUAL.md) for installation, metadata, queries,
   providers, async APIs, and troubleshooting.
 - Read the [technical guide](./TECH.md) for the compiler pipeline and important
   classes.
