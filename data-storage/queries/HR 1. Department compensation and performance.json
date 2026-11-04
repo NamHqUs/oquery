@@ -4,137 +4,125 @@
     "Entity": "Employees",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Department.Name"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Department.Name"
+        },
         "Alias": "Department"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "COUNT",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "Id"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "COUNT",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Id"
+            }
+          ]
+        },
         "Alias": "Headcount"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "AVG",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "Salary"
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "AVG",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Salary"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "AverageSalary"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "SUM",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "Salary"
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Salary"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "AnnualPayroll"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "AVG",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "ReviewSummary.AverageRating"
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "AVG",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "ReviewSummary.AverageRating"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "AverageRating"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "SUM",
-                "arguments": [
-                  {
-                    "kind": "function",
-                    "function": "Coalesce",
-                    "arguments": [
-                      {
-                        "kind": "field",
-                        "field": "ReviewSummary.Bonuses"
-                      },
-                      {
-                        "kind": "value",
-                        "value": 0
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "function",
+                  "function": "Coalesce",
+                  "arguments": [
+                    {
+                      "kind": "field",
+                      "field": "ReviewSummary.Bonuses"
+                    },
+                    {
+                      "kind": "value",
+                      "value": 0
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "TotalBonuses"
       }
     ],
@@ -185,42 +173,36 @@
       "Entity": "PerformanceReviews",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "EmployeeId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "EmployeeId"
+          },
           "Alias": "EmployeeId"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "AVG",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Rating"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "AVG",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Rating"
+              }
+            ]
+          },
           "Alias": "AverageRating"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "SUM",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "BonusAmount"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "BonusAmount"
+              }
+            ]
+          },
           "Alias": "Bonuses"
         }
       ],

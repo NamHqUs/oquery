@@ -4,62 +4,52 @@
     "Entity": "Users",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Id"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Id"
+        },
         "Alias": "CustomerId"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "Concat",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "FirstName"
-              },
-              {
-                "kind": "value",
-                "value": " "
-              },
-              {
-                "kind": "field",
-                "field": "LastName"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "Concat",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "FirstName"
+            },
+            {
+              "kind": "value",
+              "value": " "
+            },
+            {
+              "kind": "field",
+              "field": "LastName"
+            }
+          ]
+        },
         "Alias": "Customer"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "RecentOrders.Id"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "RecentOrders.Id"
+        },
         "Alias": "OrderId"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "RecentOrders.OrderDate"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "RecentOrders.OrderDate"
+        },
         "Alias": "OrderDate"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "RecentOrders.OrderAmount"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "RecentOrders.OrderAmount"
+        },
         "Alias": "OrderAmount"
       }
     ],
@@ -147,79 +137,69 @@
       "Entity": "Orders",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "UserId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "UserId"
+          },
           "Alias": "UserId"
         },
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "Id"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "Id"
+          },
           "Alias": "Id"
         },
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "OrderDate"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "OrderDate"
+          },
           "Alias": "OrderDate"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "SUM",
-              "arguments": [
-                {
-                  "kind": "group",
-                  "fields": [
-                    {
-                      "kind": "field",
-                      "field": "Items.Quantity"
-                    },
-                    {
-                      "oper": "*",
-                      "kind": "field",
-                      "field": "Items.UnitPrice"
-                    },
-                    {
-                      "oper": "-",
-                      "kind": "field",
-                      "field": "Items.DiscountAmount"
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "group",
+                "fields": [
+                  {
+                    "kind": "field",
+                    "field": "Items.Quantity"
+                  },
+                  {
+                    "oper": "*",
+                    "kind": "field",
+                    "field": "Items.UnitPrice"
+                  },
+                  {
+                    "oper": "-",
+                    "kind": "field",
+                    "field": "Items.DiscountAmount"
+                  }
+                ]
+              }
+            ]
+          },
           "Alias": "OrderAmount"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "RowNumber",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "UserId"
-                },
-                {
-                  "kind": "field",
-                  "field": "OrderDate"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "RowNumber",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "UserId"
+              },
+              {
+                "kind": "field",
+                "field": "OrderDate"
+              }
+            ]
+          },
           "Alias": "OrderRank"
         }
       ],
@@ -252,48 +232,38 @@
       "Entity": "RankedOrders",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "UserId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "UserId"
+          },
           "Alias": "UserId"
         },
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "Id"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "Id"
+          },
           "Alias": "Id"
         },
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "OrderDate"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "OrderDate"
+          },
           "Alias": "OrderDate"
         },
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "OrderAmount"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "OrderAmount"
+          },
           "Alias": "OrderAmount"
         },
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "OrderRank"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "OrderRank"
+          },
           "Alias": "OrderRank"
         }
       ],

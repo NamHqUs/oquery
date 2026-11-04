@@ -60,7 +60,7 @@ internal sealed class TestDatabase
 
     public static IDbConnection GetNorthStarPostgresConnection()
         => CreatePostgresInstance(
-            "Host=localhost;Port=5432;Database=dynamicsqltest;Username=postgres;Password=NoPassword123!",
+            $"Host=localhost;Port={GetPostgresHostPort()};Database=dynamicsqltest;Username=postgres;Password=NoPassword123!",
             "northstar-demo.postgres.sql");
 
     public static IDbConnection GetNorthStarCockroachConnection()
@@ -148,10 +148,29 @@ internal sealed class TestDatabase
 
     private static IDbConnection CreatePostgresDbConnection()
         => CreatePostgresInstance(
-            "Host=localhost;Port=5432;Database=DynamicSqlTest;Username=postgres;Password=NoPassword123!",
+            $"Host=localhost;Port={GetPostgresHostPort()};Database=DynamicSqlTest;Username=postgres;Password=NoPassword123!",
             "unit-test.postgres.sql",
             "sale-demo.postgres.sql");
 
+    private static int GetPostgresHostPort()
+    {
+        var configuredPort = Environment.GetEnvironmentVariable("POSTGRES_HOST_PORT");
+        if (string.IsNullOrWhiteSpace(configuredPort))
+        {
+            return 5432;
+        }
+
+        if (!int.TryParse(configuredPort, out var port) || port is < 1 or > 65535)
+        {
+            throw new InvalidOperationException(
+                $"POSTGRES_HOST_PORT must be a TCP port between 1 and 65535, but was '{configuredPort}'.");
+        }
+
+        return port;
+    }
+    private static string GetPostgresPassword()
+        => Environment.GetEnvironmentVariable("POSTGRES_PASSWORD")
+            ?? "NoPassword123!";
     private static IDbConnection CreateDb2DbConnection()
         => GetNorthStarDb2Connection();
 

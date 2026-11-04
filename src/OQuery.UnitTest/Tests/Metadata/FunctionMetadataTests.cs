@@ -170,7 +170,7 @@ public sealed class FunctionMetadataTests
                 BinaryOperator.Equals,
                 new ConstFieldDefinition("Completed")));
         var projection = new ProjectionDefinition(
-            [new FunctionFieldDefinition("CountIf", [new ConditionFieldDefinition(condition)])],
+            new FunctionFieldDefinition("CountIf", [new ConditionFieldDefinition(condition)]),
             "CompletedCount");
         var options = QueryDefinitionJsonParser.CreateSerializerOptions();
 
@@ -349,8 +349,8 @@ public sealed class FunctionMetadataTests
                 Projections =
                 [
                     new ProjectionDefinition(
-                        [new FunctionFieldDefinition(functionName,
-                            [new FieldDefinition("InvoiceDate"), new ConstFieldDefinition(1)])],
+                        new FunctionFieldDefinition(functionName,
+                            [new FieldDefinition("InvoiceDate"), new ConstFieldDefinition(1)]),
                         "Result")
                 ]
             }).ToList().Single();
@@ -449,7 +449,7 @@ public sealed class FunctionMetadataTests
         return context.Query(new QueryDefinition("Items")
         {
 
-            Projections = [new ProjectionDefinition([expression], "Result")]
+            Projections = [new ProjectionDefinition(expression, "Result")]
         }).ToSql();
     }
 

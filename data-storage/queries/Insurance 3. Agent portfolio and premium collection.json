@@ -4,158 +4,142 @@
     "Entity": "Employees",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Id"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Id"
+        },
         "Alias": "AgentId"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "Concat",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "FirstName"
-              },
-              {
-                "kind": "value",
-                "value": " "
-              },
-              {
-                "kind": "field",
-                "field": "LastName"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "Concat",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "FirstName"
+            },
+            {
+              "kind": "value",
+              "value": " "
+            },
+            {
+              "kind": "field",
+              "field": "LastName"
+            }
+          ]
+        },
         "Alias": "Agent"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Location.City"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Location.City"
+        },
         "Alias": "OfficeCity"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "CountDistinct",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "AgentPolicies.Id"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "CountDistinct",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "AgentPolicies.Id"
+            }
+          ]
+        },
         "Alias": "PoliciesSold"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "CountIf",
-            "arguments": [
-              {
-                "kind": "condition",
-                "condition": {
-                  "logicalOperation": 0,
-                  "filters": [
-                    {
-                      "logicalOperator": 0,
-                      "left": {
-                        "kind": "field",
-                        "field": "AgentPolicies.Status"
-                      },
-                      "operation": 0,
-                      "right": {
-                        "kind": "value",
-                        "value": "Active"
-                      },
-                      "parameterized": true
-                    }
-                  ]
-                }
+        "field": {
+          "kind": "function",
+          "function": "CountIf",
+          "arguments": [
+            {
+              "kind": "condition",
+              "condition": {
+                "logicalOperation": 0,
+                "filters": [
+                  {
+                    "logicalOperator": 0,
+                    "left": {
+                      "kind": "field",
+                      "field": "AgentPolicies.Status"
+                    },
+                    "operation": 0,
+                    "right": {
+                      "kind": "value",
+                      "value": "Active"
+                    },
+                    "parameterized": true
+                  }
+                ]
               }
-            ]
-          }
-        ],
+            }
+          ]
+        },
         "Alias": "ActivePolicies"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "Coalesce",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "PaidPayments.PaidPremiums"
-                  },
-                  {
-                    "kind": "value",
-                    "value": 0
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "Coalesce",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "PaidPayments.PaidPremiums"
+                },
+                {
+                  "kind": "value",
+                  "value": 0
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "PaidPremiums"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "Coalesce",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "LatePayments.LatePayments"
-              },
-              {
-                "kind": "value",
-                "value": 0
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "Coalesce",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "LatePayments.LatePayments"
+            },
+            {
+              "kind": "value",
+              "value": 0
+            }
+          ]
+        },
         "Alias": "LatePayments"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "Coalesce",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "MissedPayments.MissedPayments"
-              },
-              {
-                "kind": "value",
-                "value": 0
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "Coalesce",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "MissedPayments.MissedPayments"
+            },
+            {
+              "kind": "value",
+              "value": 0
+            }
+          ]
+        },
         "Alias": "MissedPayments"
       }
     ],
@@ -269,27 +253,23 @@
       "Entity": "PremiumPayments",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "Policy.AgentId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "Policy.AgentId"
+          },
           "Alias": "AgentId"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "SUM",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Amount"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Amount"
+              }
+            ]
+          },
           "Alias": "PaidPremiums"
         }
       ],
@@ -322,27 +302,23 @@
       "Entity": "PremiumPayments",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "Policy.AgentId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "Policy.AgentId"
+          },
           "Alias": "AgentId"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "COUNT",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Id"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "COUNT",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ]
+          },
           "Alias": "LatePayments"
         }
       ],
@@ -375,27 +351,23 @@
       "Entity": "PremiumPayments",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "Policy.AgentId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "Policy.AgentId"
+          },
           "Alias": "AgentId"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "COUNT",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Id"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "COUNT",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ]
+          },
           "Alias": "MissedPayments"
         }
       ],

@@ -4,12 +4,10 @@
     "Entity": "Users",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Id"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Id"
+        },
         "Alias": "UserId"
       }
     ],
@@ -97,27 +95,23 @@
       "Entity": "Orders",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "UserId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "UserId"
+          },
           "Alias": "UserId"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "CountDistinct",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Id"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "CountDistinct",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ]
+          },
           "Alias": "MatchCount"
         }
       ],
@@ -150,27 +144,23 @@
       "Entity": "Policies",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "UserId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "UserId"
+          },
           "Alias": "UserId"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "CountDistinct",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Id"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "CountDistinct",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ]
+          },
           "Alias": "MatchCount"
         }
       ],

@@ -4,100 +4,86 @@
     "Entity": "LeaveRequests",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Employee.Department.Name"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Employee.Department.Name"
+        },
         "Alias": "Department"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "LeaveType"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "LeaveType"
+        },
         "Alias": null
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Status"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Status"
+        },
         "Alias": null
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "COUNT",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "Id"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "COUNT",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Id"
+            }
+          ]
+        },
         "Alias": "Requests"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "SUM",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "Days"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "SUM",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Days"
+            }
+          ]
+        },
         "Alias": "DaysRequested"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "AVG",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "Days"
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 1
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "AVG",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Days"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 1
+            }
+          ]
+        },
         "Alias": "AverageRequestDays"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "CountDistinct",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "Employee.Id"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "CountDistinct",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Employee.Id"
+            }
+          ]
+        },
         "Alias": "EmployeesRequesting"
       }
     ],

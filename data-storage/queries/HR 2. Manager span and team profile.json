@@ -4,143 +4,127 @@
     "Entity": "Employees",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Id"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Id"
+        },
         "Alias": "ManagerId"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "Concat",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "FirstName"
-              },
-              {
-                "kind": "value",
-                "value": " "
-              },
-              {
-                "kind": "field",
-                "field": "LastName"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "Concat",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "FirstName"
+            },
+            {
+              "kind": "value",
+              "value": " "
+            },
+            {
+              "kind": "field",
+              "field": "LastName"
+            }
+          ]
+        },
         "Alias": "Manager"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Department.Name"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Department.Name"
+        },
         "Alias": "Department"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "CountDistinct",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "DirectReports.Id"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "CountDistinct",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "DirectReports.Id"
+            }
+          ]
+        },
         "Alias": "DirectReports"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "CountDistinct",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "DirectReports.LocationId"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "CountDistinct",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "DirectReports.LocationId"
+            }
+          ]
+        },
         "Alias": "TeamLocations"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "AVG",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "DirectReports.Salary"
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "AVG",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "DirectReports.Salary"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "AverageTeamSalary"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "ReviewSummary.AverageTeamRating"
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "ReviewSummary.AverageTeamRating"
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "AverageTeamRating"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "SUM",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "DirectReports.Salary"
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "DirectReports.Salary"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "TeamPayroll"
       }
     ],
@@ -212,27 +196,23 @@
       "Entity": "PerformanceReviews",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "Employee.ManagerId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "Employee.ManagerId"
+          },
           "Alias": "ManagerId"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "AVG",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Rating"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "AVG",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Rating"
+              }
+            ]
+          },
           "Alias": "AverageTeamRating"
         }
       ],

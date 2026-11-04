@@ -1,4 +1,6 @@
 #pragma warning disable IDE0130
+using System.Text;
+
 namespace OQuery;
 #pragma warning restore IDE0130
 
@@ -32,4 +34,20 @@ public record QueryDefinition : QueryDefinitionBase
 
     public Dictionary<string, QueryDefinitionBase>? Contexts { get; init; } =
         new(StringComparer.OrdinalIgnoreCase);
+
+    public string ToText()
+    {
+        var sb = new StringBuilder();
+        sb.Append($"Entity: {Entity} ")
+        .AppendLine($"Projections: {string.Join(", ", Projections?.Select(p => p.ToText()) ?? [])}")
+        .AppendLine($"Filter: {Filter?.ToText() ?? "null"}")
+        .AppendLine($"Sorts: {string.Join(", ", Sorts?.Select(s => s.ToText()) ?? [])}")
+        .AppendLine($"Take: {Take?.ToString() ?? "null"}")
+        .AppendLine($"Skip: {Skip?.ToString() ?? "null"}");
+
+        foreach(var join in Joins ?? [])
+            sb.AppendLine($"Join: {join.JoinType} {join.RefContext} {join.Alias} ON {join.Condition?.ToText() ?? "null"}");
+
+        return sb.ToString();
+    }
 }

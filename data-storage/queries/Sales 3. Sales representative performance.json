@@ -4,173 +4,157 @@
     "Entity": "Employees",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Id"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Id"
+        },
         "Alias": "SalesRepId"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "Concat",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "FirstName"
-              },
-              {
-                "kind": "value",
-                "value": " "
-              },
-              {
-                "kind": "field",
-                "field": "LastName"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "Concat",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "FirstName"
+            },
+            {
+              "kind": "value",
+              "value": " "
+            },
+            {
+              "kind": "field",
+              "field": "LastName"
+            }
+          ]
+        },
         "Alias": "SalesRep"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Location.City"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Location.City"
+        },
         "Alias": "HomeCity"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Department.Name"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Department.Name"
+        },
         "Alias": "Department"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "CountDistinct",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "SalesOrders.Id"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "CountDistinct",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "SalesOrders.Id"
+            }
+          ]
+        },
         "Alias": "CompletedOrders"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "SUM",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "SalesOrders.Items.Quantity"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "SUM",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "SalesOrders.Items.Quantity"
+            }
+          ]
+        },
         "Alias": "UnitsSold"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "SUM",
-                "arguments": [
-                  {
-                    "kind": "group",
-                    "fields": [
-                      {
-                        "kind": "field",
-                        "field": "SalesOrders.Items.Quantity"
-                      },
-                      {
-                        "oper": "*",
-                        "kind": "field",
-                        "field": "SalesOrders.Items.UnitPrice"
-                      },
-                      {
-                        "oper": "-",
-                        "kind": "field",
-                        "field": "SalesOrders.Items.DiscountAmount"
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "group",
+                  "fields": [
+                    {
+                      "kind": "field",
+                      "field": "SalesOrders.Items.Quantity"
+                    },
+                    {
+                      "oper": "*",
+                      "kind": "field",
+                      "field": "SalesOrders.Items.UnitPrice"
+                    },
+                    {
+                      "oper": "-",
+                      "kind": "field",
+                      "field": "SalesOrders.Items.DiscountAmount"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "NetSales"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "SUM",
-                "arguments": [
-                  {
-                    "kind": "group",
-                    "fields": [
-                      {
-                        "kind": "field",
-                        "field": "SalesOrders.Items.Quantity"
-                      },
-                      {
-                        "oper": "*",
-                        "kind": "group",
-                        "fields": [
-                          {
-                            "kind": "field",
-                            "field": "SalesOrders.Items.UnitPrice"
-                          },
-                          {
-                            "oper": "-",
-                            "kind": "field",
-                            "field": "SalesOrders.Items.Product.CostPrice"
-                          }
-                        ]
-                      },
-                      {
-                        "oper": "-",
-                        "kind": "field",
-                        "field": "SalesOrders.Items.DiscountAmount"
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "group",
+                  "fields": [
+                    {
+                      "kind": "field",
+                      "field": "SalesOrders.Items.Quantity"
+                    },
+                    {
+                      "oper": "*",
+                      "kind": "group",
+                      "fields": [
+                        {
+                          "kind": "field",
+                          "field": "SalesOrders.Items.UnitPrice"
+                        },
+                        {
+                          "oper": "-",
+                          "kind": "field",
+                          "field": "SalesOrders.Items.Product.CostPrice"
+                        }
+                      ]
+                    },
+                    {
+                      "oper": "-",
+                      "kind": "field",
+                      "field": "SalesOrders.Items.DiscountAmount"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "GrossProfit"
       }
     ],

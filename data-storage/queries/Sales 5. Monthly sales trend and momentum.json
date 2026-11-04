@@ -4,145 +4,133 @@
     "Entity": "MonthlySales",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "SalesMonth"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "SalesMonth"
+        },
         "Alias": null
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "Revenue"
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Revenue"
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "Revenue"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "OrderCount"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "OrderCount"
+        },
         "Alias": null
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "Lag",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "Revenue"
-                  },
-                  {
-                    "kind": "value",
-                    "value": 1
-                  },
-                  {
-                    "kind": "field",
-                    "field": "SalesMonth"
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "Lag",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Revenue"
+                },
+                {
+                  "kind": "value",
+                  "value": 1
+                },
+                {
+                  "kind": "field",
+                  "field": "SalesMonth"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "PriorMonthRevenue"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "Difference",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "Revenue"
-                  },
-                  {
-                    "kind": "function",
-                    "function": "Lag",
-                    "arguments": [
-                      {
-                        "kind": "field",
-                        "field": "Revenue"
-                      },
-                      {
-                        "kind": "value",
-                        "value": 1
-                      },
-                      {
-                        "kind": "field",
-                        "field": "SalesMonth"
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "Difference",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Revenue"
+                },
+                {
+                  "kind": "function",
+                  "function": "Lag",
+                  "arguments": [
+                    {
+                      "kind": "field",
+                      "field": "Revenue"
+                    },
+                    {
+                      "kind": "value",
+                      "value": 1
+                    },
+                    {
+                      "kind": "field",
+                      "field": "SalesMonth"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "RevenueChange"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "WindowSum",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "Revenue"
-                  },
-                  {
-                    "kind": "field",
-                    "field": "SalesMonth"
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "WindowSum",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Revenue"
+                },
+                {
+                  "kind": "field",
+                  "field": "SalesMonth"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "RunningRevenue"
       }
     ],
@@ -176,63 +164,57 @@
       "Entity": "Orders",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "MonthKey",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "OrderDate"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "MonthKey",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "OrderDate"
+              }
+            ]
+          },
           "Alias": "SalesMonth"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "SUM",
-              "arguments": [
-                {
-                  "kind": "group",
-                  "fields": [
-                    {
-                      "kind": "field",
-                      "field": "Items.Quantity"
-                    },
-                    {
-                      "oper": "*",
-                      "kind": "field",
-                      "field": "Items.UnitPrice"
-                    },
-                    {
-                      "oper": "-",
-                      "kind": "field",
-                      "field": "Items.DiscountAmount"
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "group",
+                "fields": [
+                  {
+                    "kind": "field",
+                    "field": "Items.Quantity"
+                  },
+                  {
+                    "oper": "*",
+                    "kind": "field",
+                    "field": "Items.UnitPrice"
+                  },
+                  {
+                    "oper": "-",
+                    "kind": "field",
+                    "field": "Items.DiscountAmount"
+                  }
+                ]
+              }
+            ]
+          },
           "Alias": "Revenue"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "CountDistinct",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Id"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "CountDistinct",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ]
+          },
           "Alias": "OrderCount"
         }
       ],

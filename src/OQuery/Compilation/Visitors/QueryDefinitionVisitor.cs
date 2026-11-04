@@ -145,10 +145,10 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         var context = recursiveContexts[0];
         if (context.Alias is not null &&
             definition.Projections.Any(projection =>
-                projection.Fields.Any(field => ContainsContextReference(
-                    field,
+                ContainsContextReference(
+                    projection.Field,
                     context.Name,
-                    context.Alias))))
+                    context.Alias)))
             return BuildRecursiveShorthandQuery(definition, context, definitions, out query);
 
         var recursiveJoinFields = GetContextFieldNames(context.Condition, context.Name, context.Alias);
@@ -157,19 +157,19 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             if (context.Query.Projections.Any(projection =>
                 string.Equals(GetProjectionAlias(projection), fieldName, StringComparison.OrdinalIgnoreCase)))
                 continue;
-            context.Query.Projections.Add(new ProjectionDefinition([new FieldDefinition(fieldName)], fieldName));
+            context.Query.Projections.Add(new ProjectionDefinition(new FieldDefinition(fieldName), fieldName));
         }
 
         var anchorDefinition = new QueryDefinition(definition.Entity)
         {
             Projections = definition.Projections
                 .Select(projection => ContainsContextReference(projection, context.Name, context.Alias)
-                    ? new ProjectionDefinition([new ConstFieldDefinition(0)], projection.Alias)
+                    ? new ProjectionDefinition(new ConstFieldDefinition(0), projection.Alias)
                     : projection)
                 .Concat(recursiveJoinFields
                     .Where(fieldName => !definition.Projections.Any(projection =>
                         string.Equals(GetProjectionAlias(projection), fieldName, StringComparison.OrdinalIgnoreCase)))
-                    .Select(fieldName => new ProjectionDefinition([new FieldDefinition(fieldName)], fieldName)))
+                    .Select(fieldName => new ProjectionDefinition(new FieldDefinition(fieldName), fieldName)))
                 .ToList(),
             Filter = definition.Filter,
             Sorts = definition.Sorts,
@@ -222,7 +222,6 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             recursive,
             cteFields.Select(field => field.Name).ToArray()));
         result.ProjectionItems = definition.Projections
-            .Where(projection => !projection.IsNewLine)
             .Select(projection => GetProjectionAlias(projection))
             .Select(fieldName => new ProjectionItem(
                 new FieldExpression(result.Alias, cteFields.First(field =>
@@ -253,12 +252,12 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         context.Query.Projections.Clear();
         context.Query.Projections.AddRange(
             cteFields.Select(field =>
-                new ProjectionDefinition([new FieldDefinition(field.Name)], field.Name)));
+                new ProjectionDefinition(new FieldDefinition(field.Name), field.Name)));
         var cteEntity = new Entity(context.Name, cteFields, DbTable: context.Name);
         var anchorDefinition = new QueryDefinition(context.Query.Entity)
         {
             Projections = cteFields
-                .Select(field => new ProjectionDefinition([new FieldDefinition(field.Name)], field.Name))
+                .Select(field => new ProjectionDefinition(new FieldDefinition(field.Name), field.Name))
                 .ToList(),
             Filter = QueryDefinitionJsonParser.ParseFilter(
                 string.Join(" AND ", recursiveFieldNames.Select(field => $"{field} is null")))
@@ -268,7 +267,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         var recursiveDefinition = new QueryDefinition(context.Query.Entity)
         {
             Projections = cteFields
-                .Select(field => new ProjectionDefinition([new FieldDefinition(field.Name)], field.Name))
+                .Select(field => new ProjectionDefinition(new FieldDefinition(field.Name), field.Name))
                 .ToList(),
             Joins =
             [
@@ -354,13 +353,13 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
     private static bool ContainsContextReference(QueryDefinitionBase definition, string contextName, string? contextAlias = null)
     {
         return definition.Projections.Any(projection =>
-                projection.Fields.Any(field => ContainsContextReference(field, contextName, contextAlias))) ||
+                ContainsContextReference(projection.Field, contextName, contextAlias)) ||
             (definition.Filter is not null && ContainsContextReference(definition.Filter, contextName, contextAlias)) ||
             (definition.Sorts?.Any(sort => ContainsContextReference(sort.Field, contextName, contextAlias)) ?? false);
     }
 
     private static bool ContainsContextReference(ProjectionDefinition projection, string contextName, string? contextAlias)
-        => projection.Fields.Any(field => ContainsContextReference(field, contextName, contextAlias));
+        => ContainsContextReference(projection.Field, contextName, contextAlias);
 
     private static IReadOnlySet<string> GetContextFieldNames(
         IConditionDefintion? condition,
@@ -539,7 +538,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
     {
         if (!visited.Add(context.Name))
             throw new FormatException($"Query context dependency cycle detected at [{context.Name}].");
-        var projections = context.Query.Projections.Where(projection => !projection.IsNewLine).ToArray();
+        var projections = context.Query.Projections.ToArray();
         if (projections.Length > 0)
             return projections.Select(projection =>
             {
@@ -613,7 +612,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             table = new WhereVisitor(table, queryContext)
                 .Eval(DbQueryFromQueryDto.CreateFilter(definition.Filter));
 
-        var projections = definition.Projections.Where(projection => !projection.IsNewLine).ToArray();
+        var projections = definition.Projections.ToArray();
         if (projections.Length > 0)
         {
             table.ProjectionItems = projections
@@ -656,8 +655,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         TableExpression table,
         ProjectionDefinition projection)
     {
-        if (projection.Fields.Length == 1 &&
-            projection.Fields[0] is FieldDefinition { FieldName: var fieldName } &&
+        if (projection.Field is FieldDefinition { FieldName: var fieldName } &&
             (fieldName == "*" || fieldName.EndsWith(".*", StringComparison.Ordinal)))
         {
             var wildcardTable = fieldName == "*"
@@ -671,13 +669,13 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         }
 
         yield return new ProjectionItem(
-            queryContext.ParseQueryExpression(table, projection.Fields),
+            queryContext.ParseQueryExpression(table, projection.Field),
             GetProjectionAlias(projection));
     }
 
     private static string GetProjectionAlias(ProjectionDefinition projection)
         => string.IsNullOrWhiteSpace(projection.Alias)
-            ? string.Join(" ", projection.Fields.Select(field => field.ToText()))
+            ? projection.Field.ToText()
             : projection.Alias;
 
     private static string GetContextAlias(ContextBinding context)

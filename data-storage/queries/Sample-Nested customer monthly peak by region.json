@@ -4,27 +4,23 @@
     "Entity": "Users",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "State"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "State"
+        },
         "Alias": "Region"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "AVG",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "CustomerBestMonth.BestMonthRevenue"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "AVG",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "CustomerBestMonth.BestMonthRevenue"
+            }
+          ]
+        },
         "Alias": "AverageBestMonth"
       }
     ],
@@ -71,72 +67,64 @@
       "Entity": "Orders",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "UserId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "UserId"
+          },
           "Alias": "UserId"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "Year",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "OrderDate"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "Year",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "OrderDate"
+              }
+            ]
+          },
           "Alias": "SalesYear"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "Month",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "OrderDate"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "Month",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "OrderDate"
+              }
+            ]
+          },
           "Alias": "SalesMonth"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "SUM",
-              "arguments": [
-                {
-                  "kind": "group",
-                  "fields": [
-                    {
-                      "kind": "field",
-                      "field": "Items.Quantity"
-                    },
-                    {
-                      "oper": "*",
-                      "kind": "field",
-                      "field": "Items.UnitPrice"
-                    },
-                    {
-                      "oper": "-",
-                      "kind": "field",
-                      "field": "Items.DiscountAmount"
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "group",
+                "fields": [
+                  {
+                    "kind": "field",
+                    "field": "Items.Quantity"
+                  },
+                  {
+                    "oper": "*",
+                    "kind": "field",
+                    "field": "Items.UnitPrice"
+                  },
+                  {
+                    "oper": "-",
+                    "kind": "field",
+                    "field": "Items.DiscountAmount"
+                  }
+                ]
+              }
+            ]
+          },
           "Alias": "MonthlyRevenue"
         }
       ],
@@ -169,27 +157,23 @@
       "Entity": "CustomerMonth",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "UserId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "UserId"
+          },
           "Alias": "UserId"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "MAX",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "MonthlyRevenue"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "MAX",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "MonthlyRevenue"
+              }
+            ]
+          },
           "Alias": "BestMonthRevenue"
         }
       ],

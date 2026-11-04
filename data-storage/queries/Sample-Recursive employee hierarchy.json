@@ -4,30 +4,24 @@
     "Entity": "Employees",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Id"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Id"
+        },
         "Alias": "Id"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "ManagerId"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "ManagerId"
+        },
         "Alias": "ManagerId"
       },
       {
-        "Fields": [
-          {
-            "kind": "value",
-            "value": 0
-          }
-        ],
+        "field": {
+          "kind": "value",
+          "value": 0
+        },
         "Alias": "Level"
       }
     ],
@@ -85,40 +79,34 @@
       "Entity": "Employees",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "Id"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "Id"
+          },
           "Alias": "Id"
         },
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "ManagerId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "ManagerId"
+          },
           "Alias": "ManagerId"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "Difference",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "EmployeeTree.Level"
-                },
-                {
-                  "kind": "value",
-                  "value": -1
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "Difference",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "EmployeeTree.Level"
+              },
+              {
+                "kind": "value",
+                "value": -1
+              }
+            ]
+          },
           "Alias": "Level"
         }
       ],

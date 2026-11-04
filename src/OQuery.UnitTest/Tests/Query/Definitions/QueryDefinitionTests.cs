@@ -12,10 +12,11 @@ internal sealed class QueryDefinitionTests
     {
         var projection = QueryDefinitionJsonParser.ParseProjection("A + B - <3>").Single();
 
-        Assert.That(projection.Fields, Has.Length.EqualTo(3));
-        Assert.That(projection.Fields[0], Is.EqualTo(new FieldDefinition("A")));
-        Assert.That(projection.Fields[1], Is.EqualTo(new FieldDefinition("B")));
-        Assert.That(projection.Fields[2], Is.EqualTo(
+        var fields = ((GroupFieldDefintion)projection.Field).Fields;
+        Assert.That(fields, Has.Length.EqualTo(3));
+        Assert.That(fields[0], Is.EqualTo(new FieldDefinition("A")));
+        Assert.That(fields[1], Is.EqualTo(new FieldDefinition("B")));
+        Assert.That(fields[2], Is.EqualTo(
             new ConstFieldDefinition(MatchOperation.Subtract, 3)));
         Assert.That(projection.ToText(), Is.EqualTo("A + B - <3>"));
     }
@@ -23,7 +24,8 @@ internal sealed class QueryDefinitionTests
     [Test]
     public void ParenthesizedArithmeticIsAGroupOperand()
     {
-        var fields = QueryDefinitionJsonParser.ParseProjection("A * (B - C + D) / <2>").Single().Fields;
+        var fields = ((GroupFieldDefintion)QueryDefinitionJsonParser
+            .ParseProjection("A * (B - C + D) / <2>").Single().Field).Fields;
 
         Assert.That(fields, Has.Length.EqualTo(3));
         Assert.That(fields[0], Is.EqualTo(new FieldDefinition("A")));
@@ -47,8 +49,7 @@ internal sealed class QueryDefinitionTests
         var function = (FunctionFieldDefinition)QueryDefinitionJsonParser
             .ParseProjection("Round(A + B, <2>)")
             .Single()
-            .Fields
-            .Single();
+            .Field;
 
         Assert.That(function.Arguments, Has.Length.EqualTo(2));
         var group = (GroupFieldDefintion)function.Arguments[0];
@@ -64,7 +65,8 @@ internal sealed class QueryDefinitionTests
     [Test]
     public void ConsecutiveParenthesizedOperandsKeepTheirOperators()
     {
-        var fields = QueryDefinitionJsonParser.ParseProjection("<5> - (A - B) * (C - D)").Single().Fields;
+        var fields = ((GroupFieldDefintion)QueryDefinitionJsonParser
+            .ParseProjection("<5> - (A - B) * (C - D)").Single().Field).Fields;
 
         Assert.That(fields, Has.Length.EqualTo(3));
         Assert.That(fields[0], Is.EqualTo(new ConstFieldDefinition(5)));
@@ -85,7 +87,7 @@ internal sealed class QueryDefinitionTests
         var json = JsonSerializer.Serialize(projection, options);
 
         Assert.That(json, Is.EqualTo(
-            """{"fields":[{"kind":"field","field":"A"},{"kind":"field","field":"B"},{"oper":"-","kind":"value","value":3}],"alias":null}"""));
+            """{"field":{"kind":"group","fields":[{"kind":"field","field":"A"},{"kind":"field","field":"B"},{"oper":"-","kind":"value","value":3}]},"alias":null}"""));
         var restored = JsonSerializer.Deserialize<ProjectionDefinition>(json, options)
             ?? throw new InvalidOperationException("The projection JSON did not produce a definition.");
         Assert.That(restored.ToText(), Is.EqualTo(projection.ToText()));
@@ -273,7 +275,8 @@ internal sealed class QueryDefinitionDatabaseTests : TestBase
             Projections =
             [
                 new ProjectionDefinition(
-                    QueryDefinitionJsonParser.ParseExpression("<1> + <2> * <3> - <3>"),
+                    new GroupFieldDefintion(
+                        QueryDefinitionJsonParser.ParseExpression("<1> + <2> * <3> - <3>")),
                     "Calculated")
             ]
         };

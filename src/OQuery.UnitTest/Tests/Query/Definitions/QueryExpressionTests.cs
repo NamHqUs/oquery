@@ -104,7 +104,8 @@ public sealed class QueryExpressionTests
             Projections =
             [
                 new ProjectionDefinition(
-                    QueryDefinitionJsonParser.ParseExpression("Id + CostPrice + Id - CostPrice"),
+                    new GroupFieldDefintion(
+                        QueryDefinitionJsonParser.ParseExpression("Id + CostPrice + Id - CostPrice")),
                     "Calculated")
             ]
         };
@@ -127,13 +128,14 @@ public sealed class QueryExpressionTests
             Projections =
             [
                 new ProjectionDefinition(
-                    QueryDefinitionJsonParser.ParseExpression("Id + CostPrice * Id - CostPrice"),
+                    new GroupFieldDefintion(
+                        QueryDefinitionJsonParser.ParseExpression("Id + CostPrice * Id - CostPrice")),
                     "Calculated")
             ]
         };
         var serialized = JsonSerializer.Serialize(definition, options);
         var roundTripped = QueryDefinitionJsonParser.Parse(serialized);
-        var fields = roundTripped.Projections[0].Fields;
+        var fields = ((GroupFieldDefintion)roundTripped.Projections[0].Field).Fields;
         Assert.That(fields, Has.Length.EqualTo(4));
         Assert.That(fields[1], Is.EqualTo(new FieldDefinition("CostPrice")));
         Assert.That(fields[2], Is.EqualTo(new FieldDefinition(MatchOperation.Multiply, "Id")));
@@ -148,7 +150,7 @@ public sealed class QueryExpressionTests
     [Test]
     public void ProjectionSerializationPreservesOriginalStructureAndNamingPolicy()
     {
-        var projection = new ProjectionDefinition([new FieldDefinition("Name")], "ProductName");
+        var projection = new ProjectionDefinition(new FieldDefinition("Name"), "ProductName");
 
         var defaultOptions = new JsonSerializerOptions();
         QueryDefinitionJsonParser.Configure(defaultOptions);
@@ -158,55 +160,29 @@ public sealed class QueryExpressionTests
             QueryDefinitionJsonParser.CreateSerializerOptions());
 
         Assert.That(defaultJson, Is.EqualTo(
-            """{"fields":[{"kind":"field","field":"Name"}],"alias":"ProductName"}"""));
+            """{"field":{"kind":"field","field":"Name"},"alias":"ProductName"}"""));
         Assert.That(webJson, Is.EqualTo(
-            """{"fields":[{"kind":"field","field":"Name"}],"alias":"ProductName"}"""));
+            """{"field":{"kind":"field","field":"Name"},"alias":"ProductName"}"""));
     }
 
     [Test]
     public void ProjectionSerializationStoresOperatorsOnFields()
     {
         var projection = new ProjectionDefinition(
+            new GroupFieldDefintion(
             [
                 new FieldDefinition("CostPrice"),
                 new ConstFieldDefinition(MatchOperation.Multiply, 2)
-            ],
+            ]),
             "Calculated");
         var options = QueryDefinitionJsonParser.CreateSerializerOptions();
 
         var serialized = JsonSerializer.Serialize(projection, options);
 
         Assert.That(serialized, Is.EqualTo(
-            """{"fields":[{"kind":"field","field":"CostPrice"},{"oper":"*","kind":"value","value":2}],"alias":"Calculated"}"""));
+            """{"field":{"kind":"group","fields":[{"kind":"field","field":"CostPrice"},{"oper":"*","kind":"value","value":2}]},"alias":"Calculated"}"""));
         var roundTripped = JsonSerializer.Deserialize<ProjectionDefinition>(serialized, options);
         Assert.That(roundTripped?.ToText(), Is.EqualTo(projection.ToText()));
-    }
-
-    [Test]
-    public void MathOperatorSurvivesJsonRoundTripAndBuildsSql()
-    {
-        const string json = """
-            {
-              "entity": "Products",
-              "projection": [{
-                "alias": "Calculated",
-                "fields": [
-                  { "kind": "field", "field": "Id" },
-                  { "oper": "*", "kind": "field", "field": "CostPrice" }
-                ]
-              }]
-            }
-            """;
-        var options = QueryDefinitionJsonParser.CreateSerializerOptions();
-        var definition = QueryDefinitionJsonParser.Parse(json);
-        var serialized = JsonSerializer.Serialize(definition, options);
-        var roundTripped = QueryDefinitionJsonParser.Parse(serialized);
-
-        using var connection = new SqliteConnection("Data Source=:memory:");
-        using var db = new OQueryEngine(connection, Metadata);
-        var sql = db.Query(roundTripped).ToSql();
-
-        Assert.That(sql.CommandText, Does.Contain("(t0.\"Id\" * t0.\"CostPrice\")"));
     }
 
     [Test]
@@ -220,9 +196,9 @@ public sealed class QueryExpressionTests
             Projections =
             [
                 new ProjectionDefinition(
-                    [new FunctionFieldDefinition(
+                    new FunctionFieldDefinition(
                         "RANDOM_SQL",
-                        [new ConstFieldDefinition(1)])],
+                        [new ConstFieldDefinition(1)]),
                     "Unsafe")
             ]
         };

@@ -4,49 +4,41 @@
     "Entity": "Employees",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "DepartmentId"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "DepartmentId"
+        },
         "Alias": null
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Id"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Id"
+        },
         "Alias": "EmployeeId"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Salary"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Salary"
+        },
         "Alias": null
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "Rank",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "DepartmentId"
-              },
-              {
-                "kind": "field",
-                "field": "Salary"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "Rank",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "DepartmentId"
+            },
+            {
+              "kind": "field",
+              "field": "Salary"
+            }
+          ]
+        },
         "Alias": "DepartmentRank"
       }
     ],

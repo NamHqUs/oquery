@@ -4,151 +4,135 @@
     "Entity": "InsurancePlans",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Name"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Name"
+        },
         "Alias": "Plan"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Tier"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Tier"
+        },
         "Alias": null
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "CountDistinct",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "Policies.Id"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "CountDistinct",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Policies.Id"
+            }
+          ]
+        },
         "Alias": "PolicyCount"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "Coalesce",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "PremiumTotals.PremiumRevenue"
-                  },
-                  {
-                    "kind": "value",
-                    "value": 0
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "Coalesce",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "PremiumTotals.PremiumRevenue"
+                },
+                {
+                  "kind": "value",
+                  "value": 0
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "PremiumRevenue"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "Coalesce",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "ClaimTotals.ClaimCount"
-              },
-              {
-                "kind": "value",
-                "value": 0
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "Coalesce",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "ClaimTotals.ClaimCount"
+            },
+            {
+              "kind": "value",
+              "value": 0
+            }
+          ]
+        },
         "Alias": "ClaimCount"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "Coalesce",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "ClaimTotals.ClaimsPaid"
-                  },
-                  {
-                    "kind": "value",
-                    "value": 0
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "Coalesce",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "ClaimTotals.ClaimsPaid"
+                },
+                {
+                  "kind": "value",
+                  "value": 0
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "ClaimsPaid"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "MedicalLossRatio",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "ClaimTotals.ClaimsPaid"
-              },
-              {
-                "kind": "field",
-                "field": "PremiumTotals.PremiumRevenue"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "MedicalLossRatio",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "ClaimTotals.ClaimsPaid"
+            },
+            {
+              "kind": "field",
+              "field": "PremiumTotals.PremiumRevenue"
+            }
+          ]
+        },
         "Alias": "MedicalLossRatioPercent"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "Coalesce",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "ClaimTotals.DeniedClaims"
-              },
-              {
-                "kind": "value",
-                "value": 0
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "Coalesce",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "ClaimTotals.DeniedClaims"
+            },
+            {
+              "kind": "value",
+              "value": 0
+            }
+          ]
+        },
         "Alias": "DeniedClaims"
       }
     ],
@@ -222,27 +206,23 @@
       "Entity": "PremiumPayments",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "Policy.PlanId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "Policy.PlanId"
+          },
           "Alias": "PlanId"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "SUM",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Amount"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Amount"
+              }
+            ]
+          },
           "Alias": "PremiumRevenue"
         }
       ],
@@ -275,74 +255,66 @@
       "Entity": "Claims",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "Policy.PlanId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "Policy.PlanId"
+          },
           "Alias": "PlanId"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "SUM",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "PaidAmount"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "PaidAmount"
+              }
+            ]
+          },
           "Alias": "ClaimsPaid"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "COUNT",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Id"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "COUNT",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ]
+          },
           "Alias": "ClaimCount"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "CountIf",
-              "arguments": [
-                {
-                  "kind": "condition",
-                  "condition": {
-                    "logicalOperation": 0,
-                    "filters": [
-                      {
-                        "logicalOperator": 0,
-                        "left": {
-                          "kind": "field",
-                          "field": "Status"
-                        },
-                        "operation": 0,
-                        "right": {
-                          "kind": "value",
-                          "value": "Denied"
-                        },
-                        "parameterized": true
-                      }
-                    ]
-                  }
+          "field": {
+            "kind": "function",
+            "function": "CountIf",
+            "arguments": [
+              {
+                "kind": "condition",
+                "condition": {
+                  "logicalOperation": 0,
+                  "filters": [
+                    {
+                      "logicalOperator": 0,
+                      "left": {
+                        "kind": "field",
+                        "field": "Status"
+                      },
+                      "operation": 0,
+                      "right": {
+                        "kind": "value",
+                        "value": "Denied"
+                      },
+                      "parameterized": true
+                    }
+                  ]
                 }
-              ]
-            }
-          ],
+              }
+            ]
+          },
           "Alias": "DeniedClaims"
         }
       ],

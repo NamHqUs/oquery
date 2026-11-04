@@ -119,7 +119,9 @@ public static class QueryDefinitionJsonParser
         return ParseJsonDefinition(document.RootElement);
     }
 
-    private static QueryDefinition ParseJsonDefinition(JsonElement root)
+    private static QueryDefinition ParseJsonDefinition(
+        JsonElement root,
+        IReadOnlySet<string>? inheritedContexts = null)
     {
         var projectionElement = TryGetProperty(root, "projection", out var projection)
             ? projection
@@ -135,7 +137,6 @@ public static class QueryDefinitionJsonParser
                     field.GetRawText(),
                     QueryDefinitionJsonParser.CreateSerializerOptions())
                     ?? throw new JsonException("A projection field cannot be null."))
-                .Where(field => !field.IsNewLine)
                 .ToList();
         }
 
@@ -157,26 +158,31 @@ public static class QueryDefinitionJsonParser
             Skip = ReadInt(root, "skip"),
             Joins = []
         };
+        var availableContexts = inheritedContexts is null
+            ? new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            : new HashSet<string>(inheritedContexts, StringComparer.OrdinalIgnoreCase);
         if (TryGetProperty(root, "contexts", out var contextsElement))
         {
             if (contextsElement.ValueKind == JsonValueKind.Object)
             {
                 foreach (var context in contextsElement.EnumerateObject())
-                    result.Contexts![context.Name] = ParseJsonDefinition(context.Value);
+                    availableContexts.Add(context.Name);
+                foreach (var context in contextsElement.EnumerateObject())
+                    result.Contexts![context.Name] = ParseJsonDefinition(context.Value, availableContexts);
             }
             else if (contextsElement.ValueKind == JsonValueKind.Array)
             {
-                foreach (var context in contextsElement.EnumerateArray())
+                var contextElements = contextsElement.EnumerateArray().ToArray();
+                var contextNames = contextElements.Select(GetContextName).ToArray();
+                foreach (var name in contextNames)
+                    availableContexts.Add(name);
+
+                foreach (var (context, name) in contextElements.Zip(contextNames))
                 {
-                    var name = TryGetProperty(context, "name", out var nameElement)
-                        ? nameElement.GetString()
-                        : TryGetProperty(context, "alias", out var aliasElement) ? aliasElement.GetString() : null;
-                    if (string.IsNullOrWhiteSpace(name))
-                        throw new JsonException("A query context requires a name.");
                     var queryElement = TryGetProperty(context, "query", out var nested)
                         ? nested
                         : context;
-                    var contextQuery = ParseJsonDefinition(queryElement);
+                    var contextQuery = ParseJsonDefinition(queryElement, availableContexts);
                     result.Contexts![name] = contextQuery;
                     result.Joins!.Add(new JoinDefinition(
                         name,
@@ -186,16 +192,28 @@ public static class QueryDefinitionJsonParser
                 }
             }
             else throw new JsonException("The contexts value must be an object or array.");
+
+            ValidateContextReferences(result, availableContexts);
         }
         if ((TryGetProperty(root, "relations", out var relations) ||
              TryGetProperty(root, "joins", out relations)) &&
             relations.ValueKind == JsonValueKind.Array)
             foreach (var relation in relations.EnumerateArray())
                 result.Joins!.Add(ParseJsonRelation(relation));
-        ValidateContextReferences(result);
+        ValidateContextReferences(result, availableContexts);
         FlattenContexts(result.Contexts!);
-        ValidateContextReferences(result);
+        ValidateContextReferences(result, availableContexts);
         return result;
+    }
+
+    private static string GetContextName(JsonElement context)
+    {
+        var name = TryGetProperty(context, "name", out var nameElement)
+            ? nameElement.GetString()
+            : TryGetProperty(context, "alias", out var aliasElement) ? aliasElement.GetString() : null;
+        return !string.IsNullOrWhiteSpace(name)
+            ? name
+            : throw new JsonException("A query context requires a name.");
     }
 
     private static void FlattenContexts(Dictionary<string, QueryDefinitionBase> contexts)

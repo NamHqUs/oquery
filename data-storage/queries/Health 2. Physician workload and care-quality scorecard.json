@@ -4,185 +4,167 @@
     "Entity": "Employees",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Id"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Id"
+        },
         "Alias": "DoctorId"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "Concat",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "FirstName"
-              },
-              {
-                "kind": "value",
-                "value": " "
-              },
-              {
-                "kind": "field",
-                "field": "LastName"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "Concat",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "FirstName"
+            },
+            {
+              "kind": "value",
+              "value": " "
+            },
+            {
+              "kind": "field",
+              "field": "LastName"
+            }
+          ]
+        },
         "Alias": "Physician"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Department.Name"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Department.Name"
+        },
         "Alias": "Department"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Location.City"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Location.City"
+        },
         "Alias": "ClinicCity"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "DoctorVisits.VisitCount"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "DoctorVisits.VisitCount"
+        },
         "Alias": "VisitCount"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "DoctorVisits.PatientCount"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "DoctorVisits.PatientCount"
+        },
         "Alias": "PatientCount"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "DoctorVisits.AverageVisitMinutes"
-              },
-              {
-                "kind": "value",
-                "value": 1
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "DoctorVisits.AverageVisitMinutes"
+            },
+            {
+              "kind": "value",
+              "value": 1
+            }
+          ]
+        },
         "Alias": "AverageVisitMinutes"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "DoctorVisits.Charges"
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "DoctorVisits.Charges"
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "Charges"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "group",
-                "fields": [
-                  {
-                    "kind": "value",
-                    "value": 100.0
-                  },
-                  {
-                    "oper": "*",
-                    "kind": "function",
-                    "function": "SUM",
-                    "arguments": [
-                      {
-                        "kind": "function",
-                        "function": "Coalesce",
-                        "arguments": [
-                          {
-                            "kind": "field",
-                            "field": "DoctorLabs.AbnormalCount"
-                          },
-                          {
-                            "kind": "value",
-                            "value": 0
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "oper": "/",
-                    "kind": "function",
-                    "function": "NULLIF",
-                    "arguments": [
-                      {
-                        "kind": "function",
-                        "function": "SUM",
-                        "arguments": [
-                          {
-                            "kind": "function",
-                            "function": "Coalesce",
-                            "arguments": [
-                              {
-                                "kind": "field",
-                                "field": "DoctorLabs.LabCount"
-                              },
-                              {
-                                "kind": "value",
-                                "value": 0
-                              }
-                            ]
-                          }
-                        ]
-                      },
-                      {
-                        "kind": "value",
-                        "value": 0
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "group",
+              "fields": [
+                {
+                  "kind": "value",
+                  "value": 100.0
+                },
+                {
+                  "oper": "*",
+                  "kind": "function",
+                  "function": "SUM",
+                  "arguments": [
+                    {
+                      "kind": "function",
+                      "function": "Coalesce",
+                      "arguments": [
+                        {
+                          "kind": "field",
+                          "field": "DoctorLabs.AbnormalCount"
+                        },
+                        {
+                          "kind": "value",
+                          "value": 0
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "oper": "/",
+                  "kind": "function",
+                  "function": "NULLIF",
+                  "arguments": [
+                    {
+                      "kind": "function",
+                      "function": "SUM",
+                      "arguments": [
+                        {
+                          "kind": "function",
+                          "function": "Coalesce",
+                          "arguments": [
+                            {
+                              "kind": "field",
+                              "field": "DoctorLabs.LabCount"
+                            },
+                            {
+                              "kind": "value",
+                              "value": 0
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "value",
+                      "value": 0
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "AbnormalLabPercent"
       }
     ],
@@ -306,72 +288,62 @@
       "Entity": "Visits",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "DoctorId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "DoctorId"
+          },
           "Alias": "DoctorId"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "CountDistinct",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Id"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "CountDistinct",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ]
+          },
           "Alias": "VisitCount"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "CountDistinct",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "UserId"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "CountDistinct",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "UserId"
+              }
+            ]
+          },
           "Alias": "PatientCount"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "AVG",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "DurationMinutes"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "AVG",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "DurationMinutes"
+              }
+            ]
+          },
           "Alias": "AverageVisitMinutes"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "SUM",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Charge"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Charge"
+              }
+            ]
+          },
           "Alias": "Charges"
         }
       ],
@@ -404,59 +376,53 @@
       "Entity": "LabResults",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "Visit.DoctorId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "Visit.DoctorId"
+          },
           "Alias": "DoctorId"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "COUNT",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Id"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "COUNT",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ]
+          },
           "Alias": "LabCount"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "CountIf",
-              "arguments": [
-                {
-                  "kind": "condition",
-                  "condition": {
-                    "logicalOperation": 0,
-                    "filters": [
-                      {
-                        "logicalOperator": 0,
-                        "left": {
-                          "kind": "field",
-                          "field": "IsAbnormal"
-                        },
-                        "operation": 0,
-                        "right": {
-                          "kind": "value",
-                          "value": true
-                        },
-                        "parameterized": true
-                      }
-                    ]
-                  }
+          "field": {
+            "kind": "function",
+            "function": "CountIf",
+            "arguments": [
+              {
+                "kind": "condition",
+                "condition": {
+                  "logicalOperation": 0,
+                  "filters": [
+                    {
+                      "logicalOperator": 0,
+                      "left": {
+                        "kind": "field",
+                        "field": "IsAbnormal"
+                      },
+                      "operation": 0,
+                      "right": {
+                        "kind": "value",
+                        "value": true
+                      },
+                      "parameterized": true
+                    }
+                  ]
                 }
-              ]
-            }
-          ],
+              }
+            ]
+          },
           "Alias": "AbnormalCount"
         }
       ],

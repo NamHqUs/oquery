@@ -36,7 +36,7 @@ internal static class DbQueryFromQueryDto
                 var alias = string.IsNullOrWhiteSpace(field.Alias)
                     ? field.ToText()
                     : field.Alias;
-                selection[alias] = field.Fields;
+                selection[alias] = field.Field;
             }
 
             query = query.Select(selection);

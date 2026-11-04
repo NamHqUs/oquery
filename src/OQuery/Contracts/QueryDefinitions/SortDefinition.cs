@@ -10,4 +10,10 @@ public enum QuerySortDirection
 
 public sealed record SortDefinition(
     IFieldDefinition Field,
-    QuerySortDirection Direction = QuerySortDirection.Ascending);
+    QuerySortDirection Direction = QuerySortDirection.Ascending)
+{
+    public string ToText()
+    {
+        return $"{Field.ToText()} {Direction}";
+    }
+}

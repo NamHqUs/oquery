@@ -46,8 +46,7 @@ public static class QueryDefinitionOQueryParser
 
         var alias = string.IsNullOrWhiteSpace(relation.Alias) ? rootName : relation.Alias;
         var contextFieldAliases = root.Projections
-            .Where(projection => projection.Fields is [{ }])
-            .Select(projection => (Field: projection.Fields[0], projection.Alias))
+            .Select(projection => (Field: projection.Field, projection.Alias))
             .Where(item => item.Field is FieldDefinition field
                 && !field.FieldName.Contains('.')
                 && !string.IsNullOrWhiteSpace(item.Alias))

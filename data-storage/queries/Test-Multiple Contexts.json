@@ -4,48 +4,38 @@
     "Entity": "User",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Name"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Name"
+        },
         "Alias": null
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": ""
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": ""
+        },
         "Alias": "NEW_LINE"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Manager1.Name"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Manager1.Name"
+        },
         "Alias": null
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": ""
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": ""
+        },
         "Alias": "NEW_LINE"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Manager2.Age"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Manager2.Age"
+        },
         "Alias": null
       }
     ],
@@ -109,30 +99,24 @@
       "Entity": "User",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "Id"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "Id"
+          },
           "Alias": null
         },
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "Name"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "Name"
+          },
           "Alias": null
         },
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "Age"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "Age"
+          },
           "Alias": null
         }
       ],

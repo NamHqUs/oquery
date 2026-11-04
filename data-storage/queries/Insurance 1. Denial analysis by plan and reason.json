@@ -4,120 +4,106 @@
     "Entity": "Claims",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Policy.Plan.Tier"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Policy.Plan.Tier"
+        },
         "Alias": "Tier"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Policy.Plan.Name"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Policy.Plan.Name"
+        },
         "Alias": "Plan"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "DenialReason"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "DenialReason"
+        },
         "Alias": null
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "COUNT",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "Id"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "COUNT",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Id"
+            }
+          ]
+        },
         "Alias": "DeniedClaims"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "SUM",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "BilledAmount"
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "BilledAmount"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "BilledAmount"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "SUM",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "AllowedAmount"
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "SUM",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "AllowedAmount"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "AllowedAmount"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "AVG",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "BilledAmount"
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "AVG",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "BilledAmount"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "AverageBilledAmount"
       }
     ],

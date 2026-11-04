@@ -4,54 +4,48 @@
     "Entity": "Policies",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Id"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Id"
+        },
         "Alias": "PolicyId"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "Concat",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "User.FirstName"
-              },
-              {
-                "kind": "value",
-                "value": " "
-              },
-              {
-                "kind": "field",
-                "field": "User.LastName"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "Concat",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "User.FirstName"
+            },
+            {
+              "kind": "value",
+              "value": " "
+            },
+            {
+              "kind": "field",
+              "field": "User.LastName"
+            }
+          ]
+        },
         "Alias": "Member"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "Coalesce",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "RevenueSinceStart.PremiumRevenue"
-              },
-              {
-                "kind": "value",
-                "value": 0
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "Coalesce",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "RevenueSinceStart.PremiumRevenue"
+            },
+            {
+              "kind": "value",
+              "value": 0
+            }
+          ]
+        },
         "Alias": "RevenueSinceSignup"
       }
     ],
@@ -102,27 +96,23 @@
       "Entity": "PremiumPayments",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "PolicyId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "PolicyId"
+          },
           "Alias": "PolicyId"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "SUM",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Amount"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Amount"
+              }
+            ]
+          },
           "Alias": "PremiumRevenue"
         }
       ],

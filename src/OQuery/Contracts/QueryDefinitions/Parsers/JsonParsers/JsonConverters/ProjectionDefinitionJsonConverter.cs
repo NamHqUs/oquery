@@ -14,9 +14,9 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
         if (root.ValueKind != JsonValueKind.Object)
             throw new JsonException("A projection field must be an object.");
 
-        if (!TryGetProperty(root, "fields", out var fieldsElement))
-            throw new JsonException("A projection requires a fields array.");
-        var fields = ReadFields(fieldsElement);
+        if (!TryGetProperty(root, "field", out var fieldElement))
+            throw new JsonException("A projection requires a field.");
+        var field = ParseField(fieldElement);
         var alias = TryGetProperty(root, "alias", out var aliasElement)
             ? aliasElement.ValueKind switch
             {
@@ -26,33 +26,21 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
             }
             : null;
 
-        return new ProjectionDefinition(fields, alias);
+        return new ProjectionDefinition(field, alias);
     }
 
     public override void Write(Utf8JsonWriter writer, ProjectionDefinition value, JsonSerializerOptions options)
     {
         writer.WriteStartObject();
-        var fieldsPropertyName = options.PropertyNamingPolicy?.ConvertName(nameof(value.Fields))
-            ?? nameof(value.Fields);
         var aliasPropertyName = options.PropertyNamingPolicy?.ConvertName(nameof(value.Alias))
             ?? nameof(value.Alias);
-        writer.WritePropertyName(fieldsPropertyName);
-        writer.WriteStartArray();
-        foreach (var field in value.Fields)
-            WriteField(writer, field, options);
-        writer.WriteEndArray();
+        writer.WritePropertyName("field");
+        WriteField(writer, value.Field, options);
         if (value.Alias is null)
             writer.WriteNull(aliasPropertyName);
         else
             writer.WriteString(aliasPropertyName, value.Alias);
         writer.WriteEndObject();
-    }
-
-    private static IFieldDefinition[] ReadFields(JsonElement element)
-    {
-        if (element.ValueKind != JsonValueKind.Array)
-            throw new JsonException("A projection requires a fields array.");
-        return element.EnumerateArray().Select(ParseField).ToArray();
     }
 
     internal static IFieldDefinition ParseField(JsonElement element)
@@ -137,10 +125,10 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
         var operation = TryGetProperty(element, "oper", out var operationElement)
             ? ParseGroupOperation(operationElement)
             : MatchOperation.Add;
-        if (!TryGetProperty(element, "arguments", out var fields))
-            throw new JsonException("A projection group requires an argument array.");
+        if (!TryGetProperty(element, "fields", out var fields))
+            throw new JsonException("A projection group requires a fields array.");
         if (fields.ValueKind != JsonValueKind.Array)
-            throw new JsonException("A projection group requires an argument array.");
+            throw new JsonException("A projection group requires a fields array.");
 
         var parsedFields = fields.EnumerateArray().Select(ParseField).ToArray();
         return new GroupFieldDefintion(

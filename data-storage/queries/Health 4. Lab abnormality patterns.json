@@ -4,181 +4,167 @@
     "Entity": "LabResults",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "TestName"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "TestName"
+        },
         "Alias": null
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Visit.Diagnosis.Category"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Visit.Diagnosis.Category"
+        },
         "Alias": "DiagnosisCategory"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "COUNT",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "Id"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "COUNT",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Id"
+            }
+          ]
+        },
         "Alias": "TestCount"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "CountIf",
-            "arguments": [
-              {
-                "kind": "condition",
-                "condition": {
-                  "logicalOperation": 0,
-                  "filters": [
-                    {
-                      "logicalOperator": 0,
-                      "left": {
-                        "kind": "field",
-                        "field": "IsAbnormal"
-                      },
-                      "operation": 0,
-                      "right": {
-                        "kind": "value",
-                        "value": true
-                      },
-                      "parameterized": true
-                    }
-                  ]
-                }
+        "field": {
+          "kind": "function",
+          "function": "CountIf",
+          "arguments": [
+            {
+              "kind": "condition",
+              "condition": {
+                "logicalOperation": 0,
+                "filters": [
+                  {
+                    "logicalOperator": 0,
+                    "left": {
+                      "kind": "field",
+                      "field": "IsAbnormal"
+                    },
+                    "operation": 0,
+                    "right": {
+                      "kind": "value",
+                      "value": true
+                    },
+                    "parameterized": true
+                  }
+                ]
               }
-            ]
-          }
-        ],
+            }
+          ]
+        },
         "Alias": "AbnormalCount"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "group",
-                "fields": [
-                  {
-                    "kind": "value",
-                    "value": 100.0
-                  },
-                  {
-                    "oper": "*",
-                    "kind": "function",
-                    "function": "CountIf",
-                    "arguments": [
-                      {
-                        "kind": "condition",
-                        "condition": {
-                          "logicalOperation": 0,
-                          "filters": [
-                            {
-                              "logicalOperator": 0,
-                              "left": {
-                                "kind": "field",
-                                "field": "IsAbnormal"
-                              },
-                              "operation": 0,
-                              "right": {
-                                "kind": "value",
-                                "value": true
-                              },
-                              "parameterized": true
-                            }
-                          ]
-                        }
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "group",
+              "fields": [
+                {
+                  "kind": "value",
+                  "value": 100.0
+                },
+                {
+                  "oper": "*",
+                  "kind": "function",
+                  "function": "CountIf",
+                  "arguments": [
+                    {
+                      "kind": "condition",
+                      "condition": {
+                        "logicalOperation": 0,
+                        "filters": [
+                          {
+                            "logicalOperator": 0,
+                            "left": {
+                              "kind": "field",
+                              "field": "IsAbnormal"
+                            },
+                            "operation": 0,
+                            "right": {
+                              "kind": "value",
+                              "value": true
+                            },
+                            "parameterized": true
+                          }
+                        ]
                       }
-                    ]
-                  },
-                  {
-                    "oper": "/",
-                    "kind": "function",
-                    "function": "COUNT",
-                    "arguments": [
-                      {
-                        "kind": "field",
-                        "field": "Id"
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+                    }
+                  ]
+                },
+                {
+                  "oper": "/",
+                  "kind": "function",
+                  "function": "COUNT",
+                  "arguments": [
+                    {
+                      "kind": "field",
+                      "field": "Id"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "AbnormalPercent"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "AVG",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "ResultValue"
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "AVG",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "ResultValue"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "AverageResult"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "AVG",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "ReferenceMax"
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "AVG",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "ReferenceMax"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "AverageReferenceMaximum"
       }
     ],

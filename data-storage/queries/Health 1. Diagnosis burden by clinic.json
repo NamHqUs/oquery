@@ -4,161 +4,147 @@
     "Entity": "Visits",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Diagnosis.Name"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Diagnosis.Name"
+        },
         "Alias": "Diagnosis"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Diagnosis.Category"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Diagnosis.Category"
+        },
         "Alias": "DiagnosisCategory"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Location.City"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Location.City"
+        },
         "Alias": "ClinicCity"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "CountDistinct",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "Id"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "CountDistinct",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Id"
+            }
+          ]
+        },
         "Alias": "VisitCount"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "CountDistinct",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "UserId"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "CountDistinct",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "UserId"
+            }
+          ]
+        },
         "Alias": "UniquePatients"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "function",
-                "function": "AVG",
-                "arguments": [
-                  {
-                    "kind": "field",
-                    "field": "Charge"
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "function",
+              "function": "AVG",
+              "arguments": [
+                {
+                  "kind": "field",
+                  "field": "Charge"
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "AverageCharge"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "group",
-                "fields": [
-                  {
-                    "kind": "value",
-                    "value": 100.0
-                  },
-                  {
-                    "oper": "*",
-                    "kind": "function",
-                    "function": "SUM",
-                    "arguments": [
-                      {
-                        "kind": "function",
-                        "function": "Coalesce",
-                        "arguments": [
-                          {
-                            "kind": "field",
-                            "field": "VisitLabs.AbnormalCount"
-                          },
-                          {
-                            "kind": "value",
-                            "value": 0
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "oper": "/",
-                    "kind": "function",
-                    "function": "NULLIF",
-                    "arguments": [
-                      {
-                        "kind": "function",
-                        "function": "SUM",
-                        "arguments": [
-                          {
-                            "kind": "function",
-                            "function": "Coalesce",
-                            "arguments": [
-                              {
-                                "kind": "field",
-                                "field": "VisitLabs.LabCount"
-                              },
-                              {
-                                "kind": "value",
-                                "value": 0
-                              }
-                            ]
-                          }
-                        ]
-                      },
-                      {
-                        "kind": "value",
-                        "value": 0
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "group",
+              "fields": [
+                {
+                  "kind": "value",
+                  "value": 100.0
+                },
+                {
+                  "oper": "*",
+                  "kind": "function",
+                  "function": "SUM",
+                  "arguments": [
+                    {
+                      "kind": "function",
+                      "function": "Coalesce",
+                      "arguments": [
+                        {
+                          "kind": "field",
+                          "field": "VisitLabs.AbnormalCount"
+                        },
+                        {
+                          "kind": "value",
+                          "value": 0
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "oper": "/",
+                  "kind": "function",
+                  "function": "NULLIF",
+                  "arguments": [
+                    {
+                      "kind": "function",
+                      "function": "SUM",
+                      "arguments": [
+                        {
+                          "kind": "function",
+                          "function": "Coalesce",
+                          "arguments": [
+                            {
+                              "kind": "field",
+                              "field": "VisitLabs.LabCount"
+                            },
+                            {
+                              "kind": "value",
+                              "value": 0
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "kind": "value",
+                      "value": 0
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "AbnormalLabPercent"
       }
     ],
@@ -247,59 +233,53 @@
       "Entity": "LabResults",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "VisitId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "VisitId"
+          },
           "Alias": "VisitId"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "COUNT",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Id"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "COUNT",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ]
+          },
           "Alias": "LabCount"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "CountIf",
-              "arguments": [
-                {
-                  "kind": "condition",
-                  "condition": {
-                    "logicalOperation": 0,
-                    "filters": [
-                      {
-                        "logicalOperator": 0,
-                        "left": {
-                          "kind": "field",
-                          "field": "IsAbnormal"
-                        },
-                        "operation": 0,
-                        "right": {
-                          "kind": "value",
-                          "value": true
-                        },
-                        "parameterized": true
-                      }
-                    ]
-                  }
+          "field": {
+            "kind": "function",
+            "function": "CountIf",
+            "arguments": [
+              {
+                "kind": "condition",
+                "condition": {
+                  "logicalOperation": 0,
+                  "filters": [
+                    {
+                      "logicalOperator": 0,
+                      "left": {
+                        "kind": "field",
+                        "field": "IsAbnormal"
+                      },
+                      "operation": 0,
+                      "right": {
+                        "kind": "value",
+                        "value": true
+                      },
+                      "parameterized": true
+                    }
+                  ]
                 }
-              ]
-            }
-          ],
+              }
+            ]
+          },
           "Alias": "AbnormalCount"
         }
       ],

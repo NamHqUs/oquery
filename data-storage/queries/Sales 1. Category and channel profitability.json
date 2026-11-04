@@ -4,111 +4,95 @@
     "Entity": "OrderCategory",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Category"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Category"
+        },
         "Alias": null
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Channel"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Channel"
+        },
         "Alias": null
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "COUNT",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "OrderId"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "COUNT",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "OrderId"
+            }
+          ]
+        },
         "Alias": "OrdersContainingCategory"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "SUM",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "UnitsSold"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "SUM",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "UnitsSold"
+            }
+          ]
+        },
         "Alias": "UnitsSold"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "SUM",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "NetRevenue"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "SUM",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "NetRevenue"
+            }
+          ]
+        },
         "Alias": "NetRevenue"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "SUM",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "Discounts"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "SUM",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "Discounts"
+            }
+          ]
+        },
         "Alias": "Discounts"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "SUM",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "GrossProfit"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "SUM",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "GrossProfit"
+            }
+          ]
+        },
         "Alias": "GrossProfit"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "AVG",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "NetRevenue"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "AVG",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "NetRevenue"
+            }
+          ]
+        },
         "Alias": "AverageCategoryRevenuePerOrder"
       }
     ],
@@ -142,130 +126,116 @@
       "Entity": "OrderItems",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "OrderId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "OrderId"
+          },
           "Alias": "OrderId"
         },
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "Product.Category"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "Product.Category"
+          },
           "Alias": "Category"
         },
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "Order.Channel"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "Order.Channel"
+          },
           "Alias": "Channel"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "SUM",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Quantity"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Quantity"
+              }
+            ]
+          },
           "Alias": "UnitsSold"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "SUM",
-              "arguments": [
-                {
-                  "kind": "group",
-                  "fields": [
-                    {
-                      "kind": "field",
-                      "field": "Quantity"
-                    },
-                    {
-                      "oper": "*",
-                      "kind": "field",
-                      "field": "UnitPrice"
-                    },
-                    {
-                      "oper": "-",
-                      "kind": "field",
-                      "field": "DiscountAmount"
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "group",
+                "fields": [
+                  {
+                    "kind": "field",
+                    "field": "Quantity"
+                  },
+                  {
+                    "oper": "*",
+                    "kind": "field",
+                    "field": "UnitPrice"
+                  },
+                  {
+                    "oper": "-",
+                    "kind": "field",
+                    "field": "DiscountAmount"
+                  }
+                ]
+              }
+            ]
+          },
           "Alias": "NetRevenue"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "SUM",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "DiscountAmount"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "DiscountAmount"
+              }
+            ]
+          },
           "Alias": "Discounts"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "SUM",
-              "arguments": [
-                {
-                  "kind": "group",
-                  "fields": [
-                    {
-                      "kind": "field",
-                      "field": "Quantity"
-                    },
-                    {
-                      "oper": "*",
-                      "kind": "group",
-                      "fields": [
-                        {
-                          "kind": "field",
-                          "field": "UnitPrice"
-                        },
-                        {
-                          "oper": "-",
-                          "kind": "field",
-                          "field": "Product.CostPrice"
-                        }
-                      ]
-                    },
-                    {
-                      "oper": "-",
-                      "kind": "field",
-                      "field": "DiscountAmount"
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "group",
+                "fields": [
+                  {
+                    "kind": "field",
+                    "field": "Quantity"
+                  },
+                  {
+                    "oper": "*",
+                    "kind": "group",
+                    "fields": [
+                      {
+                        "kind": "field",
+                        "field": "UnitPrice"
+                      },
+                      {
+                        "oper": "-",
+                        "kind": "field",
+                        "field": "Product.CostPrice"
+                      }
+                    ]
+                  },
+                  {
+                    "oper": "-",
+                    "kind": "field",
+                    "field": "DiscountAmount"
+                  }
+                ]
+              }
+            ]
+          },
           "Alias": "GrossProfit"
         }
       ],

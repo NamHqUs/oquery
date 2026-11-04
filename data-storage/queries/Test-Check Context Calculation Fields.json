@@ -4,21 +4,17 @@
     "Entity": "User Context",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Id"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Id"
+        },
         "Alias": null
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Name"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Name"
+        },
         "Alias": null
       }
     ],
@@ -35,36 +31,30 @@
       "Entity": "User",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "Id"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "Id"
+          },
           "Alias": null
         },
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "Name"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "Name"
+          },
           "Alias": null
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "COUNT",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Members.Id"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "COUNT",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Members.Id"
+              }
+            ]
+          },
           "Alias": "Total Members"
         }
       ],

@@ -4,109 +4,93 @@
     "Entity": "Users",
     "Projection": [
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "Id"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "Id"
+        },
         "Alias": "PatientId"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "Concat",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "FirstName"
-              },
-              {
-                "kind": "value",
-                "value": " "
-              },
-              {
-                "kind": "field",
-                "field": "LastName"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "Concat",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "FirstName"
+            },
+            {
+              "kind": "value",
+              "value": " "
+            },
+            {
+              "kind": "field",
+              "field": "LastName"
+            }
+          ]
+        },
         "Alias": "Patient"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "AgeOn",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "BirthDate"
-              },
-              {
-                "kind": "value",
-                "value": "2025-10-31"
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "AgeOn",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "BirthDate"
+            },
+            {
+              "kind": "value",
+              "value": "2025-10-31"
+            }
+          ]
+        },
         "Alias": "Age"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "PatientVisits.ChronicVisits"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "PatientVisits.ChronicVisits"
+        },
         "Alias": "ChronicVisits"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "PatientVisits.CompletedVisits"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "PatientVisits.CompletedVisits"
+        },
         "Alias": "CompletedVisits"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "PatientLabs.AbnormalResults"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "PatientLabs.AbnormalResults"
+        },
         "Alias": "AbnormalResults"
       },
       {
-        "Fields": [
-          {
-            "kind": "function",
-            "function": "ROUND",
-            "arguments": [
-              {
-                "kind": "field",
-                "field": "PatientVisits.TotalCharges"
-              },
-              {
-                "kind": "value",
-                "value": 2
-              }
-            ]
-          }
-        ],
+        "field": {
+          "kind": "function",
+          "function": "ROUND",
+          "arguments": [
+            {
+              "kind": "field",
+              "field": "PatientVisits.TotalCharges"
+            },
+            {
+              "kind": "value",
+              "value": 2
+            }
+          ]
+        },
         "Alias": "TotalCharges"
       },
       {
-        "Fields": [
-          {
-            "kind": "field",
-            "field": "PatientVisits.LastVisitDate"
-          }
-        ],
+        "field": {
+          "kind": "field",
+          "field": "PatientVisits.LastVisitDate"
+        },
         "Alias": "LastVisitDate"
       }
     ],
@@ -224,89 +208,79 @@
       "Entity": "Visits",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "UserId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "UserId"
+          },
           "Alias": "UserId"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "CountIf",
-              "arguments": [
-                {
-                  "kind": "condition",
-                  "condition": {
-                    "logicalOperation": 0,
-                    "filters": [
-                      {
-                        "logicalOperator": 0,
-                        "left": {
-                          "kind": "field",
-                          "field": "Diagnosis.IsChronic"
-                        },
-                        "operation": 0,
-                        "right": {
-                          "kind": "value",
-                          "value": true
-                        },
-                        "parameterized": true
-                      }
-                    ]
-                  }
+          "field": {
+            "kind": "function",
+            "function": "CountIf",
+            "arguments": [
+              {
+                "kind": "condition",
+                "condition": {
+                  "logicalOperation": 0,
+                  "filters": [
+                    {
+                      "logicalOperator": 0,
+                      "left": {
+                        "kind": "field",
+                        "field": "Diagnosis.IsChronic"
+                      },
+                      "operation": 0,
+                      "right": {
+                        "kind": "value",
+                        "value": true
+                      },
+                      "parameterized": true
+                    }
+                  ]
                 }
-              ]
-            }
-          ],
+              }
+            ]
+          },
           "Alias": "ChronicVisits"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "COUNT",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Id"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "COUNT",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ]
+          },
           "Alias": "CompletedVisits"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "SUM",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "Charge"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "SUM",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Charge"
+              }
+            ]
+          },
           "Alias": "TotalCharges"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "MAX",
-              "arguments": [
-                {
-                  "kind": "field",
-                  "field": "VisitDate"
-                }
-              ]
-            }
-          ],
+          "field": {
+            "kind": "function",
+            "function": "MAX",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "VisitDate"
+              }
+            ]
+          },
           "Alias": "LastVisitDate"
         }
       ],
@@ -339,44 +313,40 @@
       "Entity": "LabResults",
       "Projection": [
         {
-          "Fields": [
-            {
-              "kind": "field",
-              "field": "Visit.UserId"
-            }
-          ],
+          "field": {
+            "kind": "field",
+            "field": "Visit.UserId"
+          },
           "Alias": "UserId"
         },
         {
-          "Fields": [
-            {
-              "kind": "function",
-              "function": "CountIf",
-              "arguments": [
-                {
-                  "kind": "condition",
-                  "condition": {
-                    "logicalOperation": 0,
-                    "filters": [
-                      {
-                        "logicalOperator": 0,
-                        "left": {
-                          "kind": "field",
-                          "field": "IsAbnormal"
-                        },
-                        "operation": 0,
-                        "right": {
-                          "kind": "value",
-                          "value": true
-                        },
-                        "parameterized": true
-                      }
-                    ]
-                  }
+          "field": {
+            "kind": "function",
+            "function": "CountIf",
+            "arguments": [
+              {
+                "kind": "condition",
+                "condition": {
+                  "logicalOperation": 0,
+                  "filters": [
+                    {
+                      "logicalOperator": 0,
+                      "left": {
+                        "kind": "field",
+                        "field": "IsAbnormal"
+                      },
+                      "operation": 0,
+                      "right": {
+                        "kind": "value",
+                        "value": true
+                      },
+                      "parameterized": true
+                    }
+                  ]
                 }
-              ]
-            }
-          ],
+              }
+            ]
+          },
           "Alias": "AbnormalResults"
         }
       ],

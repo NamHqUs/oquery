@@ -249,11 +249,11 @@ condition use the same canonical field/value/group/function node shapes above.
   "entity": "User",
   "projection": [
     {
-      "fields": [{ "kind": "field", "field": "Id" }],
+      "field": { "kind": "field", "field": "Id" },
       "alias": null
     },
     {
-      "fields": [{ "kind": "field", "field": "Manager.Alias Name" }],
+      "field": { "kind": "field", "field": "Manager.Alias Name" },
       "alias": "Manager Name"
     }
   ],
@@ -266,11 +266,11 @@ condition use the same canonical field/value/group/function node shapes above.
         "entity": "User",
         "projection": [
           {
-            "fields": [{ "kind": "field", "field": "Id" }],
+            "field": { "kind": "field", "field": "Id" },
             "alias": null
           },
           {
-            "fields": [{ "kind": "field", "field": "Name" }],
+            "field": { "kind": "field", "field": "Name" },
             "alias": "Alias Name"
           }
         ]

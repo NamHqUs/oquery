@@ -1,9 +1,12 @@
 param(
     [Parameter(Position = 0)]
-    [string]$Service = $null
+    [string]$Service = $null,
+
+    [int]$PostgresHostPort = 5432
 )
 
-$ComposeFile = "docker-compose.dbservers.yml"
+$ComposeFile = Join-Path $PSScriptRoot "docker-compose.dbservers.yml"
+$env:POSTGRES_HOST_PORT = $PostgresHostPort
 
 if ([string]::IsNullOrWhiteSpace($Service)) {
     Write-Host "Starting all database services..."
