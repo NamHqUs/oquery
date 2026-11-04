@@ -1,20 +1,20 @@
-Locations: City | OfficeCity,
+Locations: City OfficeCity,
     State,
-    LocationStaff.Headcount | Headcount,
-    LocationStaff.DepartmentsRepresented | DepartmentsRepresented,
-    LocationStaff.FullTime | FullTime,
-    LocationStaff.PartTime | PartTime,
-    LocationStaff.Contractors | Contractors,
-    LocationStaff.AverageTenureYears | AverageTenureYears,
-    LocationStaff.AnnualPayroll | AnnualPayroll
+    LocationStaff.Headcount Headcount,
+    LocationStaff.DepartmentsRepresented DepartmentsRepresented,
+    LocationStaff.FullTime FullTime,
+    LocationStaff.PartTime PartTime,
+    LocationStaff.Contractors Contractors,
+    LocationStaff.AverageTenureYears AverageTenureYears,
+    LocationStaff.AnnualPayroll AnnualPayroll
   Order Headcount DESC, AnnualPayroll DESC, OfficeCity ASC, State ASC
   Take 10
   Inner Join LocationStaff LocationStaff On Id = LocationStaff.LocationId
-LocationStaff is Employees: LocationId | LocationId,
-    COUNT(Id) | Headcount,
-    CountDistinct(DepartmentId) | DepartmentsRepresented,
-    CountIf(EmploymentType = <Full-time>) | FullTime,
-    CountIf(EmploymentType = <Part-time>) | PartTime,
-    CountIf(EmploymentType = <Contract>) | Contractors,
-    ROUND(AVG(DateSub(HireDate, <2025-10-31>) / <365.25>), <1>) | AverageTenureYears,
-    ROUND(SUM(Salary), <2>) | AnnualPayroll
+LocationStaff is Employees: LocationId LocationId,
+    COUNT(Id) Headcount,
+    CountDistinct(DepartmentId) DepartmentsRepresented,
+    CountIf(EmploymentType = <Full-time>) FullTime,
+    CountIf(EmploymentType = <Part-time>) PartTime,
+    CountIf(EmploymentType = <Contract>) Contractors,
+    ROUND(AVG(DateSub(HireDate, <2025-10-31>) / <365.25>), <1>) AverageTenureYears,
+    ROUND(SUM(Salary), <2>) AnnualPayroll

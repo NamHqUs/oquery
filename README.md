@@ -11,7 +11,7 @@ relationships are selected at runtime.
 
 ```csharp
 var rows = db.QueryOqr("""
-User: Name, Manager.Name | Manager-Name
+User: Name, Manager.Name Manager-Name
   Where Name like <Dav%> AND Age >= <18>
   Order Manager.Name DESC
   Take 50

@@ -1,8 +1,8 @@
-Users: Id | UserId
+Users: Id UserId
   Where CompletedOrders.UserId IS NOT NULL OR ActivePolicies.UserId IS NOT NULL
   Left Join CompletedOrders CompletedOrders On Id = CompletedOrders.UserId
   Left Join ActivePolicies ActivePolicies On Id = ActivePolicies.UserId
-CompletedOrders is Orders: UserId | UserId, CountDistinct(Id) | MatchCount
+CompletedOrders is Orders: UserId UserId, CountDistinct(Id) MatchCount
   Where Status = <Completed>
-ActivePolicies is Policies: UserId | UserId, CountDistinct(Id) | MatchCount
+ActivePolicies is Policies: UserId UserId, CountDistinct(Id) MatchCount
   Where Status = <Active>

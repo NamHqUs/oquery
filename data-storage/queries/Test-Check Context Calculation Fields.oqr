@@ -1,4 +1,4 @@
 Query is "User Context": Id, Name
   Take 50
   Left Join "User Context"
-"User Context" is User: Id, Name, COUNT(Members.Id) | Total Members
+"User Context" is User: Id, Name, COUNT(Members.Id) Total Members

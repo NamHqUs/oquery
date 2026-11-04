@@ -40,13 +40,27 @@ internal class QueryDefinitionOQueryParserTest : TestBase
     }
 
     [Test]
+    public void ParseProjectionAliasSeparatedByWhitespace()
+    {
+        var query = QueryDefinitionOQueryParser.Parse("User: Ref1.Name ManagerName");
+        var projection = query.Projections!.Single();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(projection.Field.ToText(), Is.EqualTo("Ref1.Name"));
+            Assert.That(projection.Alias, Is.EqualTo("ManagerName"));
+            Assert.That(projection.ToText(), Is.EqualTo("Ref1.Name ManagerName"));
+        });
+    }
+
+    [Test]
     public void ParseContexts()
     {
         var oqurey = """
             Ref1 is User: Id, Name
-            Ref2 is User: Ref1.Name|ManagerName
+            Ref2 is User: Ref1.Name ManagerName
                 Join Ref1 on ManagerId = Ref1.Id
-            User: Id, Name, Ref1.Name|Manager1, Ref2.ManagerName|Manager2
+            User: Id, Name, Ref1.Name Manager1, Ref2.ManagerName Manager2
                 Join Ref1 on ManagerId = Ref1.Id
                 Join Ref2 on ManagerId = Ref2.Id
             """;
@@ -61,7 +75,7 @@ internal class QueryDefinitionOQueryParserTest : TestBase
             Assert.That(query.Contexts.Keys, Is.EquivalentTo(["Ref1", "Ref2"]));
             Assert.That(
                 query.Projections!.Select(projection => projection.ToText()),
-                Is.EqualTo(["Id", "Name", "Ref1.Name | Manager1", "Ref2.ManagerName | Manager2"]));
+                Is.EqualTo(["Id", "Name", "Ref1.Name Manager1", "Ref2.ManagerName Manager2"]));
             Assert.That(query.Joins, Has.Count.EqualTo(2));
             Assert.That(
                 query.Joins!.Select(join => join.RefContext),
@@ -80,7 +94,7 @@ internal class QueryDefinitionOQueryParserTest : TestBase
             Assert.That(ref2.Entity, Is.EqualTo("User"));
             Assert.That(
                 ref2.Projections!.Select(projection => projection.ToText()),
-                Is.EqualTo(["Ref1.Name | ManagerName"]));
+                Is.EqualTo(["Ref1.Name ManagerName"]));
             Assert.That(ref2.Joins, Has.Count.EqualTo(1));
             Assert.That(ref2.Joins![0].RefContext, Is.EqualTo("Ref1"));
             Assert.That(ref2.Joins[0].JoinType, Is.EqualTo(QueryJoinType.Inner));
@@ -92,7 +106,7 @@ internal class QueryDefinitionOQueryParserTest : TestBase
     public void ParseRecursiveProjection()
     {
         var oquery = """
-            Loop is User: Name | ManagerName, member.FirstName | MemberName
+            Loop is User: Name ManagerName, member.FirstName MemberName
               INNER JOIN Loop member on Id = member.ManagerId
             """;
 
@@ -105,7 +119,7 @@ internal class QueryDefinitionOQueryParserTest : TestBase
             Assert.That(query.Contexts.Keys, Is.EqualTo(["Loop"]));
             Assert.That(
                 query.Projections!.Select(projection => projection.ToText()),
-                Is.EqualTo(["Name | ManagerName", "member.FirstName | MemberName"]));
+                Is.EqualTo(["Name ManagerName", "member.FirstName MemberName"]));
             Assert.That(query.Joins, Has.Count.EqualTo(1));
             Assert.That(query.Joins![0].RefContext, Is.EqualTo("Loop"));
             Assert.That(query.Joins[0].Alias, Is.EqualTo("member"));
@@ -114,7 +128,7 @@ internal class QueryDefinitionOQueryParserTest : TestBase
             Assert.That(recursive.Entity, Is.EqualTo("User"));
             Assert.That(
                 recursive.Projections!.Select(projection => projection.ToText()),
-                Is.EqualTo(["Name | ManagerName", "Loop.FirstName | MemberName"]));
+                Is.EqualTo(["Name ManagerName", "Loop.FirstName MemberName"]));
             Assert.That(recursive.Joins, Is.Null);
         });
     }

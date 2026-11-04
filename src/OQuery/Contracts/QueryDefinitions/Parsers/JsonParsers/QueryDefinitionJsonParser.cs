@@ -124,6 +124,7 @@ public static class QueryDefinitionJsonParser
         IReadOnlySet<string>? inheritedContexts = null)
     {
         var projectionElement = TryGetProperty(root, "projection", out var projection)
+            || TryGetProperty(root, "projections", out projection)
             ? projection
             : (JsonElement?)null;
         List<ProjectionDefinition> projections = [];
@@ -140,18 +141,20 @@ public static class QueryDefinitionJsonParser
                 .ToList();
         }
 
-        var result = new QueryDefinition(root.GetProperty("entity").GetString()
-                ?? throw new JsonException("The entity value cannot be null."))
+        var result = new QueryDefinition(
+            Required(
+                TryGetProperty(root, "entity", out var entity) ? entity.GetString() : null,
+                "The entity value cannot be null."))
         {
             Projections = projections,
-            Filter = root.TryGetProperty("filter", out var filter)
+            Filter = TryGetProperty(root, "filter", out var filter)
                 ? filter.ValueKind == JsonValueKind.String
                     ? ConditionDefinitionParser.Parse(filter.GetString() ?? string.Empty)
                     : JsonSerializer.Deserialize<ConditionDefinition>(
                         filter,
                         QueryDefinitionJsonParser.CreateSerializerOptions())
                 : null,
-            Sorts = root.TryGetProperty("sorts", out var sorts) && sorts.ValueKind != JsonValueKind.Null
+            Sorts = TryGetProperty(root, "sorts", out var sorts) && sorts.ValueKind != JsonValueKind.Null
                 ? sorts.EnumerateArray().Select(ParseSort).ToList()
                 : [],
             Take = ReadInt(root, "take"),
@@ -326,7 +329,7 @@ public static class QueryDefinitionJsonParser
 
     private static int? ReadInt(JsonElement root, string name)
     {
-        if (!root.TryGetProperty(name, out var element) || element.ValueKind == JsonValueKind.Null)
+        if (!TryGetProperty(root, name, out var element) || element.ValueKind == JsonValueKind.Null)
             return null;
         if (element.ValueKind != JsonValueKind.Number || !element.TryGetInt32(out var value))
             throw new JsonException($"The {name} value must be an integer or null.");

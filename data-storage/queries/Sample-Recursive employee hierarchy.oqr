@@ -1,4 +1,4 @@
-Employees: Id | Id, ManagerId | ManagerId, <0> | Level
+Employees: Id Id, ManagerId ManagerId, <0> Level
   Where Id = <1>
   Inner Join EmployeeTree EmployeeTree On ManagerId = EmployeeTree.Id
-EmployeeTree is Employees: Id | Id, ManagerId | ManagerId, Difference(EmployeeTree.Level, <-1>) | Level
+EmployeeTree is Employees: Id Id, ManagerId ManagerId, Difference(EmployeeTree.Level, <-1>) Level

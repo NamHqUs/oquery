@@ -30,7 +30,7 @@ A reusable context puts its name before its source entity. If the names are
 the same, the source is omitted:
 
 ```text
-BestMonth is Orders: UserId, MAX(Amount) | Revenue
+BestMonth is Orders: UserId, MAX(Amount) Revenue
   Where Status = <Completed>
 ```
 
@@ -69,7 +69,7 @@ The single name is both the query name and source entity. A reusable context
 whose name differs from its source uses `is`:
 
 ```text
-BestMonth is Orders: UserId, MAX(Amount) | Revenue
+BestMonth is Orders: UserId, MAX(Amount) Revenue
 ```
 
 The header grammar is:
@@ -98,10 +98,14 @@ Keywords are case-insensitive. The canonical writer uses `Where`, `Order`,
 Use the expression-to-name form consistently:
 
 ```text
-Users: Id, Manager.Name | ManagerName, Count(Members.Id) | MemberCount
+Users: Id, Manager.Name ManagerName, Count(Members.Id) MemberCount
 ```
 
-The expression is always on the left of `|`; the result alias is on the right.
+Separate the expression and result alias with whitespace:
+
+```text
+Users: Id, Manager.Name ManagerName, Count(Members.Id) MemberCount
+```
 
 ### Joins and aliases
 
@@ -109,23 +113,23 @@ Explicit joins belong to the query that consumes the context:
 
 ```text
 Products: Id, Name,
-    RevenueByMonth.Month | Month,
-    RevenueByMonth.Revenue | Revenue
+    RevenueByMonth.Month Month,
+    RevenueByMonth.Revenue Revenue
   Left Join RevenueByMonth On Id = RevenueByMonth.ProductId
   Order Revenue DESC
   Take 20
 
 RevenueByMonth is InvoiceLines: ProductId,
-    MonthKey(Invoice.IssueDate) | Month,
-    SUM(Quantity * UnitPrice) | Revenue,
-    CountDistinct(InvoiceId) | Orders
+    MonthKey(Invoice.IssueDate) Month,
+    SUM(Quantity * UnitPrice) Revenue,
+    CountDistinct(InvoiceId) Orders
   Where Invoice.Status = <Paid>
 ```
 
 A reusable context can be joined more than once with a separate alias:
 
 ```text
-User: Id, ref1.Name | Manager1, newRef1.Name | Manager2
+User: Id, ref1.Name Manager1, newRef1.Name Manager2
   Left Join ref1 On ManagerId = ref1.Id
   Left Join ref1 newRef1 On ManagerId = newRef1.Id
 
@@ -141,9 +145,9 @@ or `Full Join` explicitly when optional rows are required.
 Projection and clause values can continue on indented lines:
 
 ```text
-Visits: Diagnosis.Name | Diagnosis,
-    Diagnosis.Category | DiagnosisCategory,
-    CountDistinct(Id) | VisitCount
+Visits: Diagnosis.Name Diagnosis,
+    Diagnosis.Category DiagnosisCategory,
+    CountDistinct(Id) VisitCount
   Order VisitCount DESC,
     Diagnosis.Name ASC
   Left Join VisitLabs On Id = VisitLabs.VisitId
@@ -163,14 +167,14 @@ Users: Id, Name, Manager.Name
 The relation path can generate the required join automatically.
 
 ```text
-Users: Id, Name, Count(Members.Id) | TotalMembers
+Users: Id, Name, Count(Members.Id) TotalMembers
 ```
 
 Mixing regular fields and aggregates establishes the result grain and derives
 the required `GROUP BY`.
 
 ```text
-Users: Id, Name, Count(Members.Id) | TotalMembers
+Users: Id, Name, Count(Members.Id) TotalMembers
   Where TotalMembers > 12
 ```
 
@@ -184,11 +188,11 @@ Contexts form a named dependency graph. A context owns the relationships it
 declares, and its definition can be reused by multiple consumers:
 
 ```text
-Products: Id, RevenueByMonth.Revenue | Revenue
+Products: Id, RevenueByMonth.Revenue Revenue
   Left Join RevenueByMonth On Id = RevenueByMonth.ProductId
 
 RevenueByMonth is InvoiceLines: ProductId,
-    SUM(Quantity * UnitPrice) | Revenue
+    SUM(Quantity * UnitPrice) Revenue
   Where Invoice.Status = <Paid>
 ```
 
@@ -208,8 +212,8 @@ Registered typed functions extend the language with domain concepts:
 
 ```text
 Users: Id,
-    CountIf(Status = <Active>) | ActiveMembers,
-    AvgIf(Age, Status = <Active>) | AverageActiveAge
+    CountIf(Status = <Active>) ActiveMembers,
+    AvgIf(Age, Status = <Active>) AverageActiveAge
 ```
 
 Functions can define typed arguments, validation, editor completion, and
@@ -246,9 +250,9 @@ Long projections may continue on indented lines. Continuation lines are joined
 until the next recognized clause:
 
 ```text
-Visits: Diagnosis.Name | Diagnosis,
-    Diagnosis.Category | DiagnosisCategory,
-    ROUND(<100> * SUM(Amount) / NULLIF(SUM(Total), <0>), <2>) | Percent
+Visits: Diagnosis.Name Diagnosis,
+    Diagnosis.Category DiagnosisCategory,
+    ROUND(<100> * SUM(Amount) / NULLIF(SUM(Total), <0>), <2>) Percent
   Where Status = <Completed>
   Take 10
 ```
@@ -347,17 +351,17 @@ GROUP BY Region;
 ```yaml
 Entity: Users
 Projection:
-  - State | Region
-  - AVG(CustomerBestMonth.BestMonthRevenue) | AverageBestMonth
+  - State Region
+  - AVG(CustomerBestMonth.BestMonthRevenue) AverageBestMonth
 Contexts:
   - Name: CustomerMonth
     Query:
       Entity: Orders
       Projection:
         - UserId
-        - YEAR(OrderDate) | SalesYear
-        - MONTH(OrderDate) | SalesMonth
-        - SUM(Items.Quantity * Items.UnitPrice - Items.DiscountAmount) | MonthlyRevenue
+        - YEAR(OrderDate) SalesYear
+        - MONTH(OrderDate) SalesMonth
+        - SUM(Items.Quantity * Items.UnitPrice - Items.DiscountAmount) MonthlyRevenue
       Filter: Status = 'Completed'
 
   - Name: CustomerBestMonth
@@ -365,7 +369,7 @@ Contexts:
       Entity: CustomerMonth
       Projection:
         - UserId
-        - MAX(MonthlyRevenue) | BestMonthRevenue
+        - MAX(MonthlyRevenue) BestMonthRevenue
     Join: Users.Id = CustomerBestMonth.UserId
 ```
 
@@ -405,11 +409,11 @@ OUTER APPLY
 ```yaml
 Entity: Users
 Projection:
-  - Id | CustomerId
-  - Concat(FirstName, ' ', LastName) | Customer
-  - RecentOrders.Id | OrderId
-  - RecentOrders.OrderDate | OrderDate
-  - RecentOrders.OrderAmount | OrderAmount
+  - Id CustomerId
+  - Concat(FirstName, ' ', LastName) Customer
+  - RecentOrders.Id OrderId
+  - RecentOrders.OrderDate OrderDate
+  - RecentOrders.OrderAmount OrderAmount
 Filter: RecentOrders.OrderRank <= 3
 Contexts:
   - Name: RankedOrders
@@ -419,8 +423,8 @@ Contexts:
         - UserId
         - Id
         - OrderDate
-        - SUM(Items.Quantity * Items.UnitPrice - Items.DiscountAmount) | OrderAmount
-        - RowNumber(UserId, OrderDate) | OrderRank
+        - SUM(Items.Quantity * Items.UnitPrice - Items.DiscountAmount) OrderAmount
+        - RowNumber(UserId, OrderDate) OrderRank
       Filter: Status = 'Completed'
 
   - Name: RecentOrders
@@ -463,7 +467,7 @@ WHERE Status = 'Active';
 ```yaml
 Entity: Users
 Projection:
-  - Id | UserId
+  - Id UserId
 Filter: CompletedOrders.UserId IS NOT NULL
      OR ActivePolicies.UserId IS NOT NULL
 Contexts:
@@ -472,7 +476,7 @@ Contexts:
       Entity: Orders
       Projection:
         - UserId
-        - CountDistinct(Id) | MatchCount
+        - CountDistinct(Id) MatchCount
       Filter: Status = 'Completed'
     Join: Users.Id = CompletedOrders.UserId
     JoinType: Left
@@ -482,7 +486,7 @@ Contexts:
       Entity: Policies
       Projection:
         - UserId
-        - CountDistinct(Id) | MatchCount
+        - CountDistinct(Id) MatchCount
       Filter: Status = 'Active'
     Join: Users.Id = ActivePolicies.UserId
     JoinType: Left
@@ -527,7 +531,7 @@ Entity: Employees
 Projection:
   - Id
   - ManagerId
-  - 0 | Level
+  - 0 Level
 Filter: Id = @RootManagerId
 Contexts:
   - Name: EmployeeTree
@@ -536,7 +540,7 @@ Contexts:
       Projection:
         - Id
         - ManagerId
-        - Difference(EmployeeTree.Level, -1) | Level
+        - Difference(EmployeeTree.Level, -1) Level
       Join: Employees.ManagerId = EmployeeTree.Id
       Repeat: Until no rows
 ```
@@ -574,16 +578,16 @@ premium payments as the revenue rows.
 ```yaml
 Entity: Policies
 Projection:
-  - Id | PolicyId
-  - Concat(User.FirstName, ' ', User.LastName) | Member
-  - Coalesce(RevenueSinceStart.PremiumRevenue, 0) | RevenueSinceSignup
+  - Id PolicyId
+  - Concat(User.FirstName, ' ', User.LastName) Member
+  - Coalesce(RevenueSinceStart.PremiumRevenue, 0) RevenueSinceSignup
 Contexts:
   - Name: RevenueSinceStart
     Query:
       Entity: PremiumPayments
       Projection:
         - PolicyId
-        - SUM(Amount) | PremiumRevenue
+        - SUM(Amount) PremiumRevenue
       Filter: Status = 'Paid'
             AND PaymentDate >= Policy.StartDate
     Join: Policies.Id = RevenueSinceStart.PolicyId
@@ -619,9 +623,9 @@ FROM Employees;
 Entity: Employees
 Projection:
   - DepartmentId
-  - Id | EmployeeId
+  - Id EmployeeId
   - Salary
-  - Rank(DepartmentId, Salary) | DepartmentRank
+  - Rank(DepartmentId, Salary) DepartmentRank
 Sorts:
   - DepartmentId ASC
   - DepartmentRank ASC
@@ -671,7 +675,7 @@ HAVING COUNT(*) >= 5;
 Entity: Employees
 Projection:
   - DepartmentId
-  - COUNT(Id) | Employees
+  - COUNT(Id) Employees
 Filter: COUNT(Id) >= 5
 ```
 
@@ -682,7 +686,7 @@ Aggregate predicates are routed to `HAVING` by the compiler.
 ```yaml
 Entity: Users
 Projection:
-  - Id | UserId
+  - Id UserId
 Filter: OrderSummary.OrderCount > 3
      OR PolicySummary.PolicyCount > 0
 Contexts:
@@ -691,7 +695,7 @@ Contexts:
       Entity: Orders
       Projection:
         - UserId
-        - CountDistinct(Id) | OrderCount
+        - CountDistinct(Id) OrderCount
     Join: Users.Id = OrderSummary.UserId
     JoinType: Left
 
@@ -700,7 +704,7 @@ Contexts:
       Entity: Policies
       Projection:
         - UserId
-        - CountDistinct(Id) | PolicyCount
+        - CountDistinct(Id) PolicyCount
     Join: Users.Id = PolicySummary.UserId
     JoinType: Left
 ```
@@ -722,8 +726,8 @@ Instead, convert the row predicate into an aggregate at the group grain:
 
 ```yaml
 Projection:
-  - CountIf(Status = 'Active') | ActiveCount
-  - CountDistinct(Orders.Id) | OrderCount
+  - CountIf(Status = 'Active') ActiveCount
+  - CountDistinct(Orders.Id) OrderCount
 Filter: ActiveCount > 0 OR OrderCount > 3
 ```
 

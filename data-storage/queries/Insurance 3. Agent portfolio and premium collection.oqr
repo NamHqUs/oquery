@@ -1,20 +1,20 @@
-Employees: Id | AgentId,
-    Concat(FirstName, < >, LastName) | Agent,
-    Location.City | OfficeCity,
-    CountDistinct(AgentPolicies.Id) | PoliciesSold,
-    CountIf(AgentPolicies.Status = <Active>) | ActivePolicies,
-    ROUND(Coalesce(PaidPayments.PaidPremiums, <0>), <2>) | PaidPremiums,
-    Coalesce(LatePayments.LatePayments, <0>) | LatePayments,
-    Coalesce(MissedPayments.MissedPayments, <0>) | MissedPayments
+Employees: Id AgentId,
+    Concat(FirstName, < >, LastName) Agent,
+    Location.City OfficeCity,
+    CountDistinct(AgentPolicies.Id) PoliciesSold,
+    CountIf(AgentPolicies.Status = <Active>) ActivePolicies,
+    ROUND(Coalesce(PaidPayments.PaidPremiums, <0>), <2>) PaidPremiums,
+    Coalesce(LatePayments.LatePayments, <0>) LatePayments,
+    Coalesce(MissedPayments.MissedPayments, <0>) MissedPayments
   Where Department.Name = <Insurance Agency>
   Order PaidPremiums DESC
   Take 10
   Left Join PaidPayments PaidPayments On Id = PaidPayments.AgentId
   Left Join LatePayments LatePayments On Id = LatePayments.AgentId
   Left Join MissedPayments MissedPayments On Id = MissedPayments.AgentId
-PaidPayments is PremiumPayments: Policy.AgentId | AgentId, SUM(Amount) | PaidPremiums
+PaidPayments is PremiumPayments: Policy.AgentId AgentId, SUM(Amount) PaidPremiums
   Where Status = <Paid>
-LatePayments is PremiumPayments: Policy.AgentId | AgentId, COUNT(Id) | LatePayments
+LatePayments is PremiumPayments: Policy.AgentId AgentId, COUNT(Id) LatePayments
   Where Status = <Late>
-MissedPayments is PremiumPayments: Policy.AgentId | AgentId, COUNT(Id) | MissedPayments
+MissedPayments is PremiumPayments: Policy.AgentId AgentId, COUNT(Id) MissedPayments
   Where Status = <Missed>

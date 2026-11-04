@@ -11,6 +11,6 @@ public sealed record ProjectionDefinition(IFieldDefinition Field, string? Alias 
 
     public string ToText()
     {
-        return Alias is null ? Field.ToText() : $"{Field.ToText()} | {Alias}";
+        return Alias is null ? Field.ToText() : $"{Field.ToText()} {Alias}";
     }
 }

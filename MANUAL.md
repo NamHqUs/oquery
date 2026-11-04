@@ -383,7 +383,7 @@ Use `QueryOqr` when a screen, API, or report supplies query rules at runtime:
 
 ```csharp
 var rows = db.QueryOqr("""
-User: Name, Manager.Name | Manager-Name
+User: Name, Manager.Name Manager-Name
   Where Name like <Dav%> AND (Manager.Name = <Alice> OR Age < <12>)
   Order Manager.Name DESC
   Take 50
@@ -600,7 +600,7 @@ and `GETDATE()` renders the provider's current date and time.
 
 ```csharp
 var query = OQueryDefinitionParser.Parse("""
-InvoiceItems: Product.Name | Product, Count() | ItemCount
+InvoiceItems: Product.Name Product, Count() ItemCount
   Order ItemCount DESC
 """);
 ```

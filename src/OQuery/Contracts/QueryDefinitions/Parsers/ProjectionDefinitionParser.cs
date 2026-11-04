@@ -24,9 +24,24 @@ internal class ProjectionDefinitionParser
 
     static ProjectionDefinition? FromText(string text)
     {
-        var separatorIndex = text.IndexOf('|');
-        var fieldText = separatorIndex < 0 ? text.Trim() : text[..separatorIndex].Trim();
-        var alias = separatorIndex < 0 ? null : text[(separatorIndex + 1)..].Trim();
+        text = text.Trim();
+        var fieldText = text;
+        string? alias = null;
+        var pipeIndex = text.IndexOf('|');
+        if (pipeIndex >= 0)
+        {
+            fieldText = text[..pipeIndex].Trim();
+            alias = text[(pipeIndex + 1)..].Trim();
+        }
+        else
+        {
+            var aliasStart = FindAliasStart(text);
+            if (aliasStart >= 0)
+            {
+                fieldText = text[..aliasStart].TrimEnd();
+                alias = text[(aliasStart + 1)..].Trim();
+            }
+        }
         if (fieldText.Length == 0)
             return null;
         var fields = FieldDefinitionParser.ParseExpression(fieldText);
@@ -35,4 +50,51 @@ internal class ProjectionDefinitionParser
             : new GroupFieldDefintion(fields);
         return new ProjectionDefinition(field, alias);
     }
+
+    private static int FindAliasStart(string text)
+    {
+        var parenthesisDepth = 0;
+        var bracketDepth = 0;
+        var angleDepth = 0;
+
+        for (var index = text.Length - 1; index >= 0; index--)
+        {
+            switch (text[index])
+            {
+                case ')':
+                    parenthesisDepth++;
+                    break;
+                case '(':
+                    parenthesisDepth--;
+                    break;
+                case ']':
+                    bracketDepth++;
+                    break;
+                case '[':
+                    bracketDepth--;
+                    break;
+                case '>':
+                    angleDepth++;
+                    break;
+                case '<':
+                    angleDepth--;
+                    break;
+                case ' ' when parenthesisDepth == 0 && bracketDepth == 0 && angleDepth == 0:
+                    var alias = text[(index + 1)..].Trim();
+                    if (alias.Length > 0 &&
+                        alias.All(IsIdentifierPart) &&
+                        IsIdentifierStart(alias[0]))
+                        return index;
+                    break;
+            }
+        }
+
+        return -1;
+    }
+
+    private static bool IsIdentifierStart(char value)
+        => char.IsLetter(value) || value == '_';
+
+    private static bool IsIdentifierPart(char value)
+        => char.IsLetterOrDigit(value) || value == '_';
 }

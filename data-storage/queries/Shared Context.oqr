@@ -1,4 +1,4 @@
-User: Name,  | NEW_LINE, Manager1.Name,  | NEW_LINE, Manager2.Age,  | NEW_LINE, Manager3.Birthday
+User: Name, NEW_LINE, Manager1.Name, NEW_LINE, Manager2.Age, NEW_LINE, Manager3.Birthday
   Left Join "User Context" Manager1 On ManagerId = Id
   Left Join "User Context" Manager2 On ManagerId = Id
   Left Join "Context 2" Manager3 On ManagerId = Id
