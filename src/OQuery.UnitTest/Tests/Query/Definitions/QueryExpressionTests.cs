@@ -104,7 +104,7 @@ public sealed class QueryExpressionTests
             Projections =
             [
                 new ProjectionDefinition(
-                    QueryDefinitionParser.ParseExpression("Id + CostPrice + Id - CostPrice"),
+                    QueryDefinitionJsonParser.ParseExpression("Id + CostPrice + Id - CostPrice"),
                     "Calculated")
             ]
         };
@@ -120,19 +120,19 @@ public sealed class QueryExpressionTests
     {
         using var connection = new SqliteConnection("Data Source=:memory:");
         using var db = new OQueryEngine(connection, Metadata);
-        var options = JsonQueryDefinitionParser.CreateSerializerOptions();
+        var options = QueryDefinitionJsonParser.CreateSerializerOptions();
         var definition = new QueryDefinition("Products")
         {
 
             Projections =
             [
                 new ProjectionDefinition(
-                    QueryDefinitionParser.ParseExpression("Id + CostPrice * Id - CostPrice"),
+                    QueryDefinitionJsonParser.ParseExpression("Id + CostPrice * Id - CostPrice"),
                     "Calculated")
             ]
         };
         var serialized = JsonSerializer.Serialize(definition, options);
-        var roundTripped = JsonQueryDefinitionParser.Parse(serialized);
+        var roundTripped = QueryDefinitionJsonParser.Parse(serialized);
         var fields = roundTripped.Projections[0].Fields;
         Assert.That(fields, Has.Length.EqualTo(4));
         Assert.That(fields[1], Is.EqualTo(new FieldDefinition("CostPrice")));
@@ -151,11 +151,11 @@ public sealed class QueryExpressionTests
         var projection = new ProjectionDefinition([new FieldDefinition("Name")], "ProductName");
 
         var defaultOptions = new JsonSerializerOptions();
-        JsonQueryDefinitionParser.Configure(defaultOptions);
+        QueryDefinitionJsonParser.Configure(defaultOptions);
         var defaultJson = JsonSerializer.Serialize(projection, defaultOptions);
         var webJson = JsonSerializer.Serialize(
             projection,
-            JsonQueryDefinitionParser.CreateSerializerOptions());
+            QueryDefinitionJsonParser.CreateSerializerOptions());
 
         Assert.That(defaultJson, Is.EqualTo(
             """{"fields":[{"kind":"field","field":"Name"}],"alias":"ProductName"}"""));
@@ -172,7 +172,7 @@ public sealed class QueryExpressionTests
                 new ConstFieldDefinition(MatchOperation.Multiply, 2)
             ],
             "Calculated");
-        var options = JsonQueryDefinitionParser.CreateSerializerOptions();
+        var options = QueryDefinitionJsonParser.CreateSerializerOptions();
 
         var serialized = JsonSerializer.Serialize(projection, options);
 
@@ -197,10 +197,10 @@ public sealed class QueryExpressionTests
               }]
             }
             """;
-        var options = JsonQueryDefinitionParser.CreateSerializerOptions();
-        var definition = JsonQueryDefinitionParser.Parse(json);
+        var options = QueryDefinitionJsonParser.CreateSerializerOptions();
+        var definition = QueryDefinitionJsonParser.Parse(json);
         var serialized = JsonSerializer.Serialize(definition, options);
-        var roundTripped = JsonQueryDefinitionParser.Parse(serialized);
+        var roundTripped = QueryDefinitionJsonParser.Parse(serialized);
 
         using var connection = new SqliteConnection("Data Source=:memory:");
         using var db = new OQueryEngine(connection, Metadata);

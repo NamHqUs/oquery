@@ -69,7 +69,7 @@ internal sealed class SqlServerQueryExecutionTests
         var jsonQuery = QueryDefinitionLoader.Load(
             Path.Combine(requestRoot, "Health 1. Diagnosis burden by clinic.json"));
         var oqueryPath = Path.Combine(requestRoot, "Health 1. Diagnosis burden by clinic.oqr");
-        var oqueryQuery = OQueryDefinitionParser.Parse(new FileInfo(oqueryPath));
+        var oqueryQuery = QueryDefinitionOQueryParser.Parse(new FileInfo(oqueryPath));
 
         var jsonSql = _db.Query(jsonQuery).ToSql();
         var oquerySql = _db.Query(oqueryQuery).ToSql();
@@ -90,7 +90,7 @@ internal sealed class SqlServerQueryExecutionTests
             Assert.That(File.Exists(jsonPath), Is.True, $"Missing JSON query request for '{oqueryPath}'.");
 
             var jsonSql = _db.Query(QueryDefinitionLoader.Load(jsonPath)).ToSql();
-            var oquerySql = _db.Query(OQueryDefinitionParser.Parse(new FileInfo(oqueryPath))).ToSql();
+            var oquerySql = _db.Query(QueryDefinitionOQueryParser.Parse(new FileInfo(oqueryPath))).ToSql();
 
             Assert.That(NormalizeSql(jsonSql), Is.EqualTo(NormalizeSql(oquerySql)), jsonPath);
         }
@@ -106,7 +106,7 @@ internal sealed class SqlServerQueryExecutionTests
         var oqueryPath = Path.ChangeExtension(jsonPath, ".oqr");
 
         var jsonDefinition = QueryDefinitionLoader.Load(jsonPath);
-        var oqueryDefinition = OQueryDefinitionParser.Parse(new FileInfo(oqueryPath));
+        var oqueryDefinition = QueryDefinitionOQueryParser.Parse(new FileInfo(oqueryPath));
 
         Assert.That(
             _db.Query(oqueryDefinition).ToSql().CommandText,
@@ -124,7 +124,7 @@ internal sealed class SqlServerQueryExecutionTests
         var oqueryPath = Path.ChangeExtension(jsonPath, ".oqr");
 
         var jsonDefinition = QueryDefinitionLoader.Load(jsonPath);
-        var oqueryDefinition = OQueryDefinitionParser.Parse(new FileInfo(oqueryPath));
+        var oqueryDefinition = QueryDefinitionOQueryParser.Parse(new FileInfo(oqueryPath));
 
         Assert.That(
             _db.Query(oqueryDefinition).ToSql().CommandText,

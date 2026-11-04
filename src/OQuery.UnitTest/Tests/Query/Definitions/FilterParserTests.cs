@@ -13,11 +13,11 @@ internal sealed class FilterParserTests : TestBase
         var query = new QueryDefinition("Invoices")
         {
 
-            Projections = QueryDefinitionParser.ParseProjection("Year(InvoiceDate) | Year, Month(InvoiceDate) | Month, COUNT(Id) | InvoiceCount, SUM(TotalAmount) | Revenue, AVG(TotalAmount) | AverageOrderValue"),
-            Filter = QueryDefinitionParser.ParseFilter("Status <> <Draft> And Sum(TotalAmount) > 200"),
+            Projections = QueryDefinitionJsonParser.ParseProjection("Year(InvoiceDate) | Year, Month(InvoiceDate) | Month, COUNT(Id) | InvoiceCount, SUM(TotalAmount) | Revenue, AVG(TotalAmount) | AverageOrderValue"),
+            Filter = QueryDefinitionJsonParser.ParseFilter("Status <> <Draft> And Sum(TotalAmount) > 200"),
         };
 
-        var queryText = OQueryDefinitionParser.Write(query);
+        var queryText = QueryDefinitionOQueryParser.Write(query);
         Assert.That(queryText, Does.Contain("Where Status <> <Draft> AND Sum(TotalAmount) > <200>"));
 
         var data = _db.Query(query).ToList();

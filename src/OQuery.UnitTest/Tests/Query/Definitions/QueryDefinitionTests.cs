@@ -10,7 +10,7 @@ internal sealed class QueryDefinitionTests
     [Test]
     public void AdditiveExpressionIsAFlatFieldList()
     {
-        var projection = QueryDefinitionParser.ParseProjection("A + B - <3>").Single();
+        var projection = QueryDefinitionJsonParser.ParseProjection("A + B - <3>").Single();
 
         Assert.That(projection.Fields, Has.Length.EqualTo(3));
         Assert.That(projection.Fields[0], Is.EqualTo(new FieldDefinition("A")));
@@ -23,7 +23,7 @@ internal sealed class QueryDefinitionTests
     [Test]
     public void ParenthesizedArithmeticIsAGroupOperand()
     {
-        var fields = QueryDefinitionParser.ParseProjection("A * (B - C + D) / <2>").Single().Fields;
+        var fields = QueryDefinitionJsonParser.ParseProjection("A * (B - C + D) / <2>").Single().Fields;
 
         Assert.That(fields, Has.Length.EqualTo(3));
         Assert.That(fields[0], Is.EqualTo(new FieldDefinition("A")));
@@ -44,7 +44,7 @@ internal sealed class QueryDefinitionTests
     [Test]
     public void FunctionArgumentsRetainExpressionGroups()
     {
-        var function = (FunctionFieldDefinition)QueryDefinitionParser
+        var function = (FunctionFieldDefinition)QueryDefinitionJsonParser
             .ParseProjection("Round(A + B, <2>)")
             .Single()
             .Fields
@@ -64,7 +64,7 @@ internal sealed class QueryDefinitionTests
     [Test]
     public void ConsecutiveParenthesizedOperandsKeepTheirOperators()
     {
-        var fields = QueryDefinitionParser.ParseProjection("<5> - (A - B) * (C - D)").Single().Fields;
+        var fields = QueryDefinitionJsonParser.ParseProjection("<5> - (A - B) * (C - D)").Single().Fields;
 
         Assert.That(fields, Has.Length.EqualTo(3));
         Assert.That(fields[0], Is.EqualTo(new ConstFieldDefinition(5)));
@@ -79,8 +79,8 @@ internal sealed class QueryDefinitionTests
     [Test]
     public void ProjectionJsonWritesOperatorOnEachExpressionNode()
     {
-        var projection = QueryDefinitionParser.ParseProjection("A + B - <3>").Single();
-        var options = JsonQueryDefinitionParser.CreateSerializerOptions();
+        var projection = QueryDefinitionJsonParser.ParseProjection("A + B - <3>").Single();
+        var options = QueryDefinitionJsonParser.CreateSerializerOptions();
 
         var json = JsonSerializer.Serialize(projection, options);
 
@@ -94,7 +94,7 @@ internal sealed class QueryDefinitionTests
     [Test]
     public void OQueryParsesMultilineProjectionBeforeClauses()
     {
-        var definition = OQueryDefinitionParser.Parse("""
+        var definition = QueryDefinitionOQueryParser.Parse("""
             Visits: Diagnosis.Name | Diagnosis,
                 Diagnosis.Category | DiagnosisCategory,
                 ROUND(<100> * SUM(Amount)
@@ -115,7 +115,7 @@ internal sealed class QueryDefinitionTests
     [Test]
     public void OQueryParsesMultilineOrderAndContextProjection()
     {
-        var definition = OQueryDefinitionParser.Parse("""
+        var definition = QueryDefinitionOQueryParser.Parse("""
             Visits: Diagnosis.Name | Diagnosis,
                 Diagnosis.Category | DiagnosisCategory
               order VisitCount ASC,
@@ -135,7 +135,7 @@ internal sealed class QueryDefinitionTests
     [Test]
     public void OQueryInfersSelectedConsumingContextAsRoot()
     {
-        var definition = OQueryDefinitionParser.Parse("""
+        var definition = QueryDefinitionOQueryParser.Parse("""
             UserContext1 is User: Id, Name
             UserContext2 is User: Id, Name, ManagerId
               Left Join UserContext1 on ManagerId = UserContext1.Id
@@ -151,7 +151,7 @@ internal sealed class QueryDefinitionTests
     [Test]
     public void OQueryKeepsRootWhenSelectionIncludesAllRelatedContexts()
     {
-        var definition = OQueryDefinitionParser.Parse("""
+        var definition = QueryDefinitionOQueryParser.Parse("""
             User: Id, Name
               Left Join UserContext1 on ManagerId = UserContext1.Id
               Left Join UserContext2 on ManagerId = UserContext2.Id
@@ -170,7 +170,7 @@ internal sealed class QueryDefinitionTests
     [Test]
     public void OQueryAllowsOneContextToBeJoinedMultipleTimesWithAliases()
     {
-        var definition = OQueryDefinitionParser.Parse("""
+        var definition = QueryDefinitionOQueryParser.Parse("""
             User: Id, Name, ManagerId, ref1.Name | Manager1, newRef1.Name | Manager2
               Left Join ref1 On ManagerId = ref1.Id
               Left Join ref1 newRef1 On ManagerId = newRef1.Id
@@ -182,7 +182,7 @@ internal sealed class QueryDefinitionTests
         Assert.That(definition.Joins[0].Alias, Is.Null);
         Assert.That(definition.Joins[1].RefContext, Is.EqualTo("ref1"));
         Assert.That(definition.Joins[1].Alias, Is.EqualTo("newRef1"));
-        Assert.That(() => QueryDefinitionParser.ValidateContextReferences(definition),
+        Assert.That(() => QueryDefinitionJsonParser.ValidateContextReferences(definition),
             Throws.Nothing);
     }
 
@@ -202,14 +202,14 @@ internal sealed class QueryDefinitionTests
                 }
             }
         };
-        var options = JsonQueryDefinitionParser.CreateSerializerOptions();
+        var options = QueryDefinitionJsonParser.CreateSerializerOptions();
         var json = JsonSerializer.Serialize(definition, options);
         Assert.That(json, Does.Contain("\"joinType\":null"));
         var deserialized = JsonSerializer.Deserialize<QueryDefinition>(json, options)
             ?? throw new InvalidOperationException("The query did not deserialize.");
         Assert.That(deserialized.Joins!.Single().JoinType, Is.Null);
         Assert.That(deserialized.Contexts!["Managers"].Joins!.Single().JoinType, Is.Null);
-        var parsed = QueryDefinitionParser.Parse("""
+        var parsed = QueryDefinitionJsonParser.Parse("""
             {
               "entity": "User",
               "relations": [{ "refContext": "Managers", "joinType": null }],
@@ -223,7 +223,7 @@ internal sealed class QueryDefinitionTests
     public void JsonRejectsRelationsReferencingUnknownContexts()
     {
         Assert.That(
-            () => QueryDefinitionParser.Parse("""
+            () => QueryDefinitionJsonParser.Parse("""
                 {
                   "entity": "Orders",
                   "contexts": {
@@ -245,7 +245,7 @@ internal sealed class QueryDefinitionTests
     {
         var definition = JsonSerializer.Deserialize<QueryDefinition>(
             """{"entity":"Orders"}""",
-            JsonQueryDefinitionParser.CreateSerializerOptions());
+            QueryDefinitionJsonParser.CreateSerializerOptions());
 
         Assert.That(definition, Is.Not.Null);
         Assert.That(definition!.Entity, Is.EqualTo("Orders"));
@@ -273,7 +273,7 @@ internal sealed class QueryDefinitionDatabaseTests : TestBase
             Projections =
             [
                 new ProjectionDefinition(
-                    QueryDefinitionParser.ParseExpression("<1> + <2> * <3> - <3>"),
+                    QueryDefinitionJsonParser.ParseExpression("<1> + <2> * <3> - <3>"),
                     "Calculated")
             ]
         };

@@ -185,7 +185,7 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
 
         var parsed = JsonSerializer.Deserialize<IConditionDefintion>(
             condition.GetRawText(),
-            JsonQueryDefinitionParser.CreateSerializerOptions())
+            QueryDefinitionJsonParser.CreateSerializerOptions())
             ?? throw new JsonException("A condition expression cannot be null.");
         return new ConditionFieldDefinition(parsed);
     }

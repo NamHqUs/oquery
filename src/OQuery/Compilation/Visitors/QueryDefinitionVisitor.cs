@@ -260,7 +260,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             Projections = cteFields
                 .Select(field => new ProjectionDefinition([new FieldDefinition(field.Name)], field.Name))
                 .ToList(),
-            Filter = QueryDefinitionParser.ParseFilter(
+            Filter = QueryDefinitionJsonParser.ParseFilter(
                 string.Join(" AND ", recursiveFieldNames.Select(field => $"{field} is null")))
         };
         var anchor = BuildQuery(anchorDefinition, definitions);
@@ -275,7 +275,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
                 new JoinDefinition(
                     context.Name,
                     context.Alias,
-                    QueryDefinitionParser.ParseJoinCondition(
+                    QueryDefinitionJsonParser.ParseJoinCondition(
                         $"{string.Join(" AND ", recursiveFieldNames.Select(field => $"{field} = {context.Alias}.{rootFieldNames.First()}"))}"),
                     QueryJoinType.Inner)
             ]

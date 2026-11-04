@@ -1,12 +1,74 @@
-using OQuery;
 using OQuery.QueryBuilderDto.Parsers;
-using OQuery.QueryDefinitions.Parsers.JsonConverters;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
+using OQuery.QueryDefinitions.Parsers.JsonConverters;
 
 namespace OQuery.QueryDefinitions.Parsers;
 
-public static partial class QueryDefinitionParser
+/// <summary>Parses and configures JSON query-definition serialization.</summary>
+public static class QueryDefinitionJsonParser
 {
+    public static JsonSerializerOptions CreateSerializerOptions(bool writeIndented = false)
+    {
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            WriteIndented = writeIndented
+        };
+        options.Converters.Add(
+            new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+        Configure(options);
+        return options;
+    }
+
+    public static void Configure(JsonSerializerOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        options.PropertyNamingPolicy ??= JsonNamingPolicy.CamelCase;
+        options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        if (!options.Converters.Any(converter => converter is JsonStringEnumConverter))
+        {
+            options.Converters.Add(
+                new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+        }
+        AddConverter<FieldDefinitionJsonConverter>(options);
+        AddConverter<ConditionDefinitionJsonConverter>(options);
+        AddConverter<ConditionDefintionJsonConverter>(options);
+        AddConverter<ConditionStatementDefinitionJsonConverter>(options);
+        AddConverter<ProjectionDefinitionJsonConverter>(options);
+        options.TypeInfoResolver = (options.TypeInfoResolver ?? new DefaultJsonTypeInfoResolver())
+            .WithAddedModifier(typeInfo =>
+            {
+                if (typeInfo.Type == typeof(QueryDefinition) ||
+                    typeInfo.Type == typeof(QueryDefinitionBase))
+                {
+                    var projectionName = options.PropertyNamingPolicy?.ConvertName(nameof(QueryDefinitionBase.Projections))
+                        ?? nameof(QueryDefinitionBase.Projections);
+                    foreach (var property in typeInfo.Properties)
+                        if (property.Name == projectionName)
+                            property.Name = "projection";
+                }
+
+                if (typeInfo.Type != typeof(JoinDefinition))
+                    return;
+                var joinTypeName = options.PropertyNamingPolicy?.ConvertName(nameof(JoinDefinition.JoinType))
+                    ?? nameof(JoinDefinition.JoinType);
+                foreach (var property in typeInfo.Properties)
+                    if (property.Name == joinTypeName)
+                        property.ShouldSerialize = (_, _) => true;
+            });
+    }
+
+    private static void AddConverter<TConverter>(JsonSerializerOptions options)
+        where TConverter : JsonConverter, new()
+    {
+        if (!options.Converters.Any(converter => converter is TConverter))
+            options.Converters.Add(new TConverter());
+    }
+
+
     public static void ValidateContextReferences(QueryDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -71,7 +133,7 @@ public static partial class QueryDefinitionParser
             projections = projectionValue.EnumerateArray()
                 .Select(field => JsonSerializer.Deserialize<ProjectionDefinition>(
                     field.GetRawText(),
-                    JsonQueryDefinitionParser.CreateSerializerOptions())
+                    QueryDefinitionJsonParser.CreateSerializerOptions())
                     ?? throw new JsonException("A projection field cannot be null."))
                 .Where(field => !field.IsNewLine)
                 .ToList();
@@ -86,7 +148,7 @@ public static partial class QueryDefinitionParser
                     ? ConditionDefinitionParser.Parse(filter.GetString() ?? string.Empty)
                     : JsonSerializer.Deserialize<ConditionDefinition>(
                         filter,
-                        JsonQueryDefinitionParser.CreateSerializerOptions())
+                        QueryDefinitionJsonParser.CreateSerializerOptions())
                 : null,
             Sorts = root.TryGetProperty("sorts", out var sorts) && sorts.ValueKind != JsonValueKind.Null
                 ? sorts.EnumerateArray().Select(ParseSort).ToList()
@@ -173,7 +235,7 @@ public static partial class QueryDefinitionParser
             : element.ValueKind == JsonValueKind.Null ? null :
             JsonSerializer.Deserialize<IConditionDefintion>(
                 element,
-                JsonQueryDefinitionParser.CreateSerializerOptions());
+                QueryDefinitionJsonParser.CreateSerializerOptions());
 
     private static JoinDefinition ParseJsonRelation(JsonElement element) =>
         new(
@@ -252,4 +314,5 @@ public static partial class QueryDefinitionParser
             throw new JsonException($"The {name} value must be an integer or null.");
         return value;
     }
+
 }

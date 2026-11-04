@@ -9,7 +9,7 @@ namespace OQuery.Execution;
 internal static class DbQueryFromQueryDto
 {
     public static IOQuery BuildQueryable(OQueryEngine context, string oqr)
-        => BuildQueryable(context, OQueryDefinitionParser.Parse(oqr));
+        => BuildQueryable(context, QueryDefinitionOQueryParser.Parse(oqr));
     public static IOQuery BuildQueryable(OQueryEngine context, QueryDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(context);

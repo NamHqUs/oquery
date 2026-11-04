@@ -7,7 +7,7 @@ namespace OQuery.UnitTest.Setup;
 internal static class QueryDefinitionLoader
 {
     private static readonly JsonSerializerOptions JsonOptions =
-        JsonQueryDefinitionParser.CreateSerializerOptions();
+        QueryDefinitionJsonParser.CreateSerializerOptions();
 
     public static QueryDefinition Load(string path)
     {

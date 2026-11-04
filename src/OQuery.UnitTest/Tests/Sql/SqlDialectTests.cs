@@ -67,7 +67,7 @@ public sealed class SqlDialectTests
         var definition = new QueryDefinition("User")
         {
 
-            Projections = QueryDefinitionParser.ParseProjection("Name | DisplayName"),
+            Projections = QueryDefinitionJsonParser.ParseProjection("Name | DisplayName"),
             Sorts = [new SortDefinition(new FieldDefinition("DisplayName"), QuerySortDirection.Descending)]
         };
 

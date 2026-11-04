@@ -1,6 +1,6 @@
 namespace OQuery.QueryDefinitions.Parsers;
 
-public static class OQueryDefinitionParser
+public static class QueryDefinitionOQueryParser
 {
     public static QueryDefinition Parse(string text)
     {
@@ -107,12 +107,12 @@ public static class OQueryDefinitionParser
             switch (clause.Name)
             {
                 case "where":
-                    filter = QueryDefinitionParser.ParseFilter(value);
+                    filter = QueryDefinitionJsonParser.ParseFilter(value);
                     break;
                 case "sort":
                 case "order":
                 case "orderby":
-                    sorts = QueryDefinitionParser.ParseSorts(value);
+                    sorts = QueryDefinitionJsonParser.ParseSorts(value);
                     break;
                 case "skip":
                     skip = ParseNonNegativeInt(value, "skip");
@@ -132,7 +132,7 @@ public static class OQueryDefinitionParser
 
         var definition = new QueryDefinition(block.Entity)
         {
-            Projections = QueryDefinitionParser.ParseProjection(block.Projection),
+            Projections = QueryDefinitionJsonParser.ParseProjection(block.Projection),
             Filter = filter,
             Sorts = sorts,
             Take = pageSize,
@@ -183,7 +183,7 @@ public static class OQueryDefinitionParser
         return new JoinDefinition(
             name,
             Alias: alias,
-            Condition: condition is null ? null : QueryDefinitionParser.ParseJoinCondition(condition),
+            Condition: condition is null ? null : QueryDefinitionJsonParser.ParseJoinCondition(condition),
             JoinType: joinType);
     }
 

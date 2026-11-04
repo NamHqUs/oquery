@@ -172,7 +172,7 @@ public sealed class FunctionMetadataTests
         var projection = new ProjectionDefinition(
             [new FunctionFieldDefinition("CountIf", [new ConditionFieldDefinition(condition)])],
             "CompletedCount");
-        var options = JsonQueryDefinitionParser.CreateSerializerOptions();
+        var options = QueryDefinitionJsonParser.CreateSerializerOptions();
 
         var json = System.Text.Json.JsonSerializer.Serialize(projection, options);
         var restored = System.Text.Json.JsonSerializer.Deserialize<ProjectionDefinition>(json, options);

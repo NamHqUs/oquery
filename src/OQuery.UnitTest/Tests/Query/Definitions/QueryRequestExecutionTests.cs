@@ -12,8 +12,8 @@ public sealed class QueryRequestExecutionTests : TestBase
         var definition = new QueryDefinition("User")
         {
 
-            Projections = QueryDefinitionParser.ParseProjection("Name, Manager.Name | ManagerName"),
-            Filter = QueryDefinitionParser.ParseFilter("Age > 18"),
+            Projections = QueryDefinitionJsonParser.ParseProjection("Name, Manager.Name | ManagerName"),
+            Filter = QueryDefinitionJsonParser.ParseFilter("Age > 18"),
             Sorts =
             [
                 new SortDefinition(new FieldDefinition("Name"))
@@ -37,7 +37,7 @@ public sealed class QueryRequestExecutionTests : TestBase
         var definition = new QueryDefinition("User")
         {
 
-            Projections = QueryDefinitionParser.ParseProjection("Name"),
+            Projections = QueryDefinitionJsonParser.ParseProjection("Name"),
             Take = pageSize
         };
 
@@ -53,8 +53,8 @@ public sealed class QueryRequestExecutionTests : TestBase
         var definition = new QueryDefinition("User")
         {
 
-            Projections = QueryDefinitionParser.ParseProjection("Name, AVG(Age) | AverageAge"),
-            Filter = QueryDefinitionParser.ParseFilter("AVG(Age) > 12"),
+            Projections = QueryDefinitionJsonParser.ParseProjection("Name, AVG(Age) | AverageAge"),
+            Filter = QueryDefinitionJsonParser.ParseFilter("AVG(Age) > 12"),
             Take = 50
         };
 
@@ -76,8 +76,8 @@ public sealed class QueryRequestExecutionTests : TestBase
         var definition = new QueryDefinition("User")
         {
 
-            Projections = QueryDefinitionParser.ParseProjection("Name"),
-            Filter = QueryDefinitionParser.ParseFilter("Name = 'Alice'"),
+            Projections = QueryDefinitionJsonParser.ParseProjection("Name"),
+            Filter = QueryDefinitionJsonParser.ParseFilter("Name = 'Alice'"),
         };
 
         var records = _db.Query(definition).ToList();
@@ -92,7 +92,7 @@ public sealed class QueryRequestExecutionTests : TestBase
         var definition = new QueryDefinition("User")
         {
 
-            Projections = QueryDefinitionParser.ParseProjection("Name"),
+            Projections = QueryDefinitionJsonParser.ParseProjection("Name"),
             Filter = new ConditionDefinition(
                 LogicalOperator.And,
                 new ConditionStatementDefinition(
@@ -173,7 +173,7 @@ public sealed class QueryRequestExecutionTests : TestBase
             var definition = new QueryDefinition("User")
             {
 
-                Projections = QueryDefinitionParser.ParseProjection("Name"),
+                Projections = QueryDefinitionJsonParser.ParseProjection("Name"),
                 Filter = new ConditionDefinition(
                     LogicalOperator.And,
                     new ConditionStatementDefinition(
@@ -246,7 +246,7 @@ public sealed class QueryRequestExecutionTests : TestBase
     [Test]
     public void RangeFilterAcceptsCommaSeparatedValues()
     {
-        var definition = QueryDefinitionParser.ParseFilter("Id between <100,200>");
+        var definition = QueryDefinitionJsonParser.ParseFilter("Id between <100,200>");
 
         var sql = _db.Query(new QueryDefinition("User")
         {
@@ -264,7 +264,7 @@ public sealed class QueryRequestExecutionTests : TestBase
         var definition = new QueryDefinition("User")
         {
 
-            Projections = QueryDefinitionParser.ParseProjection("Name, COUNT(Id) | InvoiceCount, SUM(Age) | Revenue, AVG(Age) | AverageOrderValue"),
+            Projections = QueryDefinitionJsonParser.ParseProjection("Name, COUNT(Id) | InvoiceCount, SUM(Age) | Revenue, AVG(Age) | AverageOrderValue"),
             Filter = null
         };
 
@@ -287,7 +287,7 @@ public sealed class QueryRequestExecutionTests : TestBase
         var definition = new QueryDefinition("User")
         {
 
-            Projections = QueryDefinitionParser.ParseProjection("Name, COUNT(Id) | InvoiceCount, SUM[Age] | TotalAge, AVG[Age] | AverageAge"),
+            Projections = QueryDefinitionJsonParser.ParseProjection("Name, COUNT(Id) | InvoiceCount, SUM[Age] | TotalAge, AVG[Age] | AverageAge"),
             Filter = null
         };
 
@@ -305,7 +305,7 @@ public sealed class QueryRequestExecutionTests : TestBase
         var definition = new QueryDefinition("User")
         {
 
-            Projections = QueryDefinitionParser.ParseProjection("Name, Count[*] | WildcardCount, Count[] | EmptyCount"),
+            Projections = QueryDefinitionJsonParser.ParseProjection("Name, Count[*] | WildcardCount, Count[] | EmptyCount"),
             Filter = null
         };
 
@@ -321,7 +321,7 @@ public sealed class QueryRequestExecutionTests : TestBase
         var definition = new QueryDefinition("User")
         {
 
-            Projections = QueryDefinitionParser.ParseProjection("Name, Sum(Members.Age) | TotalMemberAge"),
+            Projections = QueryDefinitionJsonParser.ParseProjection("Name, Sum(Members.Age) | TotalMemberAge"),
             Sorts = [new SortDefinition(new FunctionFieldDefinition("Sum", [new FieldDefinition("Members.Age")]))]
         };
 
@@ -340,7 +340,7 @@ public sealed class QueryRequestExecutionTests : TestBase
         var definition = new QueryDefinition("User")
         {
 
-            Projections = QueryDefinitionParser.ParseProjection("Name, Count(Id) | TotalCount"),
+            Projections = QueryDefinitionJsonParser.ParseProjection("Name, Count(Id) | TotalCount"),
             Sorts = [new SortDefinition(new FieldDefinition("TotalCount"), QuerySortDirection.Descending)]
         };
 
@@ -354,7 +354,7 @@ public sealed class QueryRequestExecutionTests : TestBase
     [Test]
     public void SortDefinitionParserSplitsTopLevelExpressionsAndSupportsDefaultDirection()
     {
-        var sorts = QueryDefinitionParser.ParseSorts("Sum(Age, 1) DESC, Name");
+        var sorts = QueryDefinitionJsonParser.ParseSorts("Sum(Age, 1) DESC, Name");
 
         Assert.That(sorts, Has.Count.EqualTo(2));
         Assert.That(sorts[0].Field, Is.TypeOf<FunctionFieldDefinition>());
@@ -423,7 +423,7 @@ public sealed class QueryRequestExecutionTests : TestBase
             }
             """;
 
-        var definition = QueryDefinitionParser.Parse(json);
+        var definition = QueryDefinitionJsonParser.Parse(json);
 
         Assert.That(definition.Projections.Select(projection => projection.ToText()),
             Is.EqualTo(new[] { "Id", "Name" }));
@@ -450,7 +450,7 @@ public sealed class QueryRequestExecutionTests : TestBase
 
         var definition = System.Text.Json.JsonSerializer.Deserialize<QueryDefinition>(
             json,
-            JsonQueryDefinitionParser.CreateSerializerOptions())!;
+            QueryDefinitionJsonParser.CreateSerializerOptions())!;
 
         Assert.That(definition.Filter, Is.TypeOf<ConditionDefinition>());
         var filter = definition.Filter!.Filters.Single() as ConditionStatementDefinition;
@@ -460,7 +460,7 @@ public sealed class QueryRequestExecutionTests : TestBase
         Assert.That(filter.Right, Is.TypeOf<ConstFieldDefinition>());
         Assert.That(((ConstFieldDefinition)filter.Right!).Value, Is.EqualTo("Alice"));
 
-        var options = JsonQueryDefinitionParser.CreateSerializerOptions();
+        var options = QueryDefinitionJsonParser.CreateSerializerOptions();
         var serialized = System.Text.Json.JsonSerializer.Serialize(definition, options);
         Assert.That(serialized, Does.Contain("\"left\":{\"kind\":\"field\",\"field\":\"Name\"}"));
         Assert.That(serialized, Does.Contain("\"right\":{\"kind\":\"value\",\"value\":\"Alice\"}"));

@@ -10,7 +10,7 @@ internal sealed class QueryRequestParserTests : TestBase
     public void TextToFunctionFieldDto_Arguments()
     {
         var text = "Round(Id, <2>)";
-        var field = (FunctionFieldDefinition)QueryDefinitionParser.ParseField(text);
+        var field = (FunctionFieldDefinition)QueryDefinitionJsonParser.ParseField(text);
 
         var expectedField = new FunctionFieldDefinition("Round", [
             new FieldDefinition("Id"),
@@ -25,7 +25,7 @@ internal sealed class QueryRequestParserTests : TestBase
     public void TextToFunctionFieldDto_GroupArgument()
     {
         var text = "Round(Id + <2>)";
-        var field = (FunctionFieldDefinition)QueryDefinitionParser.ParseField(text);
+        var field = (FunctionFieldDefinition)QueryDefinitionJsonParser.ParseField(text);
 
         var expectedField = new FunctionFieldDefinition("Round", [
             new GroupFieldDefintion([
@@ -42,7 +42,7 @@ internal sealed class QueryRequestParserTests : TestBase
     public void TextToFunctionFieldDto_Nested()
     {
         var text = "Round(Sum(Id + Age), <2>)";
-        var field = (FunctionFieldDefinition)QueryDefinitionParser.ParseField(text);
+        var field = (FunctionFieldDefinition)QueryDefinitionJsonParser.ParseField(text);
 
         var expectedField = new FunctionFieldDefinition("Round", [
             new FunctionFieldDefinition("Sum", [
@@ -62,7 +62,7 @@ internal sealed class QueryRequestParserTests : TestBase
     public void TextToGroupFieldDto()
     {
         const string text = "Id + Age";
-        var field = (GroupFieldDefintion)QueryDefinitionParser.ParseField(text);
+        var field = (GroupFieldDefintion)QueryDefinitionJsonParser.ParseField(text);
 
         var expectedField = new GroupFieldDefintion([
             new FieldDefinition("Id"),
@@ -77,7 +77,7 @@ internal sealed class QueryRequestParserTests : TestBase
     public void TextToGroupFieldDto_Nested()
     {
         const string text = "Id + (Age * Sum(Salary))";
-        var field = (GroupFieldDefintion)QueryDefinitionParser.ParseField(text);
+        var field = (GroupFieldDefintion)QueryDefinitionJsonParser.ParseField(text);
 
         var expectedField = new GroupFieldDefintion([
             new FieldDefinition("Id"),

@@ -20,7 +20,7 @@ public sealed class QueryContextDefinitionTests : TestBase
                     new Field("FirstName", "FirstName"),
                     new Field("ManagerId", "ManagerId"),
                 ]));
-        var query = OQueryDefinitionParser.Parse("""
+        var query = QueryDefinitionOQueryParser.Parse("""
             EmployeeTree is Employees: FirstName | ManagerName,
                 member.FirstName | MemberName
               INNER JOIN EmployeeTree member on Id = member.ManagerId
@@ -98,15 +98,15 @@ public sealed class QueryContextDefinitionTests : TestBase
                     Projections = [new("Id"), new("Name"), new("ManagerId")],
                     Joins =
                     [
-                        new("ref1", Condition: QueryDefinitionParser.ParseJoinCondition(
+                        new("ref1", Condition: QueryDefinitionJsonParser.ParseJoinCondition(
                             "ManagerId = ref1.Id"))
                     ]
                 }
             },
             Joins =
             [
-                new("ref1", Condition: QueryDefinitionParser.ParseJoinCondition("ManagerId = ref1.Id")),
-                new("ref2", Condition: QueryDefinitionParser.ParseJoinCondition("ManagerId = ref2.Id"))
+                new("ref1", Condition: QueryDefinitionJsonParser.ParseJoinCondition("ManagerId = ref1.Id")),
+                new("ref2", Condition: QueryDefinitionJsonParser.ParseJoinCondition("ManagerId = ref2.Id"))
             ],
             Projections =
             [
@@ -514,7 +514,7 @@ public sealed class QueryContextDefinitionTests : TestBase
             new SqlServerDialect(),
             new Entity("User", [new Field("Id", "Id"), new Field("ManagerId", "ManagerId")]));
 
-        var sql = db.Query(QueryDefinitionParser.Parse(json)).ToSql();
+        var sql = db.Query(QueryDefinitionJsonParser.Parse(json)).ToSql();
 
         Assert.That(sql.CommandText, Does.Contain("LEFT JOIN [UserContext]"));
         Assert.That(sql.CommandText, Does.Not.Contain("UNION ALL"));
@@ -537,7 +537,7 @@ public sealed class QueryContextDefinitionTests : TestBase
             }
             """;
 
-        Assert.DoesNotThrow(() => QueryDefinitionParser.Parse(json));
+        Assert.DoesNotThrow(() => QueryDefinitionJsonParser.Parse(json));
     }
 
     [Test]
@@ -565,7 +565,7 @@ public sealed class QueryContextDefinitionTests : TestBase
             new SqlServerDialect(),
             new Entity("User", [new Field("Id", "Id"), new Field("ManagerId", "ManagerId")]));
 
-        var sql = db.Query(QueryDefinitionParser.Parse(json)).ToSql();
+        var sql = db.Query(QueryDefinitionJsonParser.Parse(json)).ToSql();
 
         Assert.That(sql.CommandText, Does.Contain("t0.[ManagerId] > t1.[Id]"));
     }
@@ -594,7 +594,7 @@ public sealed class QueryContextDefinitionTests : TestBase
             new SqlServerDialect(),
             new Entity("User", [new Field("Id", "Id"), new Field("ManagerId", "ManagerId")]));
 
-        var sql = db.Query(QueryDefinitionParser.Parse(json)).ToSql();
+        var sql = db.Query(QueryDefinitionJsonParser.Parse(json)).ToSql();
 
         Assert.That(sql.CommandText, Does.Contain("t0.[ManagerId] = t1.[Id]"));
     }
@@ -649,7 +649,7 @@ public sealed class QueryContextDefinitionTests : TestBase
                 new Field("ReviewerId", "ReviewerId"),
             ]));
 
-        var sql = db.Query(QueryDefinitionParser.Parse(json)).ToSql().CommandText;
+        var sql = db.Query(QueryDefinitionJsonParser.Parse(json)).ToSql().CommandText;
 
         Assert.That(sql, Does.Contain($"WITH{Environment.NewLine}[UserContext] AS"));
         Assert.That(System.Text.RegularExpressions.Regex.Matches(sql, @"\[UserContext\] AS").Count, Is.EqualTo(1));

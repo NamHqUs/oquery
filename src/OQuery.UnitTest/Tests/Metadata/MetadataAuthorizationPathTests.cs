@@ -155,8 +155,8 @@ public sealed class MetadataAuthorizationPathTests
                 () => db.Query(new QueryDefinition("User")
                 {
 
-                    Projections = QueryDefinitionParser.ParseProjection("COUNT(Calculated) | Total"),
-                    Filter = QueryDefinitionParser.ParseFilter("COUNT(Calculated) >= <1>")
+                    Projections = QueryDefinitionJsonParser.ParseProjection("COUNT(Calculated) | Total"),
+                    Filter = QueryDefinitionJsonParser.ParseFilter("COUNT(Calculated) >= <1>")
                 }).ToSql(),
                 Throws.Nothing);
         });
@@ -244,7 +244,7 @@ public sealed class MetadataAuthorizationPathTests
         {
 
             Projections = [new("Id"), new("COUNT(Id) | Total")],
-            Filter = QueryDefinitionParser.ParseFilter("COUNT(Secret) >= <1>")
+            Filter = QueryDefinitionJsonParser.ParseFilter("COUNT(Secret) >= <1>")
         };
 
         Assert.That(
@@ -368,7 +368,7 @@ public sealed class MetadataAuthorizationPathTests
         var query = new QueryDefinition("User")
         {
 
-            Projections = QueryDefinitionParser.ParseProjection("COUNT(*) | Total")
+            Projections = QueryDefinitionJsonParser.ParseProjection("COUNT(*) | Total")
         };
 
         Assert.That(
