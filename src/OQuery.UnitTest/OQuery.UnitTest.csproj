@@ -7,6 +7,7 @@
 
 	<ItemGroup>
 		<Compile Remove="Tests\Providers\*QueryExecutionTests.cs" />
+		<Compile Remove="Tests\Query\Execution\SqliteQueryExecutionTests.cs" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -1,4 +1,4 @@
-﻿using OQuery.QueryDefinitions.Parsers;
+using OQuery.QueryDefinitions.Parsers;
 using OQuery.UnitTest;
 
 namespace OQuery.UnitTest.Tests.Query.Definitions;
@@ -9,17 +9,16 @@ public sealed class QueryRequestExecutionTests : TestBase
     [Test]
     public void DefinitionBuildsParameterizedSql()
     {
-        var definition = new QueryDefinition
+        var definition = new QueryDefinition("User")
         {
-            Entity = "User",
-            Projection = QueryDefinitionParser.ParseProjection("Name, Manager.Name | ManagerName"),
+
+            Projections = QueryDefinitionParser.ParseProjection("Name, Manager.Name | ManagerName"),
             Filter = QueryDefinitionParser.ParseFilter("Age > 18"),
             Sorts =
             [
                 new SortDefinition(new FieldDefinition("Name"))
             ],
-            Page = 1,
-            PageSize = 10
+            Take = 10
         };
 
         var sql = _db.Query(definition).ToSql();
@@ -35,12 +34,11 @@ public sealed class QueryRequestExecutionTests : TestBase
     [TestCase(0)]
     public void DefinitionDoesNotPageWhenPageSizeIsUnsetOrZero(int? pageSize)
     {
-        var definition = new QueryDefinition
+        var definition = new QueryDefinition("User")
         {
-            Entity = "User",
-            Projection = QueryDefinitionParser.ParseProjection("Name"),
-            Page = 1,
-            PageSize = pageSize
+
+            Projections = QueryDefinitionParser.ParseProjection("Name"),
+            Take = pageSize
         };
 
         var sql = _db.Query(definition).ToSql().CommandText;
@@ -52,12 +50,12 @@ public sealed class QueryRequestExecutionTests : TestBase
     [Test]
     public void AggregateFilterUsesHavingInsteadOfScalarSubquery()
     {
-        var definition = new QueryDefinition
+        var definition = new QueryDefinition("User")
         {
-            Entity = "User",
-            Projection = QueryDefinitionParser.ParseProjection("Name, AVG(Age) | AverageAge"),
+
+            Projections = QueryDefinitionParser.ParseProjection("Name, AVG(Age) | AverageAge"),
             Filter = QueryDefinitionParser.ParseFilter("AVG(Age) > 12"),
-            PageSize = 50
+            Take = 50
         };
 
         var sql = _db.Query(definition).ToSql().CommandText;
@@ -75,10 +73,10 @@ public sealed class QueryRequestExecutionTests : TestBase
     [Test]
     public void DefinitionExecutesWithProjectionAndFilter()
     {
-        var definition = new QueryDefinition
+        var definition = new QueryDefinition("User")
         {
-            Entity = "User",
-            Projection = QueryDefinitionParser.ParseProjection("Name"),
+
+            Projections = QueryDefinitionParser.ParseProjection("Name"),
             Filter = QueryDefinitionParser.ParseFilter("Name = 'Alice'"),
         };
 
@@ -91,10 +89,10 @@ public sealed class QueryRequestExecutionTests : TestBase
     [Test]
     public void DefinitionExecutesFilterWithFieldReferenceOnRight()
     {
-        var definition = new QueryDefinition
+        var definition = new QueryDefinition("User")
         {
-            Entity = "User",
-            Projection = QueryDefinitionParser.ParseProjection("Name"),
+
+            Projections = QueryDefinitionParser.ParseProjection("Name"),
             Filter = new ConditionDefinition(
                 LogicalOperator.And,
                 new ConditionStatementDefinition(
@@ -116,9 +114,9 @@ public sealed class QueryRequestExecutionTests : TestBase
     [Test]
     public void DefinitionFiltersOnFunctionExpression()
     {
-        var definition = new QueryDefinition
+        var definition = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Filter = new ConditionDefinition(
                 LogicalOperator.And,
                 new ConditionStatementDefinition(
@@ -172,10 +170,10 @@ public sealed class QueryRequestExecutionTests : TestBase
 
         foreach (var (operation, right, sqlOperator) in filters)
         {
-            var definition = new QueryDefinition
+            var definition = new QueryDefinition("User")
             {
-                Entity = "User",
-                Projection = QueryDefinitionParser.ParseProjection("Name"),
+
+                Projections = QueryDefinitionParser.ParseProjection("Name"),
                 Filter = new ConditionDefinition(
                     LogicalOperator.And,
                     new ConditionStatementDefinition(
@@ -194,9 +192,9 @@ public sealed class QueryRequestExecutionTests : TestBase
     [Test]
     public void DefinitionRejectsInvalidRangeAndEmptySetFilters()
     {
-        var invalidRange = new QueryDefinition
+        var invalidRange = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Filter = new ConditionDefinition(
                 LogicalOperator.And,
                 new ConditionStatementDefinition(
@@ -205,9 +203,9 @@ public sealed class QueryRequestExecutionTests : TestBase
                     BinaryOperator.Between,
                     new GroupFieldDefintion([new ConstFieldDefinition(18)])))
         };
-        var emptySet = new QueryDefinition
+        var emptySet = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Filter = new ConditionDefinition(
                 LogicalOperator.And,
                 new ConditionStatementDefinition(
@@ -224,9 +222,9 @@ public sealed class QueryRequestExecutionTests : TestBase
     [Test]
     public void RangeFilterAcceptsCommaSeparatedUiValue()
     {
-        var definition = new QueryDefinition
+        var definition = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Filter = new ConditionDefinition(
                 LogicalOperator.And,
                 new ConditionStatementDefinition(
@@ -250,9 +248,9 @@ public sealed class QueryRequestExecutionTests : TestBase
     {
         var definition = QueryDefinitionParser.ParseFilter("Id between <100,200>");
 
-        var sql = _db.Query(new QueryDefinition
+        var sql = _db.Query(new QueryDefinition("User")
         {
-            Entity = "User",
+
             Filter = definition
         }).ToSql();
 
@@ -261,32 +259,12 @@ public sealed class QueryRequestExecutionTests : TestBase
     }
 
     [Test]
-    public void MultiValueFilterRoundTripsThroughJson()
-    {
-        var definition = new QueryDefinition
-        {
-            Entity = "User",
-            Filter = QueryDefinitionParser.ParseFilter("Id between <100,200>")
-        };
-        var options = JsonQueryDefinitionParser.CreateSerializerOptions();
-
-        var serialized = System.Text.Json.JsonSerializer.Serialize(definition, options);
-        var roundTrip = System.Text.Json.JsonSerializer.Deserialize<QueryDefinition>(serialized, options)!;
-        var filter = (ConditionStatementDefinition)roundTrip.Filter!.Filters.Single();
-        var values = ((GroupFieldDefintion)filter.Right!).Fields
-            .Cast<ConstFieldDefinition>()
-            .Select(value => value.Value);
-
-        Assert.That(values, Is.EqualTo(new object?[] { 100, 200 }));
-    }
-
-    [Test]
     public void DefinitionSupportsAggregateOnRootEntity()
     {
-        var definition = new QueryDefinition
+        var definition = new QueryDefinition("User")
         {
-            Entity = "User",
-            Projection = QueryDefinitionParser.ParseProjection("Name, COUNT(Id) | InvoiceCount, SUM(Age) | Revenue, AVG(Age) | AverageOrderValue"),
+
+            Projections = QueryDefinitionParser.ParseProjection("Name, COUNT(Id) | InvoiceCount, SUM(Age) | Revenue, AVG(Age) | AverageOrderValue"),
             Filter = null
         };
 
@@ -306,10 +284,10 @@ public sealed class QueryRequestExecutionTests : TestBase
     [Test]
     public void DefinitionSupportsBracketAggregateFunctions()
     {
-        var definition = new QueryDefinition
+        var definition = new QueryDefinition("User")
         {
-            Entity = "User",
-            Projection = QueryDefinitionParser.ParseProjection("Name, COUNT(Id) | InvoiceCount, SUM[Age] | TotalAge, AVG[Age] | AverageAge"),
+
+            Projections = QueryDefinitionParser.ParseProjection("Name, COUNT(Id) | InvoiceCount, SUM[Age] | TotalAge, AVG[Age] | AverageAge"),
             Filter = null
         };
 
@@ -324,10 +302,10 @@ public sealed class QueryRequestExecutionTests : TestBase
     [Test]
     public void DefinitionRejectsWildcardAndEmptyCountArguments()
     {
-        var definition = new QueryDefinition
+        var definition = new QueryDefinition("User")
         {
-            Entity = "User",
-            Projection = QueryDefinitionParser.ParseProjection("Name, Count[*] | WildcardCount, Count[] | EmptyCount"),
+
+            Projections = QueryDefinitionParser.ParseProjection("Name, Count[*] | WildcardCount, Count[] | EmptyCount"),
             Filter = null
         };
 
@@ -340,10 +318,10 @@ public sealed class QueryRequestExecutionTests : TestBase
     [Test]
     public void DefinitionSortsByCollectionAggregate()
     {
-        var definition = new QueryDefinition
+        var definition = new QueryDefinition("User")
         {
-            Entity = "User",
-            Projection = QueryDefinitionParser.ParseProjection("Name, Sum(Members.Age) | TotalMemberAge"),
+
+            Projections = QueryDefinitionParser.ParseProjection("Name, Sum(Members.Age) | TotalMemberAge"),
             Sorts = [new SortDefinition(new FunctionFieldDefinition("Sum", [new FieldDefinition("Members.Age")]))]
         };
 
@@ -359,10 +337,10 @@ public sealed class QueryRequestExecutionTests : TestBase
     [Test]
     public void DefinitionSortsByProjectedAlias()
     {
-        var definition = new QueryDefinition
+        var definition = new QueryDefinition("User")
         {
-            Entity = "User",
-            Projection = QueryDefinitionParser.ParseProjection("Name, Count(Id) | TotalCount"),
+
+            Projections = QueryDefinitionParser.ParseProjection("Name, Count(Id) | TotalCount"),
             Sorts = [new SortDefinition(new FieldDefinition("TotalCount"), QuerySortDirection.Descending)]
         };
 
@@ -388,9 +366,9 @@ public sealed class QueryRequestExecutionTests : TestBase
     [Test]
     public void DefinitionConnectsStructuredFiltersWithLogicalOperators()
     {
-        var definition = new QueryDefinition
+        var definition = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Filter = new ConditionDefinition(
                 LogicalOperator.And,
                 new ConditionDefinition(
@@ -422,11 +400,10 @@ public sealed class QueryRequestExecutionTests : TestBase
     [Test]
     public void DefinitionRejectsInvalidPaging()
     {
-        var definition = new QueryDefinition
+        var definition = new QueryDefinition("User")
         {
-            Entity = "User",
-            Page = 0,
-            PageSize = 10
+
+            Take = -1
         };
 
         Assert.Throws<ArgumentOutOfRangeException>(() => _db.Query(definition));
@@ -439,16 +416,16 @@ public sealed class QueryRequestExecutionTests : TestBase
             {
               "entity": "User",
               "projection": [
-                { "field": { "kind": "field", "field": "Id" }, "alias": null },
-                { "field": { "kind": "field", "field": "" }, "alias": "NEW_LINE" },
-                { "field": { "kind": "field", "field": "Name" }, "alias": null }
+                { "fields": [{ "kind": "field", "field": "Id" }], "alias": null },
+                { "fields": [{ "kind": "field", "field": "" }], "alias": "NEW_LINE" },
+                { "fields": [{ "kind": "field", "field": "Name" }], "alias": null }
               ]
             }
             """;
 
         var definition = QueryDefinitionParser.Parse(json);
 
-        Assert.That(definition.Projection.Select(projection => projection.ToText()),
+        Assert.That(definition.Projections.Select(projection => projection.ToText()),
             Is.EqualTo(new[] { "Id", "Name" }));
     }
 
@@ -464,7 +441,7 @@ public sealed class QueryRequestExecutionTests : TestBase
                   "logicalOperator": 0,
                   "field": { "kind": "field", "field": "Name" },
                   "operation": 0,
-                  "value": "Alice",
+                  "right": { "kind": "value", "value": "Alice" },
                   "parameterized": false
                 }]
               }

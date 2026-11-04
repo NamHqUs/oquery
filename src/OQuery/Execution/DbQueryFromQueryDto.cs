@@ -27,7 +27,7 @@ internal static class DbQueryFromQueryDto
         if (definition.Filter is not null)
             query = query.Where(CreateFilter(definition.Filter));
 
-        var projections = definition.Projection ?? [];
+        var projections = definition.Projections ?? [];
         if (projections.Count > 0)
         {
             var selection = new Dictionary<string, object?>();
@@ -55,17 +55,17 @@ internal static class DbQueryFromQueryDto
 
         if (definition.Skip is < 0)
             throw new ArgumentOutOfRangeException(nameof(definition.Skip), "Skip cannot be negative.");
-        if (definition.PageSize is < 0)
-            throw new ArgumentOutOfRangeException(nameof(definition.PageSize), "Page size cannot be negative.");
+        if (definition.Take is < 0)
+            throw new ArgumentOutOfRangeException(nameof(definition.Take), "Take cannot be negative.");
 
-        if (definition.PageSize is > 0)
+        if (definition.Take is > 0)
         {
-            var pageSize = definition.PageSize.Value;
-            var skip = definition.Skip ?? ((definition.Page ?? 1) - 1) * pageSize;
+            var take = definition.Take.Value;
+            var skip = definition.Skip ?? 0;
             if (skip < 0)
                 throw new ArgumentOutOfRangeException(nameof(definition.Skip), "Skip cannot be negative.");
             query = query.Skip(skip);
-            query = query.TakeQuery(pageSize);
+            query = query.TakeQuery(take);
         }
         else if (definition.Skip is not null)
         {

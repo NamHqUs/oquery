@@ -1,4 +1,4 @@
-﻿using OQuery;
+using OQuery;
 using OQuery.QueryBuilderDto.Parsers;
 using OQuery.QueryDefinitions.Parsers.JsonConverters;
 using System.Text.Json;
@@ -21,7 +21,7 @@ public static partial class QueryDefinitionParser
         QueryDefinition definition,
         HashSet<string> availableContexts)
     {
-        foreach (var relation in definition.Relations ?? [])
+        foreach (var relation in definition.Joins ?? [])
         {
             if (!availableContexts.Contains(relation.RefContext))
                 throw new FormatException(
@@ -61,9 +61,7 @@ public static partial class QueryDefinitionParser
     {
         var projectionElement = TryGetProperty(root, "projection", out var projection)
             ? projection
-            : TryGetProperty(root, "fields", out var legacyProjection)
-                ? legacyProjection
-                : (JsonElement?)null;
+            : (JsonElement?)null;
         List<ProjectionDefinition> projections = [];
         if (projectionElement is { } projectionValue)
         {
@@ -79,11 +77,10 @@ public static partial class QueryDefinitionParser
                 .ToList();
         }
 
-        var result = new QueryDefinition
+        var result = new QueryDefinition(root.GetProperty("entity").GetString()
+                ?? throw new JsonException("The entity value cannot be null."))
         {
-            Entity = root.GetProperty("entity").GetString()
-                ?? throw new JsonException("The entity value cannot be null."),
-            Projection = projections,
+            Projections = projections,
             Filter = root.TryGetProperty("filter", out var filter)
                 ? filter.ValueKind == JsonValueKind.String
                     ? ConditionDefinitionParser.Parse(filter.GetString() ?? string.Empty)
@@ -94,9 +91,9 @@ public static partial class QueryDefinitionParser
             Sorts = root.TryGetProperty("sorts", out var sorts) && sorts.ValueKind != JsonValueKind.Null
                 ? sorts.EnumerateArray().Select(ParseSort).ToList()
                 : [],
-            Page = ReadInt(root, "page"),
-            PageSize = ReadInt(root, "pageSize"),
+            Take = ReadInt(root, "take"),
             Skip = ReadInt(root, "skip"),
+            Joins = []
         };
         if (TryGetProperty(root, "contexts", out var contextsElement))
         {
@@ -118,14 +115,8 @@ public static partial class QueryDefinitionParser
                         ? nested
                         : context;
                     var contextQuery = ParseJsonDefinition(queryElement);
-                    if (TryGetProperty(context, "recursive", out var recursive))
-                    {
-                        if (recursive.ValueKind is not JsonValueKind.True and not JsonValueKind.False)
-                            throw new JsonException($"Query context [{name}] recursive must be a boolean.");
-                        contextQuery.Recursive = recursive.GetBoolean();
-                    }
                     result.Contexts![name] = contextQuery;
-                    result.Relations!.Add(new RelationDefinition(
+                    result.Joins!.Add(new JoinDefinition(
                         name,
                         TryGetProperty(context, "alias", out var alias) ? alias.GetString() : null,
                         TryGetProperty(context, "condition", out var condition) ? ParseJsonCondition(condition) : null,
@@ -134,10 +125,11 @@ public static partial class QueryDefinitionParser
             }
             else throw new JsonException("The contexts value must be an object or array.");
         }
-        if (TryGetProperty(root, "relations", out var relations) &&
+        if ((TryGetProperty(root, "relations", out var relations) ||
+             TryGetProperty(root, "joins", out relations)) &&
             relations.ValueKind == JsonValueKind.Array)
             foreach (var relation in relations.EnumerateArray())
-                result.Relations!.Add(ParseJsonRelation(relation));
+                result.Joins!.Add(ParseJsonRelation(relation));
         ValidateContextReferences(result);
         FlattenContexts(result.Contexts!);
         ValidateContextReferences(result);
@@ -183,10 +175,9 @@ public static partial class QueryDefinitionParser
                 element,
                 JsonQueryDefinitionParser.CreateSerializerOptions());
 
-    private static RelationDefinition ParseJsonRelation(JsonElement element) =>
+    private static JoinDefinition ParseJsonRelation(JsonElement element) =>
         new(
-            Required(TryGetProperty(element, "refContext", out var reference) ? reference.GetString() :
-                TryGetProperty(element, "refContextId", out var legacy) ? legacy.GetString() : null,
+            Required(TryGetProperty(element, "refContext", out var reference) ? reference.GetString() : null,
                 "A query relation requires a referenced context."),
             TryGetProperty(element, "alias", out var alias) ? alias.GetString() : null,
             TryGetProperty(element, "condition", out var condition) ? ParseJsonCondition(condition) : null,

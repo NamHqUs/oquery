@@ -343,10 +343,10 @@ public sealed class FunctionMetadataTests
         };
         foreach (var (functionName, expected) in cases)
         {
-            var record = context.Query(new QueryDefinition
+            var record = context.Query(new QueryDefinition("Items")
             {
-                Entity = "Items",
-                Projection =
+
+                Projections =
                 [
                     new ProjectionDefinition(
                         [new FunctionFieldDefinition(functionName,
@@ -446,10 +446,10 @@ public sealed class FunctionMetadataTests
             functionProvider,
             dialect ?? new SqliteDialect());
 
-        return context.Query(new QueryDefinition
+        return context.Query(new QueryDefinition("Items")
         {
-            Entity = "Items",
-            Projection = [new ProjectionDefinition([expression], "Result")]
+
+            Projections = [new ProjectionDefinition([expression], "Result")]
         }).ToSql();
     }
 

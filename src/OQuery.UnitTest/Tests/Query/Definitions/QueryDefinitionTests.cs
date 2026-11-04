@@ -1,4 +1,4 @@
-﻿using OQuery.QueryDefinitions.Parsers;
+using OQuery.QueryDefinitions.Parsers;
 using OQuery.UnitTest;
 using System.Text.Json;
 
@@ -92,38 +92,6 @@ internal sealed class QueryDefinitionTests
     }
 
     [Test]
-    public void LegacyProjectionMathNodesDeserializeIntoOperatorFields()
-    {
-        const string json = """
-            {
-              "field": {
-                "oper": "Add",
-                "kind": "group",
-                "fields": [
-                  { "kind": "field", "field": "A" },
-                  {
-                    "oper": "Subtract",
-                    "kind": "math",
-                    "field": { "kind": "value", "value": 3 }
-                  }
-                ]
-              },
-              "alias": "Calculated"
-            }
-            """;
-
-        var projection = JsonSerializer.Deserialize<ProjectionDefinition>(
-            json,
-            JsonQueryDefinitionParser.CreateSerializerOptions())
-            ?? throw new InvalidOperationException("The legacy projection JSON did not produce a definition.");
-
-        Assert.That(projection.Fields, Has.Length.EqualTo(2));
-        Assert.That(projection.Fields[1], Is.EqualTo(
-            new ConstFieldDefinition(MatchOperation.Subtract, 3L)));
-        Assert.That(projection.ToText(), Is.EqualTo("A - <3> | Calculated"));
-    }
-
-    [Test]
     public void OQueryParsesMultilineProjectionBeforeClauses()
     {
         var definition = OQueryDefinitionParser.Parse("""
@@ -135,13 +103,13 @@ internal sealed class QueryDefinitionTests
               take 10
             """);
 
-        Assert.That(definition.Projection.Select(field => field.ToText()),
+        Assert.That(definition.Projections.Select(field => field.ToText()),
             Is.EqualTo([
                 "Diagnosis.Name | Diagnosis",
                 "Diagnosis.Category | DiagnosisCategory",
                 "ROUND(<100> * SUM(Amount) / NULLIF(SUM(Total), <0>), <2>) | Percent"
             ]));
-        Assert.That(definition.PageSize, Is.EqualTo(10));
+        Assert.That(definition.Take, Is.EqualTo(10));
     }
 
     [Test]
@@ -159,8 +127,8 @@ internal sealed class QueryDefinitionTests
 
         Assert.That(definition.Sorts.Select(sort => sort.Field.ToText()),
             Is.EqualTo(["VisitCount", "Diagnosis.Name"]));
-        Assert.That(definition.Relations!.Single().RefContext, Is.EqualTo("VisitLabs"));
-        Assert.That(definition.Contexts!["VisitLabs"].Projection.Select(field => field.ToText()),
+        Assert.That(definition.Joins!.Single().RefContext, Is.EqualTo("VisitLabs"));
+        Assert.That(definition.Contexts!["VisitLabs"].Projections.Select(field => field.ToText()),
             Is.EqualTo(["VisitId | VisitId", "COUNT(Id) | LabCount"]));
     }
 
@@ -175,8 +143,8 @@ internal sealed class QueryDefinitionTests
 
         Assert.That(definition.Entity, Is.EqualTo("User"));
         Assert.That(definition.Contexts, Does.ContainKey("UserContext1"));
-        Assert.That(definition.Relations!.Single().RefContext, Is.EqualTo("UserContext1"));
-        Assert.That(definition.Projection.Select(field => field.ToText()),
+        Assert.That(definition.Joins!.Single().RefContext, Is.EqualTo("UserContext1"));
+        Assert.That(definition.Projections.Select(field => field.ToText()),
             Is.EqualTo(["Id", "Name", "ManagerId"]));
     }
 
@@ -193,9 +161,9 @@ internal sealed class QueryDefinitionTests
             """);
 
         Assert.That(definition.Entity, Is.EqualTo("User"));
-        Assert.That(definition.Relations!.Select(relation => relation.RefContext),
+        Assert.That(definition.Joins!.Select(relation => relation.RefContext),
             Is.EqualTo(["UserContext1", "UserContext2"]));
-        Assert.That(definition.Contexts!["UserContext2"].Relations!.Single().RefContext,
+        Assert.That(definition.Contexts!["UserContext2"].Joins!.Single().RefContext,
             Is.EqualTo("UserContext1"));
     }
 
@@ -209,11 +177,11 @@ internal sealed class QueryDefinitionTests
             ref1 is User: Id, Name
             """);
 
-        Assert.That(definition.Relations, Has.Count.EqualTo(2));
-        Assert.That(definition.Relations![0].RefContext, Is.EqualTo("ref1"));
-        Assert.That(definition.Relations[0].Alias, Is.Null);
-        Assert.That(definition.Relations[1].RefContext, Is.EqualTo("ref1"));
-        Assert.That(definition.Relations[1].Alias, Is.EqualTo("newRef1"));
+        Assert.That(definition.Joins, Has.Count.EqualTo(2));
+        Assert.That(definition.Joins![0].RefContext, Is.EqualTo("ref1"));
+        Assert.That(definition.Joins[0].Alias, Is.Null);
+        Assert.That(definition.Joins[1].RefContext, Is.EqualTo("ref1"));
+        Assert.That(definition.Joins[1].Alias, Is.EqualTo("newRef1"));
         Assert.That(() => QueryDefinitionParser.ValidateContextReferences(definition),
             Throws.Nothing);
     }
@@ -221,16 +189,16 @@ internal sealed class QueryDefinitionTests
     [Test]
     public void JsonPreservesNullJoinTypesDespiteIgnoringOtherNullProperties()
     {
-        var definition = new QueryDefinition
+        var definition = new QueryDefinition("User")
         {
-            Entity = "User",
-            Relations = [new("Managers", JoinType: null)],
+
+            Joins = [new("Managers", JoinType: null)],
             Contexts = new()
             {
-                ["Managers"] = new QueryDefinitionBase
+                ["Managers"] = new QueryDefinitionBase("User")
                 {
-                    Entity = "User",
-                    Relations = [new("Managers", JoinType: null)]
+
+                    Joins = [new("Managers", JoinType: null)]
                 }
             }
         };
@@ -239,8 +207,8 @@ internal sealed class QueryDefinitionTests
         Assert.That(json, Does.Contain("\"joinType\":null"));
         var deserialized = JsonSerializer.Deserialize<QueryDefinition>(json, options)
             ?? throw new InvalidOperationException("The query did not deserialize.");
-        Assert.That(deserialized.Relations!.Single().JoinType, Is.Null);
-        Assert.That(deserialized.Contexts!["Managers"].Relations!.Single().JoinType, Is.Null);
+        Assert.That(deserialized.Joins!.Single().JoinType, Is.Null);
+        Assert.That(deserialized.Contexts!["Managers"].Joins!.Single().JoinType, Is.Null);
         var parsed = QueryDefinitionParser.Parse("""
             {
               "entity": "User",
@@ -248,7 +216,7 @@ internal sealed class QueryDefinitionTests
               "contexts": { "Managers": { "entity": "User" } }
             }
             """);
-        Assert.That(parsed.Relations!.Single().JoinType, Is.Null);
+        Assert.That(parsed.Joins!.Single().JoinType, Is.Null);
     }
 
     [Test]
@@ -281,14 +249,13 @@ internal sealed class QueryDefinitionTests
 
         Assert.That(definition, Is.Not.Null);
         Assert.That(definition!.Entity, Is.EqualTo("Orders"));
-        Assert.That(definition.Projection, Is.Empty);
+        Assert.That(definition.Projections, Is.Null);
         Assert.That(definition.Filter, Is.Null);
-        Assert.That(definition.Sorts, Is.Empty);
-        Assert.That(definition.Page, Is.Null);
-        Assert.That(definition.PageSize, Is.Null);
-        Assert.That(definition.Relations, Is.Empty);
+        Assert.That(definition.Sorts, Is.Null);
+        Assert.That(definition.Skip, Is.Null);
+        Assert.That(definition.Take, Is.Null);
+        Assert.That(definition.Joins, Is.Null);
         Assert.That(definition.Contexts, Is.Empty);
-        Assert.That(definition.Recursive, Is.False);
     }
 
 }
@@ -300,10 +267,10 @@ internal sealed class QueryDefinitionDatabaseTests : TestBase
     [Test]
     public void OperatorFieldsRespectArithmeticPrecedence()
     {
-        var query = new QueryDefinition
+        var query = new QueryDefinition("User")
         {
-            Entity = "User",
-            Projection =
+
+            Projections =
             [
                 new ProjectionDefinition(
                     QueryDefinitionParser.ParseExpression("<1> + <2> * <3> - <3>"),

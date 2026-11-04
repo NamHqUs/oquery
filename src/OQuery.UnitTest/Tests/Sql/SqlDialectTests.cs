@@ -64,10 +64,10 @@ public sealed class SqlDialectTests
     {
         using var connection = new Microsoft.Data.SqlClient.SqlConnection();
         using var db = new OQueryEngine(connection, Metadata, new Db2Dialect());
-        var definition = new QueryDefinition
+        var definition = new QueryDefinition("User")
         {
-            Entity = "User",
-            Projection = QueryDefinitionParser.ParseProjection("Name | DisplayName"),
+
+            Projections = QueryDefinitionParser.ParseProjection("Name | DisplayName"),
             Sorts = [new SortDefinition(new FieldDefinition("DisplayName"), QuerySortDirection.Descending)]
         };
 

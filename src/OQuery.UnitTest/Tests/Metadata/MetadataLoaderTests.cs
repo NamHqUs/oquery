@@ -90,7 +90,7 @@ public sealed class MetadataLoaderTests
                     field.DataType,
                     field.IsRawSql,
                 }),
-                Relations = entity.Relations?.Select(relation => new
+                Joins = entity.Relations?.Select(relation => new
                 {
                     relation.Name,
                     relation.RefEntity,

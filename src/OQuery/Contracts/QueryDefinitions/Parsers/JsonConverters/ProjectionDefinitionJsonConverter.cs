@@ -14,11 +14,9 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
         if (root.ValueKind != JsonValueKind.Object)
             throw new JsonException("A projection field must be an object.");
 
-        var fields = TryGetProperty(root, "fields", out var fieldsElement)
-            ? ReadFields(fieldsElement)
-            : TryGetProperty(root, "field", out var legacyField)
-                ? UnwrapLegacyProjection(ParseField(legacyField))
-                : throw new JsonException("A projection requires a fields array.");
+        if (!TryGetProperty(root, "fields", out var fieldsElement))
+            throw new JsonException("A projection requires a fields array.");
+        var fields = ReadFields(fieldsElement);
         var alias = TryGetProperty(root, "alias", out var aliasElement)
             ? aliasElement.ValueKind switch
             {
@@ -56,9 +54,6 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
             throw new JsonException("A projection requires a fields array.");
         return element.EnumerateArray().Select(ParseField).ToArray();
     }
-
-    private static IFieldDefinition[] UnwrapLegacyProjection(IFieldDefinition field)
-        => field is GroupFieldDefintion group ? group.Fields : [field];
 
     internal static IFieldDefinition ParseField(JsonElement element)
     {
@@ -139,44 +134,15 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
 
     private static GroupFieldDefintion ParseGroup(JsonElement element)
     {
-        var operation = MatchOperation.Add;
-        var legacyOperator = TryGetProperty(element, "operator", out var operatorElement);
-        if (legacyOperator)
-        {
-            if (operatorElement.ValueKind != JsonValueKind.String)
-                throw new JsonException("A grouped projection operator must be a string.");
-            try
-            {
-                operation = MatchOperationParser.Parse(operatorElement.GetString()!);
-            }
-            catch (FormatException exception)
-            {
-                throw new JsonException("A grouped projection requires a supported operator.", exception);
-            }
-        }
-        else if (TryGetProperty(element, "oper", out var operationElement))
-        {
-            operation = ParseGroupOperation(operationElement);
-        }
-
-        var fields = TryGetProperty(element, "arguments", out var arguments)
-            ? arguments
-            : TryGetProperty(element, "fields", out var legacyFields)
-                ? legacyFields
-                : throw new JsonException("A projection group requires an argument array.");
+        var operation = TryGetProperty(element, "oper", out var operationElement)
+            ? ParseGroupOperation(operationElement)
+            : MatchOperation.Add;
+        if (!TryGetProperty(element, "arguments", out var fields))
+            throw new JsonException("A projection group requires an argument array.");
         if (fields.ValueKind != JsonValueKind.Array)
             throw new JsonException("A projection group requires an argument array.");
 
         var parsedFields = fields.EnumerateArray().Select(ParseField).ToArray();
-        if (legacyOperator)
-        {
-            for (var index = 1; index < parsedFields.Length; index++)
-            {
-                if (parsedFields[index].Oper == MatchOperation.Add)
-                    parsedFields[index] = WithOperation(parsedFields[index], operation);
-            }
-        }
-
         return new GroupFieldDefintion(
             operation,
             parsedFields);

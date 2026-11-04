@@ -27,25 +27,28 @@ internal static class QueryDefinitionLoader
         if (!visited.Add(node.Id))
             throw new InvalidDataException($"Query request context [{node.Name}] is recursive.");
 
-        var query = new QueryDefinition
+        var query = new QueryDefinition(node.Entity)
         {
-            Entity = node.Entity,
-            Projection = node.Projection,
+
+            Projections = node.Projection,
             Filter = node.Filters,
             Sorts = node.Sorts?.SelectMany(sorts => sorts).ToList() ?? [],
-            Page = node.Page,
-            PageSize = node.PageSize,
+            Skip = node.Page is > 0 && node.PageSize is > 0
+                ? (node.Page.Value - 1) * node.PageSize.Value
+                : null,
+            Take = node.PageSize,
+            Joins = [],
             Contexts = BuildContexts(node, contexts, visited, allowDirectContext)
         };
         if (node.ExtraRelations is { Count: > 0 })
-            query.Relations.AddRange(node.ExtraRelations.Select(relation =>
-                new RelationDefinition(
+            query.Joins.AddRange(node.ExtraRelations.Select(relation =>
+                new JoinDefinition(
                     contexts[relation.RefContextId].Name,
                     relation.Alias,
                     relation.Condition,
                     relation.JoinType)));
         else
-            query.Relations.AddRange(query.Contexts.Keys.Select(name => new RelationDefinition(name)));
+            query.Joins.AddRange(query.Contexts.Keys.Select(name => new JoinDefinition(name)));
         return query;
     }
 

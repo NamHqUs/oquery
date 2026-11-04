@@ -2,7 +2,7 @@ namespace OQuery.UnitTest.Tests.Providers;
 
 internal static class SavedQueryTestCases
 {
-    private static readonly string[] LegacyRequests =
+    private static readonly string[] UnsupportedRequests =
     [
         "Test-Check Context Calculation Fields.json",
         "Test-Multiple Contexts.json",
@@ -26,7 +26,7 @@ internal static class SavedQueryTestCases
         var root = Path.Combine(GetRepositoryRoot(), "data-storage", "queries");
         var requests = Directory
             .EnumerateFiles(root, "*.json")
-            .Where(path => !LegacyRequests.Contains(
+            .Where(path => !UnsupportedRequests.Contains(
                 Path.GetFileName(path),
                 StringComparer.Ordinal))
             .OrderBy(path => path, StringComparer.Ordinal)

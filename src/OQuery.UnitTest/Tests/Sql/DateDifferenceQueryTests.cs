@@ -35,10 +35,9 @@ internal sealed class DateDifferenceQueryTests
     ];
 
     private static QueryDefinition CreateQuery()
-        => new()
+        => new("Invoices")
         {
-            Entity = "Invoices",
-            Projection =
+            Projections =
             [
                 new([new FieldDefinition("InvoiceNumber")]),
                 new([new FieldDefinition("Customer.Name")]),
@@ -51,8 +50,7 @@ internal sealed class DateDifferenceQueryTests
                     ])],
                     "DaysOverdue")
             ],
-            Page = 1,
-            PageSize = 50
+            Take = 50
         };
 
     [Test]

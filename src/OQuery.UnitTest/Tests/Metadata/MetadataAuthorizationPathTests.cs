@@ -96,23 +96,23 @@ public sealed class MetadataAuthorizationPathTests
             [new MetadataFieldPermission("User", ["Id", "Name"])],
             accessMode: AccessMode.Allow));
         using var db = new OQueryEngine(new SqliteConnection(), metadata, new SqliteDialect());
-        var query = new QueryDefinition
+        var query = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
             {
-                ["UserContext"] = new QueryDefinition
+                ["UserContext"] = new QueryDefinition("User")
                     {
-                        Entity = "User",
-                        Projection = [new("Id"), new("Name")]
+
+                        Projections = [new("Id"), new("Name")]
                     },
             },
-            Relations =
+            Joins =
             [
-                new RelationDefinition("UserContext", null, null, QueryJoinType.Left),
+                new JoinDefinition("UserContext", null, null, QueryJoinType.Left),
             ],
 
-            Projection = [new("UserContext.*")]
+            Projections = [new("UserContext.*")]
         };
 
         var sql = db.Query(query).ToSql().CommandText;
@@ -152,10 +152,10 @@ public sealed class MetadataAuthorizationPathTests
                 () => db.Query("User").Select("COUNT(Calculated)").ToSql(),
                 Throws.Nothing);
             Assert.That(
-                () => db.Query(new QueryDefinition
+                () => db.Query(new QueryDefinition("User")
                 {
-                    Entity = "User",
-                    Projection = QueryDefinitionParser.ParseProjection("COUNT(Calculated) | Total"),
+
+                    Projections = QueryDefinitionParser.ParseProjection("COUNT(Calculated) | Total"),
                     Filter = QueryDefinitionParser.ParseFilter("COUNT(Calculated) >= <1>")
                 }).ToSql(),
                 Throws.Nothing);
@@ -192,23 +192,23 @@ public sealed class MetadataAuthorizationPathTests
             [new MetadataFieldPermission("User", ["Id"])],
             accessMode: AccessMode.Allow));
         using var db = new OQueryEngine(new SqliteConnection(), metadata, new SqliteDialect());
-        var query = new QueryDefinition
+        var query = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
             {
-                ["UserContext"] = new QueryDefinition
+                ["UserContext"] = new QueryDefinition("User")
                     {
-                        Entity = "User",
-                        Projection = [new("Secret")]
+
+                        Projections = [new("Secret")]
                     },
             },
-            Relations =
+            Joins =
             [
-                new RelationDefinition("UserContext", null, null, QueryJoinType.Left),
+                new JoinDefinition("UserContext", null, null, QueryJoinType.Left),
             ],
 
-            Projection = [new("Id")]
+            Projections = [new("Id")]
         };
 
         Assert.That(
@@ -240,10 +240,10 @@ public sealed class MetadataAuthorizationPathTests
     {
         var metadata = RestrictedUserMetadata();
         using var db = new OQueryEngine(new SqliteConnection(), metadata, new SqliteDialect());
-        var query = new QueryDefinition
+        var query = new QueryDefinition("User")
         {
-            Entity = "User",
-            Projection = [new("Id"), new("COUNT(Id) | Total")],
+
+            Projections = [new("Id"), new("COUNT(Id) | Total")],
             Filter = QueryDefinitionParser.ParseFilter("COUNT(Secret) >= <1>")
         };
 
@@ -257,26 +257,26 @@ public sealed class MetadataAuthorizationPathTests
     {
         var metadata = RestrictedRelationMetadata();
         using var db = new OQueryEngine(new SqliteConnection(), metadata, new SqliteDialect());
-        var query = new QueryDefinition
+        var query = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
             {
-                ["MemberContext"] = new QueryDefinition
+                ["MemberContext"] = new QueryDefinition("Member")
                     {
-                        Entity = "Member",
-                        Projection = [new("Id")]
+
+                        Projections = [new("Id")]
                     },
             },
-            Relations =
+            Joins =
             [
-                new RelationDefinition("MemberContext", null, new ConditionStatementDefinition(
+                new JoinDefinition("MemberContext", null, new ConditionStatementDefinition(
                         new FieldDefinition("Secret"),
                         BinaryOperator.Equals,
                         new FieldDefinition("Id")), QueryJoinType.Left),
             ],
 
-            Projection = [new("Id")]
+            Projections = [new("Id")]
         };
 
         Assert.That(
@@ -365,10 +365,10 @@ public sealed class MetadataAuthorizationPathTests
     {
         var metadata = RestrictedUserMetadata();
         using var db = new OQueryEngine(new SqliteConnection(), metadata, new SqliteDialect());
-        var query = new QueryDefinition
+        var query = new QueryDefinition("User")
         {
-            Entity = "User",
-            Projection = QueryDefinitionParser.ParseProjection("COUNT(*) | Total")
+
+            Projections = QueryDefinitionParser.ParseProjection("COUNT(*) | Total")
         };
 
         Assert.That(
@@ -381,26 +381,26 @@ public sealed class MetadataAuthorizationPathTests
     {
         var metadata = RestrictedUserMetadata();
         using var db = new OQueryEngine(new SqliteConnection(), metadata, new SqliteDialect());
-        var query = new QueryDefinition
+        var query = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
             {
-                ["UserTree"] = new QueryDefinition
+                ["UserTree"] = new QueryDefinition("User")
                     {
-                        Entity = "User",
-                        Projection = [new("Id"), new("Secret")]
+
+                        Projections = [new("Id"), new("Secret")]
                     },
             },
-            Relations =
+            Joins =
             [
-                new RelationDefinition("UserTree", null, new ConditionStatementDefinition(
+                new JoinDefinition("UserTree", null, new ConditionStatementDefinition(
                         new FieldDefinition("Id"),
                         BinaryOperator.Equals,
                         new FieldDefinition("UserTree.Id")), QueryJoinType.Left),
             ],
 
-            Projection = [new("Id")]
+            Projections = [new("Id")]
         };
 
         Assert.That(
@@ -416,26 +416,26 @@ public sealed class MetadataAuthorizationPathTests
             new SqliteConnection("Data Source=:memory:"),
             metadata,
             new SqliteDialect());
-        var query = new QueryDefinition
+        var query = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
             {
-                ["UserTree"] = new QueryDefinition
+                ["UserTree"] = new QueryDefinition("User")
                     {
-                        Entity = "User",
-                        Projection = [new("Id"), new("Secret")]
+
+                        Projections = [new("Id"), new("Secret")]
                     },
             },
-            Relations =
+            Joins =
             [
-                new RelationDefinition("UserTree", null, new ConditionStatementDefinition(
+                new JoinDefinition("UserTree", null, new ConditionStatementDefinition(
                         new FieldDefinition("Id"),
                         BinaryOperator.Equals,
                         new FieldDefinition("UserTree.Id")), QueryJoinType.Left),
             ],
 
-            Projection = [new("Id")]
+            Projections = [new("Id")]
         };
 
         Assert.ThrowsAsync<UnauthorizedAccessException>(

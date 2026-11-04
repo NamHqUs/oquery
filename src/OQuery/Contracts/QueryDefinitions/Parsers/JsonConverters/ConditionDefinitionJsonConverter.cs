@@ -105,9 +105,7 @@ internal sealed class ConditionStatementDefinitionJsonConverter : JsonConverter<
             ? rightElement.ValueKind == JsonValueKind.Null
                 ? null
                 : ReadField(rightElement, options, "right")
-            : TryGetProperty(root, "value", out var legacyValue)
-                ? ReadLegacyValue(legacyValue)
-                : null;
+            : null;
         LogicalOperator? logicalOperator = TryGetProperty(root, "logicalOperator", out var logicalElement) &&
             logicalElement.ValueKind != JsonValueKind.Null
                 ? logicalElement.Deserialize<LogicalOperator>(options)
@@ -151,18 +149,6 @@ internal sealed class ConditionStatementDefinitionJsonConverter : JsonConverter<
             ? new FieldDefinition(element.GetString() ?? throw new JsonException($"A filter {name} cannot be null."))
             : JsonSerializer.Deserialize<IFieldDefinition>(element, options)
                 ?? throw new JsonException($"A filter {name} expression cannot be null.");
-
-    private static IFieldDefinition ReadLegacyValue(JsonElement element)
-        => new ConstFieldDefinition(element.ValueKind switch
-        {
-            JsonValueKind.Null => null,
-            JsonValueKind.String => element.GetString(),
-            JsonValueKind.True => true,
-            JsonValueKind.False => false,
-            JsonValueKind.Number when element.TryGetInt64(out var integer) => integer,
-            JsonValueKind.Number => element.GetDecimal(),
-            _ => throw new JsonException($"Unsupported legacy filter value [{element.ValueKind}].")
-        });
 
     private static bool TryParseBuiltinOperator(string operatorId, out BinaryOperator operation)
     {

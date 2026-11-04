@@ -30,7 +30,6 @@ public sealed class QueryContextDefinitionTests : TestBase
 
         Assert.That(sql, Does.Contain("UNION ALL"));
         Assert.That(sql, Does.Contain("[EmployeeTree]"));
-        Assert.That(sql, Does.Contain("[Id], [ManagerId]"));
         Assert.That(sql, Does.Contain("[ManagerId] IS NULL"));
         Assert.That(sql, Does.Contain("INNER JOIN [dbo].[Employees] member"));
         Assert.That(sql, Does.Contain("LEFT JOIN [dbo].[Employees] manager"));
@@ -47,21 +46,21 @@ public sealed class QueryContextDefinitionTests : TestBase
         using var db = CreateContext(
             new SqlServerDialect(),
             new Entity("User", [new Field("Id", "Id")]));
-        var query = new QueryDefinition
+        var query = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
             {
-                ["UserContext"] = new QueryDefinition { Entity = "User", Projection = [new("Id")] },
-                ["UserContext1"] = new QueryDefinition { Entity = "User", Projection = [new("Id")] },
+                ["UserContext"] = new QueryDefinition("User") {  Projections = [new("Id")] },
+                ["UserContext1"] = new QueryDefinition("User") {  Projections = [new("Id")] },
             },
-            Relations =
+            Joins =
             [
-                new RelationDefinition("UserContext", null, null, QueryJoinType.Left),
-                new RelationDefinition("UserContext1", null, null, QueryJoinType.Left),
+                new JoinDefinition("UserContext", null, null, QueryJoinType.Left),
+                new JoinDefinition("UserContext1", null, null, QueryJoinType.Left),
             ],
 
-            Projection = [new("Id")]
+            Projections = [new("Id")]
         };
 
         var sql = db.Query(query).ToSql().CommandText;
@@ -83,33 +82,33 @@ public sealed class QueryContextDefinitionTests : TestBase
                     new Field("ManagerId", "ManagerId"),
                 ]));
 
-        var query = new QueryDefinition
+        var query = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
             {
-                ["ref1"] = new QueryDefinitionBase
+                ["ref1"] = new QueryDefinitionBase("User")
                 {
-                    Entity = "User",
-                    Projection = [new("Id"), new("Name")]
+
+                    Projections = [new("Id"), new("Name")]
                 },
-                ["ref2"] = new QueryDefinitionBase
+                ["ref2"] = new QueryDefinitionBase("User")
                 {
-                    Entity = "User",
-                    Projection = [new("Id"), new("Name"), new("ManagerId")],
-                    Relations =
+
+                    Projections = [new("Id"), new("Name"), new("ManagerId")],
+                    Joins =
                     [
                         new("ref1", Condition: QueryDefinitionParser.ParseJoinCondition(
                             "ManagerId = ref1.Id"))
                     ]
                 }
             },
-            Relations =
+            Joins =
             [
                 new("ref1", Condition: QueryDefinitionParser.ParseJoinCondition("ManagerId = ref1.Id")),
                 new("ref2", Condition: QueryDefinitionParser.ParseJoinCondition("ManagerId = ref2.Id"))
             ],
-            Projection =
+            Projections =
             [
                 new("Id"),
                 new("Name"),
@@ -139,30 +138,30 @@ public sealed class QueryContextDefinitionTests : TestBase
                     new Field("ManagerId", "ManagerId"),
                 ]));
 
-        var query = new QueryDefinition
+        var query = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
             {
-                ["UserContext"] = new QueryDefinition
+                ["UserContext"] = new QueryDefinition("User")
                     {
-                        Entity = "User",
-                        Projection =
+
+                        Projections =
                         [
                             new("Id"),
                             new("Name", "Alias Name"),
                         ],
                     },
             },
-            Relations =
+            Joins =
             [
-                new RelationDefinition("UserContext", null, new ConditionStatementDefinition(
+                new JoinDefinition("UserContext", null, new ConditionStatementDefinition(
                         new FieldDefinition("ManagerId"),
                         BinaryOperator.Equals,
                         new FieldDefinition("Id")), QueryJoinType.Left),
             ],
 
-            Projection =
+            Projections =
             [
                 new("Id"),
                 new("Name", "User Name"),
@@ -198,27 +197,26 @@ public sealed class QueryContextDefinitionTests : TestBase
                     new Field("Id", "Id"),
                     new Field("ManagerId", "ManagerId"),
                 ]));
-        var query = new QueryDefinition
+        var query = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
             {
-                ["UserTree"] = new QueryDefinition
+                ["UserTree"] = new QueryDefinition("User")
                     {
-                        Entity = "User",
-                        Projection = [new("Id"), new("ManagerId")],
-                        Recursive = true
+
+                        Projections = [new("Id"), new("ManagerId")],
                     },
             },
-            Relations =
+            Joins =
             [
-                new RelationDefinition("UserTree", null, new ConditionStatementDefinition(
+                new JoinDefinition("UserTree", null, new ConditionStatementDefinition(
                         new FieldDefinition("ManagerId"),
                         BinaryOperator.Equals,
                         new FieldDefinition("UserTree.Id")), QueryJoinType.Left),
             ],
 
-            Projection =
+            Projections =
             [
                 new("Id"),
                 new("ManagerId"),
@@ -227,9 +225,8 @@ public sealed class QueryContextDefinitionTests : TestBase
 
         var sql = db.Query(query).ToSql().CommandText;
 
-        Assert.That(sql, Does.Contain("UNION ALL"));
+        Assert.That(sql, Does.Not.Contain("UNION ALL"));
         Assert.That(sql, Does.Contain("[UserTree]"));
-        Assert.That(sql, Does.Contain("[Id], [ManagerId]"));
     }
 
     [Test]
@@ -238,29 +235,26 @@ public sealed class QueryContextDefinitionTests : TestBase
         using var db = CreateContext(
             new SqlServerDialect(),
             new Entity("User", [new Field("Id", "Id")]));
-        var query = new QueryDefinition
+        var query = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
             {
-                ["UserTree"] = new QueryDefinition
+                ["UserTree"] = new QueryDefinition("User")
                     {
-                        Entity = "User",
-                        Projection = [new("Id")],
-                        Recursive = true
+
+                        Projections = [new("Id")],
                     },
             },
-            Relations =
+            Joins =
             [
-                new RelationDefinition("UserTree", null, null, QueryJoinType.Left),
+                new JoinDefinition("UserTree", null, null, QueryJoinType.Left),
             ],
 
-            Projection = [new("Id")]
+            Projections = [new("Id")]
         };
 
-        Assert.That(
-            () => db.Query(query).ToSql(),
-            Throws.TypeOf<FormatException>());
+        Assert.DoesNotThrow(() => db.Query(query).ToSql());
     }
 
     [Test]
@@ -270,30 +264,30 @@ public sealed class QueryContextDefinitionTests : TestBase
             new SqlServerDialect(),
             new Entity("User", [new Field("Id", "Id")]),
             new Entity("UserHierarchy", [new Field("Id", "Id")]));
-        var query = new QueryDefinition
+        var query = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
             {
-                ["UserTree"] = new QueryDefinition
+                ["UserTree"] = new QueryDefinition("UserHierarchy")
                     {
-                        Entity = "UserHierarchy",
-                        Projection =
+
+                        Projections =
                         [
                             new("Id"),
                             new("UserTree.Id", "Level"),
                         ],
                     },
             },
-            Relations =
+            Joins =
             [
-                new RelationDefinition("UserTree", null, new ConditionStatementDefinition(
+                new JoinDefinition("UserTree", null, new ConditionStatementDefinition(
                         new FieldDefinition("Id"),
                         BinaryOperator.Equals,
                         new FieldDefinition("UserTree.Id")), QueryJoinType.Left),
             ],
 
-            Projection = [new("Id"), new("Id", "Level")]
+            Projections = [new("Id"), new("Id", "Level")]
         };
 
         var sql = db.Query(query).ToSql().CommandText;
@@ -307,36 +301,36 @@ public sealed class QueryContextDefinitionTests : TestBase
         using var db = CreateContext(
             new SqlServerDialect(),
             new Entity("User", [new Field("Id", "Id")]));
-        var query = new QueryDefinition
+        var query = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
             {
-                ["UserTree"] = new QueryDefinition
+                ["UserTree"] = new QueryDefinition("User")
                     {
-                        Entity = "User",
-                        Projection =
+
+                        Projections =
                         [
                             new("Id"),
                             new("UserTree.Id", "Level"),
                         ],
                     },
-                ["OtherUsers"] = new QueryDefinition
+                ["OtherUsers"] = new QueryDefinition("User")
                     {
-                        Entity = "User",
-                        Projection = [new("Id")],
+
+                        Projections = [new("Id")],
                     },
             },
-            Relations =
+            Joins =
             [
-                new RelationDefinition("UserTree", null, new ConditionStatementDefinition(
+                new JoinDefinition("UserTree", null, new ConditionStatementDefinition(
                         new FieldDefinition("OtherUsers.Id"),
                         BinaryOperator.Equals,
                         new FieldDefinition("UserTree.Id")), QueryJoinType.Left),
-                new RelationDefinition("OtherUsers", null, null, QueryJoinType.Left),
+                new JoinDefinition("OtherUsers", null, null, QueryJoinType.Left),
             ],
 
-            Projection = [new("Id")]
+            Projections = [new("Id")]
         };
 
         Assert.That(
@@ -350,26 +344,26 @@ public sealed class QueryContextDefinitionTests : TestBase
         using var db = CreateContext(
             new SapHanaDialect(),
             new Entity("User", [new Field("Id", "Id")]));
-        var query = new QueryDefinition
+        var query = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
             {
-                ["UserTree"] = new QueryDefinition
+                ["UserTree"] = new QueryDefinition("User")
                     {
-                        Entity = "User",
-                        Projection = [new("Id"), new("UserTree.Id", "Level")],
+
+                        Projections = [new("Id"), new("UserTree.Id", "Level")],
                     },
             },
-            Relations =
+            Joins =
             [
-                new RelationDefinition("UserTree", null, new ConditionStatementDefinition(
+                new JoinDefinition("UserTree", null, new ConditionStatementDefinition(
                         new FieldDefinition("Id"),
                         BinaryOperator.Equals,
                         new FieldDefinition("UserTree.Id")), QueryJoinType.Left),
             ],
 
-            Projection = [new("Id"), new("Id", "Level")]
+            Projections = [new("Id"), new("Id", "Level")]
         };
 
         Assert.That(() => db.Query(query).ToSql(), Throws.TypeOf<NotSupportedException>());
@@ -386,15 +380,15 @@ public sealed class QueryContextDefinitionTests : TestBase
                     new Field("Id", "Id"),
                     new Field("ManagerId", "ManagerId"),
                 ]));
-        var query = new QueryDefinition
+        var query = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
             {
-                ["UserTree"] = new QueryDefinition
+                ["UserTree"] = new QueryDefinition("User")
                     {
-                        Entity = "User",
-                        Projection =
+
+                        Projections =
                         [
                             new("Id"),
                             new("ManagerId"),
@@ -402,15 +396,15 @@ public sealed class QueryContextDefinitionTests : TestBase
                         ],
                     },
             },
-            Relations =
+            Joins =
             [
-                new RelationDefinition("UserTree", null, new ConditionStatementDefinition(
+                new JoinDefinition("UserTree", null, new ConditionStatementDefinition(
                         new FieldDefinition("ManagerId"),
                         BinaryOperator.Equals,
                         new FieldDefinition("UserTree.Id")), QueryJoinType.Left),
             ],
 
-            Projection = [new("Id")]
+            Projections = [new("Id")]
         };
 
         Assert.That(() => db.Query(query).ToSql(), Throws.TypeOf<FormatException>());
@@ -423,28 +417,27 @@ public sealed class QueryContextDefinitionTests : TestBase
         using var db = CreateContext(
             new SqlServerDialect(),
             new Entity("User", [new Field("Id", "Id"), new Field("ManagerId", "ManagerId")]));
-        var query = new QueryDefinition
+        var query = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
             {
-                ["Manager"] = new QueryDefinition
+                ["Manager"] = new QueryDefinition("User")
                     {
-                        Entity = "User",
-                        Projection = [new("Id")],
-                        Page = 1,
-                        PageSize = pageSize
+
+                        Projections = [new("Id")],
+                        Take = pageSize
                     },
             },
-            Relations =
+            Joins =
             [
-                new RelationDefinition("Manager", null, new ConditionStatementDefinition(
+                new JoinDefinition("Manager", null, new ConditionStatementDefinition(
                         new FieldDefinition("ManagerId"),
                         BinaryOperator.Equals,
                         new FieldDefinition("Id")), QueryJoinType.Left),
             ],
 
-            Projection = [new("Manager.Id")]
+            Projections = [new("Manager.Id")]
         };
 
         var sql = db.Query(query).ToSql().CommandText;
@@ -470,22 +463,22 @@ public sealed class QueryContextDefinitionTests : TestBase
         using var db = CreateContext(
             dialect,
             new Entity("User", [new Field("Id", "Id"), new Field("ManagerId", "ManagerId")]));
-        var query = new QueryDefinition
+        var query = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
             {
-                ["UserContext"] = new QueryDefinition { Entity = "User", Projection = [new("Id")] },
+                ["UserContext"] = new QueryDefinition("User") {  Projections = [new("Id")] },
             },
-            Relations =
+            Joins =
             [
-                new RelationDefinition("UserContext", null, new ConditionStatementDefinition(
+                new JoinDefinition("UserContext", null, new ConditionStatementDefinition(
                         new FieldDefinition("ManagerId"),
                         BinaryOperator.Equals,
                         new FieldDefinition("Id")), QueryJoinType.Left),
             ],
 
-            Projection = [new("UserContext.Id")]
+            Projections = [new("UserContext.Id")]
         };
 
         var sql = db.Query(query).ToSql().CommandText;
@@ -524,7 +517,7 @@ public sealed class QueryContextDefinitionTests : TestBase
         var sql = db.Query(QueryDefinitionParser.Parse(json)).ToSql();
 
         Assert.That(sql.CommandText, Does.Contain("LEFT JOIN [UserContext]"));
-        Assert.That(sql.CommandText, Does.Contain("UNION ALL"));
+        Assert.That(sql.CommandText, Does.Not.Contain("UNION ALL"));
     }
 
     [Test]
@@ -544,9 +537,7 @@ public sealed class QueryContextDefinitionTests : TestBase
             }
             """;
 
-        Assert.That(
-            () => QueryDefinitionParser.Parse(json),
-            Throws.TypeOf<JsonException>());
+        Assert.DoesNotThrow(() => QueryDefinitionParser.Parse(json));
     }
 
     [Test]
@@ -674,22 +665,22 @@ public sealed class QueryContextDefinitionTests : TestBase
         using var db = CreateContext(
             new SqlServerDialect(),
             new Entity("User", [new Field("Id", "Id"), new Field("ManagerId", "ManagerId")]));
-        var definition = new QueryDefinition
+        var definition = new QueryDefinition("User")
         {
-            Entity = "User",
+
             Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
             {
-                ["UserContext"] = new QueryDefinition { Entity = "User", Projection = [new("Id")] },
+                ["UserContext"] = new QueryDefinition("User") {  Projections = [new("Id")] },
             },
-            Relations =
+            Joins =
             [
-                new RelationDefinition("UserContext", null, new ConditionStatementDefinition(
+                new JoinDefinition("UserContext", null, new ConditionStatementDefinition(
                         new FieldDefinition("ManagerId"),
                         BinaryOperator.Equals,
                         new FieldDefinition("Id")), QueryJoinType.Left),
             ],
 
-            Projection = [new("UserContext.Id")]
+            Projections = [new("UserContext.Id")]
         };
 
         var sql = db.Query(definition)

@@ -43,10 +43,20 @@ public static class JsonQueryDefinitionParser
         options.TypeInfoResolver = (options.TypeInfoResolver ?? new DefaultJsonTypeInfoResolver())
             .WithAddedModifier(typeInfo =>
             {
-                if (typeInfo.Type != typeof(RelationDefinition))
+                if (typeInfo.Type == typeof(QueryDefinition) ||
+                    typeInfo.Type == typeof(QueryDefinitionBase))
+                {
+                    var projectionName = options.PropertyNamingPolicy?.ConvertName(nameof(QueryDefinitionBase.Projections))
+                        ?? nameof(QueryDefinitionBase.Projections);
+                    foreach (var property in typeInfo.Properties)
+                        if (property.Name == projectionName)
+                            property.Name = "projection";
+                }
+
+                if (typeInfo.Type != typeof(JoinDefinition))
                     return;
-                var joinTypeName = options.PropertyNamingPolicy?.ConvertName(nameof(RelationDefinition.JoinType))
-                    ?? nameof(RelationDefinition.JoinType);
+                var joinTypeName = options.PropertyNamingPolicy?.ConvertName(nameof(JoinDefinition.JoinType))
+                    ?? nameof(JoinDefinition.JoinType);
                 foreach (var property in typeInfo.Properties)
                     if (property.Name == joinTypeName)
                         property.ShouldSerialize = (_, _) => true;

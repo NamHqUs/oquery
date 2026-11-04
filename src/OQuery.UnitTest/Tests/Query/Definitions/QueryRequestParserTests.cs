@@ -59,14 +59,6 @@ internal sealed class QueryRequestParserTests : TestBase
     }
 
     [Test]
-    public void TextToFunctionFieldDto_LegacyBracketSyntax()
-    {
-        var field = (FunctionFieldDefinition)QueryDefinitionParser.ParseProjection("Round[Sum[Id], <2>]")[0].Fields.Single();
-
-        Assert.That(field.ToText(), Is.EqualTo("Round(Sum(Id), <2>)"));
-    }
-
-    [Test]
     public void TextToGroupFieldDto()
     {
         const string text = "Id + Age";

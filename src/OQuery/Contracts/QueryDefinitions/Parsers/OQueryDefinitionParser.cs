@@ -15,7 +15,7 @@ public static class OQueryDefinitionParser
             ParseBlock,
             StringComparer.OrdinalIgnoreCase);
         var referencedContexts = queries.Values
-            .SelectMany(query => query.Relations ?? [])
+            .SelectMany(query => query.Joins ?? [])
             .Select(relation => relation.RefContext)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var rootBlock = blocks.FirstOrDefault(block => !referencedContexts.Contains(block.Name))
@@ -39,13 +39,13 @@ public static class OQueryDefinitionParser
 
     private static void AddImplicitRecursiveContext(QueryDefinition root, string rootName)
     {
-        var relation = root.Relations?.FirstOrDefault(candidate =>
+        var relation = root.Joins?.FirstOrDefault(candidate =>
             string.Equals(candidate.RefContext, rootName, StringComparison.OrdinalIgnoreCase));
         if (relation is null || root.Contexts is null || root.Contexts.ContainsKey(rootName))
             return;
 
         var alias = string.IsNullOrWhiteSpace(relation.Alias) ? rootName : relation.Alias;
-        var contextFieldAliases = root.Projection
+        var contextFieldAliases = root.Projections
             .Where(projection => projection.Fields is [{ }])
             .Select(projection => (Field: projection.Fields[0], projection.Alias))
             .Where(item => item.Field is FieldDefinition field
@@ -55,7 +55,7 @@ public static class OQueryDefinitionParser
                 item => ((FieldDefinition)item.Field).FieldName,
                 item => item.Alias!,
                 StringComparer.OrdinalIgnoreCase);
-        var projectionText = root.Projection
+        var projectionText = root.Projections
             .Select(projection => projection.ToText())
             .Select(text => System.Text.RegularExpressions.Regex.Replace(
                 text,
@@ -67,11 +67,9 @@ public static class OQueryDefinitionParser
                 $@"(?<context>{System.Text.RegularExpressions.Regex.Escape(rootName)})\.(?<field>[A-Za-z_][A-Za-z0-9_]*)",
                 match => $"{match.Groups["context"].Value}.{contextFieldAliases.GetValueOrDefault(match.Groups["field"].Value, match.Groups["field"].Value)}",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase));
-        root.Contexts[rootName] = new QueryDefinition
+        root.Contexts[rootName] = new QueryDefinition(root.Entity)
         {
-            Entity = root.Entity,
-            Projection = projectionText.SelectMany(ProjectionDefinitionParser.Parse).ToList(),
-            Recursive = true,
+            Projections = projectionText.SelectMany(ProjectionDefinitionParser.Parse).ToList(),
         };
     }
 
@@ -101,7 +99,7 @@ public static class OQueryDefinitionParser
         var sorts = new List<SortDefinition>();
         int? pageSize = null;
         int? skip = null;
-        var relations = new List<RelationDefinition>();
+        var relations = new List<JoinDefinition>();
 
         foreach (var clause in block.Clauses)
         {
@@ -132,20 +130,19 @@ public static class OQueryDefinitionParser
             }
         }
 
-        var definition = new QueryDefinition
+        var definition = new QueryDefinition(block.Entity)
         {
-            Entity = block.Entity,
-            Projection = QueryDefinitionParser.ParseProjection(block.Projection),
+            Projections = QueryDefinitionParser.ParseProjection(block.Projection),
             Filter = filter,
             Sorts = sorts,
-            PageSize = pageSize,
+            Take = pageSize,
             Skip = skip,
-            Relations = relations
+            Joins = relations
         };
         return definition;
     }
 
-    private static RelationDefinition ParseJoin(string value)
+    private static JoinDefinition ParseJoin(string value)
     {
         var joinType = QueryJoinType.Inner;
         var join = value.Trim();
@@ -183,7 +180,7 @@ public static class OQueryDefinitionParser
         if (string.IsNullOrWhiteSpace(name))
             throw new FormatException("A join requires a context name.");
 
-        return new RelationDefinition(
+        return new JoinDefinition(
             name,
             Alias: alias,
             Condition: condition is null ? null : QueryDefinitionParser.ParseJoinCondition(condition),
@@ -279,7 +276,7 @@ public static class OQueryDefinitionParser
         var header = string.Equals(name, entity, StringComparison.OrdinalIgnoreCase)
             ? FormatIdentifier(name)
             : $"{FormatIdentifier(name)} is {FormatIdentifier(entity)}";
-        var projections = definition.Projection.Select(field => field.ToText()).ToArray();
+        var projections = definition.Projections.Select(field => field.ToText()).ToArray();
         var projectionText = string.Join(", ", projections);
         if (projectionText.Length <= 120 || projections.Length < 2)
         {
@@ -298,15 +295,12 @@ public static class OQueryDefinitionParser
             lines.Add($"{indent}  Where {definition.Filter.ToText().Replace(" <NULL>", string.Empty, StringComparison.Ordinal)}");
         if (definition.Sorts is { Count: > 0 })
             lines.Add($"{indent}  Order {string.Join(", ", definition.Sorts.Select(FormatSort))}");
-        var skip = definition.Skip ?? (
-            definition.Page is not null && definition.PageSize is not null
-                ? (definition.Page.Value - 1) * definition.PageSize.Value
-                : null);
+        var skip = definition.Skip;
         if (skip is not null && skip > 0)
             lines.Add($"{indent}  Skip {skip}");
-        if (definition.PageSize is not null)
-            lines.Add($"{indent}  Take {definition.PageSize}");
-        foreach (var relation in definition.Relations ?? [])
+        if (definition.Take is not null)
+            lines.Add($"{indent}  Take {definition.Take}");
+        foreach (var relation in definition.Joins ?? [])
         {
             var joinType = relation.JoinType?.ToString() ?? nameof(QueryJoinType.Left);
             var join = $"{joinType} Join {FormatIdentifier(relation.RefContext)}";
@@ -352,7 +346,7 @@ public static class OQueryDefinitionParser
 
     private static void ValidateContextReferences(QueryDefinition definition)
     {
-        foreach (var relation in definition.Relations ?? [])
+        foreach (var relation in definition.Joins ?? [])
             if (!(definition.Contexts?.ContainsKey(relation.RefContext) ?? false))
                 throw new FormatException($"Query relation references unknown context [{relation.RefContext}].");
     }

@@ -1,4 +1,4 @@
-﻿using OQuery.QueryDefinitions.Parsers;
+using OQuery.QueryDefinitions.Parsers;
 using OQuery.UnitTest;
 
 namespace OQuery.UnitTest.Tests.Query.Definitions;
@@ -10,10 +10,10 @@ internal sealed class FilterParserTests : TestBase
     [Test]
     public void Filter_FromText()
     {
-        var query = new QueryDefinition
+        var query = new QueryDefinition("Invoices")
         {
-            Entity = "Invoices",
-            Projection = QueryDefinitionParser.ParseProjection("Year(InvoiceDate) | Year, Month(InvoiceDate) | Month, COUNT(Id) | InvoiceCount, SUM(TotalAmount) | Revenue, AVG(TotalAmount) | AverageOrderValue"),
+
+            Projections = QueryDefinitionParser.ParseProjection("Year(InvoiceDate) | Year, Month(InvoiceDate) | Month, COUNT(Id) | InvoiceCount, SUM(TotalAmount) | Revenue, AVG(TotalAmount) | AverageOrderValue"),
             Filter = QueryDefinitionParser.ParseFilter("Status <> <Draft> And Sum(TotalAmount) > 200"),
         };
 
