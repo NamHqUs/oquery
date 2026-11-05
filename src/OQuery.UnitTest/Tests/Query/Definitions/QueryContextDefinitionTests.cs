@@ -41,6 +41,161 @@ public sealed class QueryContextDefinitionTests : TestBase
     }
 
     [Test]
+    public void RecursiveProjectionCalculatesAggregateAfterCte()
+    {
+        using var db = CreateContext(
+            new SqlServerDialect(),
+            new Entity(
+                "Employees",
+                [
+                    new Field("Id", "Id"),
+                    new Field("FirstName", "FirstName"),
+                    new Field("ManagerId", "ManagerId"),
+                ]));
+        var query = QueryDefinitionOQueryParser.Parse("""
+            EmployeeTree is Employees: FirstName ManagerName,
+                member.FirstName MemberName,
+                Count(member.Id) MemberCount
+              INNER JOIN EmployeeTree member On Id = member.ManagerId
+            """);
+
+        var sql = db.Query(query).ToSql().CommandText;
+
+        Assert.That(sql, Does.Contain("UNION ALL"));
+        Assert.That(sql, Does.Contain("COUNT ("), sql);
+        Assert.That(sql, Does.Contain("GROUP BY"));
+        Assert.That(
+            sql.IndexOf("COUNT (", StringComparison.Ordinal),
+            Is.GreaterThan(sql.IndexOf("UNION ALL", StringComparison.Ordinal)));
+    }
+
+    [Test]
+    public void RecursiveWindowAggregateExecutionMatchesNativeSql()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = """
+                CREATE TABLE Employees (
+                    Id INTEGER PRIMARY KEY,
+                    FirstName TEXT NOT NULL,
+                    ManagerId INTEGER NULL
+                );
+                INSERT INTO Employees (Id, FirstName, ManagerId) VALUES
+                    (1, 'Alice', NULL),
+                    (2, 'Bob', 1),
+                    (3, 'Carol', 1),
+                    (4, 'Dan', 2),
+                    (5, 'Eve', 2),
+                    (6, 'Frank', 3);
+                """;
+            command.ExecuteNonQuery();
+        }
+
+        var metadata = new MetadataProvider(
+        [
+            new Entity(
+                "Employees",
+                [
+                    new Field("Id", "Id"),
+                    new Field("FirstName", "FirstName"),
+                    new Field("ManagerId", "ManagerId"),
+                ])
+        ]);
+        using var db = new OQueryEngine(connection, metadata, new SqliteDialect());
+        var query = QueryDefinitionOQueryParser.Parse("""
+            EmployeeTree is Employees:
+                FirstName ManagerName,
+                member.FirstName MemberName,
+                CountOver(member.Id, manager.Id) TotalMembers
+              Inner Join EmployeeTree member On Id = member.ManagerId
+            """);
+
+        var oqueryRows = db.Query(query)
+            .ToList()
+            .Select(record => string.Join(
+                "|",
+                FormatValue(record["ManagerName"]),
+                FormatValue(record["MemberName"]),
+                FormatValue(record["TotalMembers"])))
+            .Order()
+            .ToArray();
+
+        using var nativeCommand = connection.CreateCommand();
+        nativeCommand.CommandText = """
+            WITH EmployeeTree AS
+            (
+                SELECT Id, ManagerId
+                FROM Employees
+                WHERE ManagerId IS NULL
+
+                UNION ALL
+
+                SELECT employee.Id, employee.ManagerId
+                FROM Employees employee
+                INNER JOIN EmployeeTree tree
+                    ON employee.ManagerId = tree.Id
+            )
+            SELECT
+                manager.FirstName AS ManagerName,
+                member.FirstName AS MemberName,
+                COUNT(member.Id) OVER (
+                    PARTITION BY manager.Id
+                ) AS TotalMembers
+            FROM EmployeeTree tree
+            INNER JOIN Employees member
+                ON member.Id = tree.Id
+            LEFT JOIN Employees manager
+                ON manager.Id = tree.ManagerId
+            GROUP BY manager.FirstName, member.FirstName;
+            """;
+
+        var nativeRows = new List<string>();
+        using (var reader = nativeCommand.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                nativeRows.Add(string.Join(
+                    "|",
+                    FormatValue(reader["ManagerName"]),
+                    FormatValue(reader["MemberName"]),
+                    FormatValue(reader["TotalMembers"])));
+            }
+        }
+
+        Assert.That(oqueryRows, Is.EqualTo(nativeRows.Order().ToArray()));
+    }
+
+    [Test]
+    public void RecursiveProjectionCalculatesExpressionAfterCte()
+    {
+        using var db = CreateContext(
+            new SqlServerDialect(),
+            new Entity(
+                "Employees",
+                [
+                    new Field("Id", "Id"),
+                    new Field("FirstName", "FirstName"),
+                    new Field("ManagerId", "ManagerId"),
+                ]));
+        var query = QueryDefinitionOQueryParser.Parse("""
+            EmployeeTree is Employees: FirstName ManagerName,
+                member.Id + <1> NextMemberId
+              INNER JOIN EmployeeTree member On Id = member.ManagerId
+            """);
+
+        var sql = db.Query(query).ToSql().CommandText;
+
+        Assert.That(sql, Does.Contain("UNION ALL"));
+        Assert.That(sql, Does.Contain("[NextMemberId]"));
+        Assert.That(sql, Does.Contain("+"));
+        Assert.That(
+            sql.IndexOf("+", StringComparison.Ordinal),
+            Is.GreaterThan(sql.IndexOf("UNION ALL", StringComparison.Ordinal)));
+    }
+
+    [Test]
     public void MultipleContexts_StartEachCteOnANewLine()
     {
         using var db = CreateContext(
@@ -521,6 +676,9 @@ public sealed class QueryContextDefinitionTests : TestBase
 
     private static OQueryEngine CreateContext(ISqlDialect dialect, params Entity[] entities)
         => new(new SqliteConnection(), new MetadataProvider(entities), dialect);
+
+    private static string FormatValue(object? value)
+        => value is DBNull or null ? "<NULL>" : value.ToString()!;
 
     private static ProjectionDefinition Projection(string alias, IFieldDefinition expression)
         => new(expression, alias);

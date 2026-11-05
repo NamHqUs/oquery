@@ -517,18 +517,26 @@ Sample request:
 ```sql
 WITH EmployeeTree AS
 (
-    SELECT Id, ManagerId, 0 AS Level
+    SELECT Id, ManagerId
     FROM Employees
-    WHERE Id = @RootManagerId
+    WHERE ManagerId IS NULL
 
     UNION ALL
 
-    SELECT e.Id, e.ManagerId, t.Level + 1
+    SELECT e.Id, e.ManagerId
     FROM Employees e
     JOIN EmployeeTree t ON e.ManagerId = t.Id
 )
-SELECT *
-FROM EmployeeTree;
+SELECT
+    manager.FirstName AS ManagerName,
+    member.FirstName AS MemberName,
+    COUNT(member.Id) OVER (
+        PARTITION BY manager.Id
+    ) AS TotalMembers
+FROM EmployeeTree tree
+JOIN Employees member ON member.Id = tree.Id
+LEFT JOIN Employees manager ON manager.Id = tree.ManagerId
+GROUP BY manager.FirstName, member.FirstName;
 ```
 
 ### Intended QueryDefinition shape
@@ -556,6 +564,24 @@ This sample requires repeated evaluation of the same relationship until a
 fixed point is reached. The compiler emits a recursive CTE for this shape,
 including the anchor query and the recursive query. A finite relation path
 such as `Manager.DirectReports` remains supported as well.
+
+Recursive shorthand keeps the CTE projection limited to the fields required
+for traversal. Calculated fields and aggregates that reference the recursive
+member are rendered by the query consuming the CTE, after recursion has
+completed:
+
+```text
+EmployeeTree is Employees:
+    FirstName ManagerName,
+    member.FirstName MemberName,
+    CountOver(member.Id, manager.Id) TotalMembers
+  Inner Join EmployeeTree member On Id = member.ManagerId
+```
+
+The anchor and recursive members therefore retain the same physical traversal
+columns, while `MemberName` and the windowed `TotalMembers` are calculated in
+the outer query. This avoids placing an aggregate inside the recursive member,
+preserves one row per member, and keeps the recursive CTE column shape valid.
 
 Sample request:
 [Sample-Recursive employee hierarchy.json](./data-storage/queries/Sample-Recursive%20employee%20hierarchy.json)

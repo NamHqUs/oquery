@@ -321,16 +321,65 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
                     string.Equals(field.Name, "ManagerId", StringComparison.OrdinalIgnoreCase))),
                 typeof(bool))]));
 
-        var firstName = sourceFields.First(field =>
-            string.Equals(field.Name, "FirstName", StringComparison.OrdinalIgnoreCase));
-        result.ProjectionItems =
-        [
-            new ProjectionItem(new FieldExpression(manager.Alias, firstName), "ManagerName"),
-            new ProjectionItem(new FieldExpression(member.Alias, firstName), "MemberName")
-        ];
+        result.ProjectionItems = definition.Projections
+            .Select(projection => new ProjectionItem(
+                queryContext.ParseQueryExpression(
+                    result,
+                    QualifyRecursiveProjection(projection.Field, manager.Alias)),
+                GetProjectionAlias(projection)))
+            .ToList();
         query = result;
         return true;
     }
+
+    private static IFieldDefinition QualifyRecursiveProjection(
+        IFieldDefinition field,
+        string managerAlias)
+        => field switch
+        {
+            FieldDefinition value when !value.FieldName.Contains('.') =>
+                new FieldDefinition(value.Oper, $"{managerAlias}.{value.FieldName}"),
+            FunctionFieldDefinition function => new FunctionFieldDefinition(
+                function.Oper,
+                function.FunctionName,
+                function.Arguments
+                    .Select(argument => QualifyRecursiveProjection(argument, managerAlias))
+                    .ToArray()),
+            GroupFieldDefintion group => new GroupFieldDefintion(
+                group.Oper,
+                group.Fields
+                    .Select(argument => QualifyRecursiveProjection(argument, managerAlias))
+                    .ToArray()),
+            ConditionFieldDefinition condition => new ConditionFieldDefinition(
+                condition.Oper,
+                QualifyRecursiveCondition(condition.Condition, managerAlias)),
+            _ => field
+        };
+
+    private static IConditionDefintion QualifyRecursiveCondition(
+        IConditionDefintion condition,
+        string managerAlias)
+        => condition switch
+        {
+            ConditionDefinition group => new ConditionDefinition(
+                group.LogicalOperation,
+                group.Filters
+                    .Select(filter => QualifyRecursiveCondition(filter, managerAlias))
+                    .ToArray()),
+            ConditionStatementDefinition statement => new ConditionStatementDefinition(
+                statement.LogicalOperator,
+                QualifyRecursiveField(statement.Left, managerAlias),
+                statement.Operator,
+                statement.Right is null
+                    ? null
+                    : QualifyRecursiveField(statement.Right, managerAlias)),
+            _ => condition
+        };
+
+    private static IFieldDefinition QualifyRecursiveField(
+        IFieldDefinition field,
+        string managerAlias)
+        => QualifyRecursiveProjection(field, managerAlias);
 
     private static void ValidateRecursiveProjectionShape(
         IReadOnlyList<ProjectionItem> anchor,

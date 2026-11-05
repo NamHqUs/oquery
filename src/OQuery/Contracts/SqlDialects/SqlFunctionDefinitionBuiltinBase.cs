@@ -11,6 +11,7 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
     internal virtual IEnumerable<SqlFunctionDefintion> CreateAllFunctions() =>
     [
         Count(),
+        CountOver(),
         Sum(),
         Average(),
         Maximum(),
@@ -44,6 +45,13 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
     protected virtual SqlFunctionDefintion Count() =>
         Create("COUNT", [new("value", DataType.Number, "*")], DataType.Number,
             "Counts rows or non-null values.", "COUNT({1})", isAggregate: true);
+
+    protected virtual SqlFunctionDefintion CountOver() =>
+        Create("COUNTOVER",
+            [new("expression", DataType.Number), new("partitionBy", DataType.Number)],
+            DataType.Number,
+            "Counts values within a window partition without collapsing rows.",
+            "COUNT({1}) OVER (PARTITION BY {2})");
 
     protected virtual SqlFunctionDefintion Sum() =>
         Create("SUM", [new("expression", DataType.Number)], DataType.Number,
