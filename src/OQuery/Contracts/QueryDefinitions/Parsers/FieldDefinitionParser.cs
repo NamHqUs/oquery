@@ -255,8 +255,26 @@ internal static class FieldDefinitionParser
             return Parse(text);
         }
 
+        if (IsNumericLiteral(text))
+        {
+            throw new FormatException(
+                $"Numeric constant [{text}] must be enclosed in angle brackets: <{text}>.");
+        }
+
         return new FieldDefinition(text);
     }
+
+    private static bool IsNumericLiteral(string text)
+        => int.TryParse(
+            text,
+            System.Globalization.NumberStyles.Integer,
+            System.Globalization.CultureInfo.InvariantCulture,
+            out _)
+        || decimal.TryParse(
+            text,
+            System.Globalization.NumberStyles.Number | System.Globalization.NumberStyles.AllowExponent,
+            System.Globalization.CultureInfo.InvariantCulture,
+            out _);
 
     private static List<string> SplitBinaryOperators(string text)
     {

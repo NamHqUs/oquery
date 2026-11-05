@@ -85,13 +85,17 @@ Supported query clauses include:
 Keywords are case-insensitive. Use the canonical capitalization shown above
 for readable saved queries.
 
-Values use angle brackets:
+Values must use angle brackets:
 
 ```text
 Where Status = <Completed>
 Where Quantity > <10>
 Where IsActive = <true>
 ```
+
+If a numeric value is written without angle brackets, the parser reports the
+required form, for example: `Numeric constant [2] must be enclosed in angle
+brackets: <2>.`
 
 ## 4. Fields and relationships
 

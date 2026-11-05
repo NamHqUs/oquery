@@ -21,6 +21,22 @@ internal sealed class QueryRequestParserTests : TestBase
         AssertEquivalent(expectedField, field);
     }
 
+    [TestCase("2", "<2>")]
+    [TestCase("-2.5", "<-2.5>")]
+    [TestCase("2e2", "<2e2>")]
+    public void TextToExpressionReportsHowToWriteBareNumericConstant(
+        string text,
+        string expectedConstantSyntax)
+    {
+        var exception = Assert.Throws<FormatException>(
+            () => QueryDefinitionJsonParser.ParseField(text));
+
+        Assert.That(
+            exception!.Message,
+            Is.EqualTo(
+                $"Numeric constant [{text}] must be enclosed in angle brackets: {expectedConstantSyntax}."));
+    }
+
     [Test]
     public void TextToFunctionFieldDto_GroupArgument()
     {
