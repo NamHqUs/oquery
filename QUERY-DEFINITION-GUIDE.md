@@ -189,6 +189,101 @@ Aggregate predicates are routed to `HAVING`; row predicates remain `WHERE`.
 This lets users express the business condition without manually moving the
 predicate between SQL clauses.
 
+### Grouped and scalar aggregates
+
+An aggregate query is grouped when its projection contains both an aggregate
+expression and at least one non-aggregate field. The non-aggregate fields
+define the result grain and are emitted in the generated `GROUP BY` clause:
+
+```text
+ProductSales is OrderItems: ProductId,
+    SUM(Quantity * UnitPrice) TotalRevenue
+```
+
+This represents one row per `ProductId`:
+
+```sql
+SELECT ProductId, SUM(Quantity * UnitPrice) AS TotalRevenue
+FROM OrderItems
+GROUP BY ProductId
+```
+
+An aggregate-only projection is a scalar aggregate query. It returns one row
+and does not introduce a grouping key:
+
+```text
+AverageRevenue is ProductSales:
+    AVG(TotalRevenue) AverageTotalRevenue
+```
+
+When an aggregate function references a field through a named context from an
+outer query, the aggregate is also scalar over the complete context. It is
+rendered as a scalar subquery rather than as an aggregate in the outer query:
+
+```text
+Products: Id,
+    Name,
+    ProductSales.TotalRevenue TotalRevenue
+  Inner Join ProductSales On Id = ProductSales.ProductId
+  Where ProductSales.TotalRevenue > AVG(ProductSales.TotalRevenue)
+```
+
+The context-qualified aggregate above represents:
+
+```sql
+WHERE ProductSales.TotalRevenue >
+(
+    SELECT AVG(TotalRevenue)
+    FROM ProductSales
+)
+```
+
+The distinction is:
+
+- aggregate plus non-aggregate projection fields: grouped query;
+- aggregate-only projection: one-row scalar aggregate query;
+- aggregate over a context-qualified field in a filter: scalar subquery over
+  that context; do not generate scalar aggregate statements in projections.
+
+### Aggregate-over window functions
+
+Use the explicit `*Over` functions when an aggregate value must be returned as
+a scalar column without collapsing the result rows:
+
+```text
+Products: Id,
+    Name,
+    ProductSales.TotalRevenue TotalRevenue,
+    AverageOver(ProductSales.TotalRevenue, ProductSales.ProductId) AverageTotalRevenue,
+    SumOver(ProductSales.TotalRevenue, ProductSales.ProductId) PartitionRevenue,
+    CountOver(ProductSales.ProductId, ProductSales.ProductId) PartitionProductCount,
+    MaxOver(ProductSales.TotalRevenue, ProductSales.ProductId) MaximumRevenue,
+    MinOver(ProductSales.TotalRevenue, ProductSales.ProductId) MinimumRevenue
+  Inner Join ProductSales On Id = ProductSales.ProductId
+```
+
+`CountOver`, `SumOver`, `AverageOver`, `MaxOver`, and `MinOver` are window
+functions, not grouping aggregates. Each takes one required argument and one
+optional partition argument. Without the second argument, the function
+operates over the complete result set:
+
+```text
+AverageOver(ProductSales.TotalRevenue) OverallAverage
+```
+
+With the second argument, it operates within each partition:
+
+```text
+AverageOver(ProductSales.TotalRevenue, ProductSales.ProductId) AveragePerProduct
+```
+
+The functions render as
+`COUNT(...) OVER (PARTITION BY ...)`, `SUM(...) OVER (PARTITION BY ...)`,
+`AVG(...) OVER (PARTITION BY ...)`, `MAX(...) OVER (PARTITION BY ...)`, and
+`MIN(...) OVER (PARTITION BY ...)`, respectively. The `OVER` form preserves
+one result row per input row and repeats the aggregate value across the
+complete result set or selected partition.
+
 ## Reusable contexts and isolated composition
 
 Contexts form a named dependency graph. A context owns the relationships it

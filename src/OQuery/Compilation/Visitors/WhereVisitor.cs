@@ -118,7 +118,7 @@ class WhereVisitor(TableExpression tableContext, QueryContext queryContext)
         {
             var expression = ((ConstantExpression)node.Arguments[0]).Value as IFieldDefinition
                 ?? throw new FormatException("A filter query expression cannot be null.");
-            return QueryContext.ParseQueryExpression(TableContext, expression);
+            return QueryContext.ParseScalarQueryExpression(TableContext, expression);
         }
 
         return base.VisitMethodCall(node);

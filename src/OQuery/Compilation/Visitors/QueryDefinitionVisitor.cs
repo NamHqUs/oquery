@@ -657,21 +657,27 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         TableExpression table,
         IReadOnlyDictionary<string, ContextBinding> definitions)
     {
-        if (definition.Filter is not null)
-            table = new WhereVisitor(table, queryContext)
-                .Eval(DbQueryFromQueryDto.CreateFilter(definition.Filter));
-
         var projections = definition.Projections.ToArray();
         if (projections.Length > 0)
         {
-            table.ProjectionItems = projections
-                .SelectMany(projection => ExpandProjection(table, projection))
-                .ToList();
+            var projectionItems = new List<ProjectionItem>();
+            foreach (var projection in projections)
+            {
+                foreach (var item in ExpandProjection(table, projection))
+                {
+                    projectionItems.Add(item);
+                    table.ProjectionItems = projectionItems.ToArray();
+                }
+            }
         }
         else
         {
             table.EnsureDefaultProjection();
         }
+
+        if (definition.Filter is not null)
+            table = new WhereVisitor(table, queryContext)
+                .Eval(DbQueryFromQueryDto.CreateFilter(definition.Filter));
 
         foreach (var sort in definition.Sorts ?? [])
             table.Orders.Add(new OrderExpression(

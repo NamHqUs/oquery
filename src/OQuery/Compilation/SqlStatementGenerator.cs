@@ -10,6 +10,7 @@ internal sealed record SqlStatement(string CommandText, IReadOnlyList<DbParamete
 internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 {
     private IReadOnlyDictionary<string, IEntity> _entities = new Dictionary<string, IEntity>();
+    private string? _projectionSourceAlias;
 
     public SqlStatement Generate(TableExpression query, IEnumerable<DbParameter> parameters)
     {
@@ -58,12 +59,34 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         bool recursivePart = false)
     {
         query.EnsureDefaultProjection();
-        var hasGroupedAggregate = query.ProjectionItems
+        if (!exists &&
+            !recursivePart &&
+            TryRenderProjectionLayers(query, includeCtes, out var layeredQuery))
+            return layeredQuery;
+
+        return RenderQueryCoreSingle(query, exists, includeCtes, recursivePart);
+    }
+
+    private string RenderQueryCoreSingle(
+        TableExpression query,
+        bool exists,
+        bool includeCtes,
+        bool recursivePart,
+        IReadOnlyList<ProjectionItem>? projectionItemsOverride = null,
+        IReadOnlyList<SqlExpression>? whereExpressionsOverride = null,
+        IReadOnlyList<SqlExpression>? havingExpressionsOverride = null,
+        bool includeTrailingClauses = true)
+    {
+        query.EnsureDefaultProjection();
+        var projectionItems = projectionItemsOverride ?? query.ProjectionItems.ToArray();
+        var whereExpressions = whereExpressionsOverride ?? query.SqlWhere;
+        var havingExpressions = havingExpressionsOverride ?? query.SqlHaving;
+        var hasGroupedAggregate = projectionItems
             .Any(item => item.Item.ContainsGroupedAggregate());
 
         var select = exists
             ? "1"
-            : query.ProjectionItems.Any()
+            : projectionItems.Any()
                 ? null
                 : query.SqlSelect?.ToString();
 
@@ -72,7 +95,6 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
         if (select is null)
         {
-            var projectionItems = query.ProjectionItems.ToArray();
             select = string.Join(
                 string.Empty,
                 projectionItems.Select((item, index) =>
@@ -87,7 +109,9 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
                 }));
         }
 
-        var takePrefix = query.IsTake ? dialect.RenderTakePrefix(query.Take!.Value) : string.Empty;
+        var takePrefix = includeTrailingClauses && query.IsTake
+            ? dialect.RenderTakePrefix(query.Take!.Value)
+            : string.Empty;
         if (takePrefix.Length != 0)
             select = takePrefix + select;
 
@@ -108,14 +132,14 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
             : [];
         var text = $"SELECT {select}\nFROM {recursiveJoinRendering.FromClause}";
 
-        var whereExpressions = recursiveJoinConditions
-            .Concat(query.SqlWhere.Select(RenderExpression))
+        var renderedWhereExpressions = recursiveJoinConditions
+            .Concat(whereExpressions.Select(RenderExpression))
             .ToArray();
-        if (whereExpressions.Length != 0)
+        if (renderedWhereExpressions.Length != 0)
         {
-            text += "\nWHERE " + whereExpressions[0];
+            text += "\nWHERE " + renderedWhereExpressions[0];
 
-            foreach (var where in whereExpressions.Skip(1))
+            foreach (var where in renderedWhereExpressions.Skip(1))
                 text += "\n\tAND " + where;
         }
 
@@ -123,7 +147,7 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         {
             var groupBy = query.GroupByExpressions
                 .Select(expression => (Sql: RenderExpression(expression), Fields: Array.Empty<string>(), Alias: (string?)null))
-                .Concat(query.ProjectionItems
+                .Concat(projectionItems
                     .Where(item => !item.Item.ContainsGroupedAggregate())
                     .Select(item => (
                         Sql: RenderExpression(item.Item),
@@ -139,26 +163,182 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
                 text += "\nGROUP BY " + string.Join(", ", groupBy);
         }
 
-        if (query.SqlHaving.Count != 0)
+        if (havingExpressions.Count != 0)
         {
-            text += "\nHAVING " + RenderExpression(query.SqlHaving[0]);
+            text += "\nHAVING " + RenderExpression(havingExpressions[0]);
 
-            foreach (var having in query.SqlHaving.Skip(1))
+            foreach (var having in havingExpressions.Skip(1))
                 text += "\n\tAND " + RenderExpression(having);
         }
 
-        if (query.Orders.Count != 0)
+        if (includeTrailingClauses && query.Orders.Count != 0)
             text += "\nORDER BY " + string.Join(", ", query.Orders.Select(order => RenderOrder(order, query)));
 
-        text += dialect.RenderPaging(
-            query.Skip,
-            takePrefix.Length != 0 ? null : query.Take,
-            query.Orders.Count != 0);
+        if (includeTrailingClauses)
+            text += dialect.RenderPaging(
+                query.Skip,
+                takePrefix.Length != 0 ? null : query.Take,
+                query.Orders.Count != 0);
 
         if (includeCtes)
             text = RenderCommonTableExpressions(query) + text;
 
         return text;
+    }
+
+    private bool TryRenderProjectionLayers(
+        TableExpression query,
+        bool includeCtes,
+        out string renderedQuery)
+    {
+        var projectionItems = query.ProjectionItems.ToArray();
+        var projectionByAlias = projectionItems.ToDictionary(
+            item => item.Alias,
+            StringComparer.OrdinalIgnoreCase);
+        var levels = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var visiting = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        int GetLevel(string alias)
+        {
+            if (!projectionByAlias.TryGetValue(alias, out var item))
+                return 0;
+            if (levels.TryGetValue(alias, out var level))
+                return level;
+            if (!visiting.Add(alias))
+                throw new FormatException($"Projection aliases cannot contain a cycle involving [{alias}].");
+
+            var dependencies = item.Item.ProjectionAliases().ToArray();
+            level = dependencies.Length == 0
+                ? 0
+                : dependencies.Max(dependency => GetLevel(dependency)) + 1;
+            visiting.Remove(alias);
+            levels[alias] = level;
+            return level;
+        }
+
+        foreach (var item in projectionItems)
+            GetLevel(item.Alias);
+
+        var aliasPredicates = query.SqlWhere
+            .Concat(query.SqlHaving)
+            .Where(expression => expression.ContainsProjectionAlias())
+            .ToArray();
+        var maxLevel = levels.Values.DefaultIfEmpty(0).Max();
+        if (maxLevel == 0 && aliasPredicates.Length == 0)
+        {
+            renderedQuery = string.Empty;
+            return false;
+        }
+
+        var baseWhere = query.SqlWhere
+            .Where(expression => !expression.ContainsProjectionAlias())
+            .ToArray();
+        var baseHaving = query.SqlHaving
+            .Where(expression => !expression.ContainsProjectionAlias())
+            .ToArray();
+        var baseItems = projectionItems
+            .Where(item => levels[item.Alias] == 0)
+            .ToArray();
+        if (baseItems.Length == 0)
+            throw new FormatException("Projection alias dependencies must have a non-alias base projection.");
+
+        var previousAlias = (string?)null;
+        var inner = RenderQueryCoreSingle(
+            query,
+            exists: false,
+            includeCtes: false,
+            recursivePart: false,
+            projectionItemsOverride: baseItems,
+            whereExpressionsOverride: baseWhere,
+            havingExpressionsOverride: baseHaving,
+            includeTrailingClauses: false);
+
+        for (var level = 1; level <= maxLevel; level++)
+        {
+            var sourceAlias = $"q{level - 1}";
+            var availableItems = projectionItems
+                .Where(item => levels[item.Alias] < level)
+                .ToArray();
+            var currentItems = projectionItems
+                .Where(item => levels[item.Alias] == level)
+                .ToArray();
+            var selectItems = availableItems
+                .Select(item => $"{sourceAlias}.{dialect.QuoteIdentifier(item.Alias)} {dialect.QuoteIdentifier(item.Alias)}")
+                .Concat(currentItems.Select(item => RenderLayerProjection(item, sourceAlias)))
+                .ToArray();
+
+            inner = $"SELECT {string.Join(",\n", selectItems)}\n" +
+                $"FROM (\n{Indent(inner)}\n) AS {sourceAlias}";
+            previousAlias = sourceAlias;
+        }
+
+        var finalSourceAlias = previousAlias ?? "q0";
+        if (aliasPredicates.Length != 0)
+        {
+            var sourceAlias = $"q{maxLevel}";
+            var selectItems = projectionItems
+                .Select(item => $"{sourceAlias}.{dialect.QuoteIdentifier(item.Alias)} {dialect.QuoteIdentifier(item.Alias)}")
+                .ToArray();
+            _projectionSourceAlias = sourceAlias;
+            try
+            {
+                inner = $"SELECT {string.Join(",\n", selectItems)}\n" +
+                    $"FROM (\n{Indent(inner)}\n) AS {sourceAlias}\n" +
+                    $"WHERE {string.Join("\n\tAND ", aliasPredicates.Select(RenderExpression))}";
+            }
+            finally
+            {
+                _projectionSourceAlias = null;
+            }
+            finalSourceAlias = sourceAlias;
+        }
+
+        if (query.IsTake)
+        {
+            var takePrefix = dialect.RenderTakePrefix(query.Take!.Value);
+            if (takePrefix.Length != 0)
+                inner = "SELECT " + takePrefix + inner["SELECT ".Length..];
+        }
+
+        if (query.Orders.Count != 0)
+        {
+            _projectionSourceAlias = finalSourceAlias;
+            try
+            {
+                inner += "\nORDER BY " +
+                    string.Join(", ", query.Orders.Select(order => RenderOrder(order, query)));
+            }
+            finally
+            {
+                _projectionSourceAlias = null;
+            }
+        }
+
+        inner += dialect.RenderPaging(
+            query.Skip,
+            query.IsTake && dialect.RenderTakePrefix(query.Take!.Value).Length != 0
+                ? null
+                : query.Take,
+            query.Orders.Count != 0);
+
+        renderedQuery = includeCtes
+            ? RenderCommonTableExpressions(query) + inner
+            : inner;
+        return true;
+    }
+
+    private string RenderLayerProjection(ProjectionItem item, string sourceAlias)
+    {
+        var previousAlias = _projectionSourceAlias;
+        _projectionSourceAlias = sourceAlias;
+        try
+        {
+            return RenderProjection(item);
+        }
+        finally
+        {
+            _projectionSourceAlias = previousAlias;
+        }
     }
 
     private string RenderProjection(
@@ -291,6 +471,10 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
             ProjectionExpression projection => $"{(projection.Parenthesize ? "(" : "")}{RenderExpression(projection.Expression)}{(projection.Parenthesize ? ")" : "")} {dialect.QuoteIdentifier(projection.Alias)}",
 
+            ProjectionAliasExpression alias => _projectionSourceAlias is null
+                ? dialect.QuoteIdentifier(alias.Alias)
+                : $"{_projectionSourceAlias}.{dialect.QuoteIdentifier(alias.Alias)}",
+
             SubqueryExpression subquery => $"({RenderQuery(subquery.Query)})",
 
             AnyExpression any => $"EXISTS({RenderQuery(any.Query, true)})",
@@ -387,6 +571,11 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
                     $"Unsupported function argument type [{argument.GetType().Name}].")
             })
             .ToArray();
+        if (function.Arguments.Count == 2 &&
+            function.Arguments[1] is FunctionSqlTokenArgument { Token: "*" } &&
+            TryGetAggregateOverName(function.Definition.Name, out var aggregateName))
+            return $"{aggregateName}({arguments[0]}) OVER ()";
+
         var template = function.Definition.GetSqlTemplate(dialect.Key);
         var sql = new StringBuilder(template.Length);
 
@@ -413,6 +602,20 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         }
 
         return sql.ToString();
+    }
+
+    private static bool TryGetAggregateOverName(string functionName, out string aggregateName)
+    {
+        aggregateName = functionName.ToUpperInvariant() switch
+        {
+            "COUNTOVER" => "COUNT",
+            "SUMOVER" => "SUM",
+            "AVERAGEOVER" => "AVG",
+            "MAXOVER" => "MAX",
+            "MINOVER" => "MIN",
+            _ => string.Empty
+        };
+        return aggregateName.Length > 0;
     }
 
     private string RenderAggregate(AggregateExpression aggregate)

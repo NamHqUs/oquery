@@ -42,9 +42,6 @@ internal static class DbQueryFromQueryDto
 
         var query = context.Query(definition.Entity);
 
-        if (definition.Filter is not null)
-            query = query.Where(CreateFilter(definition.Filter));
-
         var projections = definition.Projections ?? [];
         if (projections.Count > 0)
         {
@@ -59,6 +56,9 @@ internal static class DbQueryFromQueryDto
 
             query = query.Select(selection);
         }
+
+        if (definition.Filter is not null)
+            query = query.Where(CreateFilter(definition.Filter));
 
         foreach (var sortGroup in (definition.Sorts ?? []).Select((sort, index) => (sort, index)))
         {

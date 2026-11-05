@@ -13,6 +13,7 @@ class QueryContext(
     ISqlDialect sqlDialect)
 {
     private int _aliasCount;
+    private bool _parseContextAggregatesAsScalar;
     public readonly Stack<(string ArgumentName, TableExpression TableContext)> Arguments = new();
     private readonly List<DbParameter> _dbParameters = [];
 
@@ -66,8 +67,8 @@ class QueryContext(
     {
         if (tableContext.ProjectionItems
             .FirstOrDefault(e => string.Equals(e.Alias, fieldPath, StringComparison.OrdinalIgnoreCase))
-            ?.Item is SqlExpression projection)
-            return projection;
+            is { Alias: var alias, Item: var projection })
+            return new ProjectionAliasExpression(alias, projection.Type);
 
         var separator = fieldPath.IndexOf('.');
         if (separator > 0)
@@ -78,8 +79,8 @@ class QueryContext(
                     fieldPath[..separator],
                     StringComparison.OrdinalIgnoreCase))
                 .Value;
-            if (joinedTable is not null)
-                return ParseFieldPath(joinedTable, fieldPath[(separator + 1)..]);
+                if (joinedTable is not null)
+                    return ParseFieldPath(joinedTable, fieldPath[(separator + 1)..]);
         }
 
         if (TryParseAggregateFunction(fieldPath, out var wrappedAggregate))
@@ -119,6 +120,20 @@ class QueryContext(
             FunctionFieldDefinition function => ParseFunctionExpression(tableContext, function, depth),
             _ => throw new FormatException($"Unsupported query expression [{expression.GetType().Name}].")
         };
+    }
+
+    public SqlExpression ParseScalarQueryExpression(TableExpression tableContext, IFieldDefinition expression)
+    {
+        var previous = _parseContextAggregatesAsScalar;
+        _parseContextAggregatesAsScalar = true;
+        try
+        {
+            return ParseQueryExpression(tableContext, expression);
+        }
+        finally
+        {
+            _parseContextAggregatesAsScalar = previous;
+        }
     }
 
     public SqlExpression ParseQueryExpression(TableExpression tableContext, IFieldDefinition[] expressions, int depth = 0)
@@ -229,7 +244,47 @@ class QueryContext(
                 "COUNT(*) is not allowed. Specify an authorized field to count.");
         }
 
+        if (_parseContextAggregatesAsScalar &&
+            TryParseContextAggregate(tableContext, expression, definition, depth, out var contextAggregate))
+            return contextAggregate;
+
         return new FunctionSqlExpression(definition, arguments);
+    }
+
+    private bool TryParseContextAggregate(
+        TableExpression tableContext,
+        FunctionFieldDefinition expression,
+        SqlFunctionDefintion definition,
+        int depth,
+        out AggregateExpression aggregate)
+    {
+        aggregate = null!;
+        if (!definition.IsAggregate ||
+            expression.Arguments.Length != 1 ||
+            expression.Arguments[0] is not FieldDefinition field)
+            return false;
+
+        var separator = field.FieldName.IndexOf('.');
+        if (separator <= 0 ||
+            !tableContext.JoinedTables.TryGetValue(field.FieldName[..separator], out var contextTable) ||
+            contextTable is not CteTableExpression)
+            return false;
+
+        var contextField = field.FieldName[(separator + 1)..];
+        if (string.IsNullOrWhiteSpace(contextField))
+            return false;
+
+        var contextFunction = expression with
+        {
+            Arguments = [new FieldDefinition(contextField)]
+        };
+        var function = ParseFunctionExpression(contextTable, contextFunction, depth + 1);
+        if (function is not FunctionSqlExpression aggregateFunction)
+            throw new InvalidOperationException(
+                $"Aggregate function [{expression.FunctionName}] did not produce a SQL function.");
+
+        aggregate = new AggregateExpression(contextTable, aggregateFunction);
+        return true;
     }
 
     private FunctionSqlArgument ParseFunctionArgument(

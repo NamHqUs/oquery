@@ -23,4 +23,12 @@ internal sealed class FilterParserTests : TestBase
         var data = _db.Query(query).ToList();
         Assert.That(data.Count, Is.GreaterThan(0));
     }
+
+    [Test]
+    public void Filter_AllowsParenthesizedExpressionAsValue()
+    {
+        var filter = QueryDefinitionJsonParser.ParseFilter("Total = (Minimum + <1>)");
+
+        Assert.That(filter!.ToText(), Is.EqualTo("Total = Minimum + <1>"));
+    }
 }

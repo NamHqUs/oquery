@@ -10,10 +10,10 @@ internal sealed class PostgresFunctionDefinitionBuiltin : SqlFunctionDefinitionB
         base.CreateAllFunctions().Append(GetDate()).Append(Round());
 
     private SqlFunctionDefintion GetDate() =>
-        Create("GETDATE", [], DataType.Datetime, "Returns the current date and time.", "CURRENT_TIMESTAMP");
+        Create("GetDate", [], DataType.Datetime, "Returns the current date and time.", "CURRENT_TIMESTAMP");
 
     private SqlFunctionDefintion Round() =>
-        Create("ROUND", [new("value", DataType.Number), new("digits", DataType.Number)],
+        Create("Round", [new("value", DataType.Number), new("digits", DataType.Number)],
             DataType.Number, "Rounds a number to the specified number of decimal places.",
             "ROUND({1}, CAST({2} AS INTEGER))");
 
@@ -21,46 +21,46 @@ internal sealed class PostgresFunctionDefinitionBuiltin : SqlFunctionDefinitionB
     protected override SqlFunctionDefintion Month() => ExtractDatePart("MONTH");
     protected override SqlFunctionDefintion Year() => ExtractDatePart("YEAR");
 
-    protected override SqlFunctionDefintion DateSub() => DateDifference("DATESUB", "day",
+    protected override SqlFunctionDefintion DateSub() => DateDifference("DateSub", "day",
         "(CAST({2} AS DATE) - CAST({1} AS DATE))",
         "Returns the number of elapsed whole days from startDate to endDate.");
 
-    protected override SqlFunctionDefintion MonthSub() => DateDifference("MONTHSUB", "month",
+    protected override SqlFunctionDefintion MonthSub() => DateDifference("MonthSub", "month",
         "((EXTRACT(YEAR FROM {2}) - EXTRACT(YEAR FROM {1})) * 12 + EXTRACT(MONTH FROM {2}) - EXTRACT(MONTH FROM {1}))",
         "Returns the number of calendar-month boundaries from startDate to endDate.");
 
-    protected override SqlFunctionDefintion YearSub() => DateDifference("YEARSUB", "year",
+    protected override SqlFunctionDefintion YearSub() => DateDifference("YearSub", "year",
         "(EXTRACT(YEAR FROM {2}) - EXTRACT(YEAR FROM {1}))",
         "Returns the number of calendar-year boundaries from startDate to endDate.");
 
-    protected override SqlFunctionDefintion DateAdd() => DateAdjustment("DATEADD", "day",
+    protected override SqlFunctionDefintion DateAdd() => DateAdjustment("DateAdd", "day",
         "({1} + ({2} * INTERVAL '1 day'))",
         "Adds the specified number of days to a date or date-time.");
 
-    protected override SqlFunctionDefintion MonthAdd() => DateAdjustment("MONTHADD", "month",
+    protected override SqlFunctionDefintion MonthAdd() => DateAdjustment("MonthAdd", "month",
         "({1} + ({2} * INTERVAL '1 month'))",
         "Adds the specified number of months to a date or date-time.");
 
-    protected override SqlFunctionDefintion YearAdd() => DateAdjustment("YEARADD", "year",
+    protected override SqlFunctionDefintion YearAdd() => DateAdjustment("YearAdd", "year",
         "({1} + ({2} * INTERVAL '1 year'))",
         "Adds the specified number of years to a date or date-time.");
 
     protected override SqlFunctionDefintion MonthKey() =>
-        Create("MONTHKEY", [new("value", DataType.Datetime)], DataType.String,
+        Create("MonthKey", [new("value", DataType.Datetime)], DataType.String,
             "Formats a date as a year-month key.", "TO_CHAR({1}, 'YYYY-MM')");
 
     protected override SqlFunctionDefintion AgeOn() =>
-        Create("AGEON", [new("birthDate", DataType.Datetime), new("asOfDate", DataType.Datetime)],
+        Create("AgeOn", [new("birthDate", DataType.Datetime), new("asOfDate", DataType.Datetime)],
             DataType.Number, "Returns completed years between a start date and an as-of date.",
             "(EXTRACT(YEAR FROM CAST({2} AS DATE)) - EXTRACT(YEAR FROM CAST({1} AS DATE)) - CASE WHEN EXTRACT(MONTH FROM CAST({2} AS DATE)) * 100 + EXTRACT(DAY FROM CAST({2} AS DATE)) < EXTRACT(MONTH FROM CAST({1} AS DATE)) * 100 + EXTRACT(DAY FROM CAST({1} AS DATE)) THEN 1 ELSE 0 END)");
 
     protected override SqlFunctionDefintion ElapsedYears() =>
-        Create("ELAPSEDYEARS", [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],
+        Create("ElapsedYears", [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],
             DataType.Number, "Returns fractional years elapsed between two dates.",
             "(EXTRACT(EPOCH FROM ({2} - {1})) / 31556952.0)");
 
     protected override SqlFunctionDefintion Lag() =>
-        Create("LAG", [new("expression", DataType.Number), new("offset", DataType.Number), new("orderBy", DataType.String)],
+        Create("Lag", [new("expression", DataType.Number), new("offset", DataType.Number), new("orderBy", DataType.String)],
             DataType.Number, "Returns the previous row's value in ascending order.",
             "LAG({1}, CAST({2} AS INTEGER)) OVER (ORDER BY {3} ASC)");
 

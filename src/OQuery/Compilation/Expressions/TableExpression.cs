@@ -104,6 +104,5 @@ internal sealed class CteTableExpression : TableExpression
         : base(entity, alias, fields)
     {
         Name = name;
-        CommonTableExpressionName = name;
     }
 }

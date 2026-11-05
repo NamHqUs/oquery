@@ -196,7 +196,9 @@ public static class QueryDefinitionOQueryParser
             if (line.Length == 0 || line.StartsWith('#'))
                 continue;
 
-            if (rawLine.Length > 0 && !char.IsWhiteSpace(rawLine[0]))
+            if (rawLine.Length > 0 &&
+                !char.IsWhiteSpace(rawLine[0]) &&
+                !IsClauseLine(line))
             {
                 var separator = line.IndexOf(':');
                 if (separator <= 0)

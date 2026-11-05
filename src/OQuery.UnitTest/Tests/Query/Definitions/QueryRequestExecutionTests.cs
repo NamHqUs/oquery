@@ -71,6 +71,110 @@ public sealed class QueryRequestExecutionTests : TestBase
     }
 
     [Test]
+    public void ContextQualifiedAggregateFilterUsesScalarSubquery()
+    {
+        var definition = new QueryDefinition("Products")
+        {
+            Projections = QueryDefinitionJsonParser.ParseProjection(
+                "Id, Name, ProductSales.TotalRevenue | TotalRevenue"),
+            Joins =
+            [
+                new JoinDefinition(
+                    "ProductSales",
+                    Condition: QueryDefinitionJsonParser.ParseFilter(
+                        "Id = ProductSales.ProductId")!.Filters[0],
+                    JoinType: QueryJoinType.Inner),
+            ],
+            Filter = QueryDefinitionJsonParser.ParseFilter(
+                "ProductSales.TotalRevenue > AVG(ProductSales.TotalRevenue)"),
+            Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["ProductSales"] = new QueryDefinitionBase("OrderItems")
+                {
+                    Projections = QueryDefinitionJsonParser.ParseProjection(
+                        "ProductId, SUM(Quantity * UnitPrice) | TotalRevenue")
+                }
+            }
+        };
+
+        var sql = _db.Query(definition).ToSql().CommandText;
+
+        Assert.That(sql, Does.Match(
+            @"(?is)WHERE\s+\(\s*t\d+\.\""TotalRevenue\""\s*>\s*\(\s*SELECT\s+AVG\s*\(\s*t\d+\.\""TotalRevenue\""\s*\)\s+FROM\s+\""ProductSales\"""));
+        Assert.That(sql, Does.Not.Contain("HAVING"));
+    }
+
+    [Test]
+    public void ProjectionAliasDependenciesUseMinimumNumberOfLayers()
+    {
+        var definition = new QueryDefinition("OrderItems")
+        {
+            Projections = QueryDefinitionJsonParser.ParseProjection(
+                "ProductId, SUM(Quantity * UnitPrice) | Alias1, " +
+                "AverageOver(Alias1) | Alias2, " +
+                "CountOver(Alias1) | Alias3, " +
+                "SumOver(Alias3) | Alias4")
+        };
+
+        var sql = _db.Query(definition).ToSql().CommandText;
+
+        Assert.That(
+            System.Text.RegularExpressions.Regex.Matches(sql, @"(?i)FROM\s+\("),
+            Has.Count.EqualTo(2));
+        Assert.That(sql, Does.Match(
+            @"(?is)AVG\s*\(\s*q0\.\""Alias1\""\s*\)\s+OVER\s*\(\s*\)\s+\""Alias2\"""));
+        Assert.That(sql, Does.Match(
+            @"(?is)COUNT\s*\(\s*q0\.\""Alias1\""\s*\)\s+OVER\s*\(\s*\)\s+\""Alias3\"""));
+        Assert.That(sql, Does.Match(
+            @"(?is)SUM\s*\(\s*q1\.\""Alias3\""\s*\)\s+OVER\s*\(\s*\)\s+\""Alias4\"""));
+    }
+
+    [Test]
+    public void ProjectionAliasFilterIsAppliedAfterAliasLayers()
+    {
+        var definition = new QueryDefinition("OrderItems")
+        {
+            Projections = QueryDefinitionJsonParser.ParseProjection(
+                "ProductId, SUM(Quantity * UnitPrice) | Alias1, " +
+                "AverageOver(Alias1) | Alias2"),
+            Filter = QueryDefinitionJsonParser.ParseFilter("Alias1 > Alias2")
+        };
+
+        var sql = _db.Query(definition).ToSql().CommandText;
+
+        Assert.That(
+            System.Text.RegularExpressions.Regex.Matches(sql, @"(?i)FROM\s+\("),
+            Has.Count.EqualTo(2));
+        Assert.That(sql, Does.Match(
+            @"(?is)SELECT\s+q1\.\""ProductId\""[\s\S]*FROM\s+\([\s\S]*\)\s+AS\s+q1"));
+        Assert.That(sql, Does.Match(
+            @"(?is)WHERE\s+\(\s*q1\.\""Alias1\""\s*>\s*q1\.\""Alias2\""\s*\)"));
+    }
+
+    [Test]
+    public void OQueryTextSupportsUnindentedAliasFilterAfterWindowProjection()
+    {
+        var query = _db.QueryOqr("""
+            ProductSales is OrderItems: ProductId, Product.Name,
+                SUM(Quantity * UnitPrice) TotalRevenue,
+                AverageOver(TotalRevenue) Average
+            WHERE TotalRevenue > Average
+            """);
+
+        var sql = query.ToSql().CommandText;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(sql, Does.Match(
+                @"(?is)AVG\s*\(\s*q0\.\""TotalRevenue\""\s*\)\s+OVER\s*\(\s*\)\s+\""Average\"""));
+            Assert.That(sql, Does.Match(
+                @"(?is)SELECT\s+q1\.\""ProductId\""[\s\S]*FROM\s+\([\s\S]*\)\s+AS\s+q1"));
+            Assert.That(sql, Does.Match(
+                @"(?is)WHERE\s+\(\s*q1\.\""TotalRevenue\""\s*>\s*q1\.\""Average\""\s*\)"));
+        });
+    }
+
+    [Test]
     public void DefinitionExecutesWithProjectionAndFilter()
     {
         var definition = new QueryDefinition("User")

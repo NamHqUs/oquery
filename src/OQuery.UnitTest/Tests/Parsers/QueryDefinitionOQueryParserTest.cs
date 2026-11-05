@@ -166,4 +166,17 @@ internal class QueryDefinitionOQueryParserTest : TestBase
         Assert.That(query.Skip, Is.EqualTo(10));
     }
 
+    [Test]
+    public void ParseUnindentedWhereClause()
+    {
+        var query = QueryDefinitionOQueryParser.Parse("""
+            ProductSales is OrderItems: ProductId,
+                SUM(Quantity * UnitPrice) TotalRevenue,
+                AverageOver(TotalRevenue) Average
+            WHERE TotalRevenue > Average
+            """);
+
+        Assert.That(query.Filter!.ToText(), Is.EqualTo("TotalRevenue > Average"));
+    }
+
 }

@@ -22,8 +22,12 @@ class SelectVisitor(TableExpression tableContext, QueryContext queryContext)
     {
         if (body is ConstantExpression @const && @const.Value is Dictionary<string, object?> dataRecord)
         {
-            var selectedFields = BuildProjection(TableContext, dataRecord);
-            TableContext.ProjectionItems = [.. selectedFields];
+            var selectedFields = new List<ProjectionItem>();
+            foreach (var projection in BuildProjection(TableContext, dataRecord))
+            {
+                selectedFields.Add(projection);
+                TableContext.ProjectionItems = selectedFields.ToArray();
+            }
         }
     }
 

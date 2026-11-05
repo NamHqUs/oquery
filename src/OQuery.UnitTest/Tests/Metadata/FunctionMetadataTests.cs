@@ -257,7 +257,7 @@ public sealed class FunctionMetadataTests
         var functionProvider = new FunctionProvider(new SqliteDialect(), [customFunction]);
 
         Assert.That(functionProvider.GetFunctions().Select(function => function.Name),
-            Does.Contain("TODAY").And.Contain("SUM"));
+            Does.Contain("TODAY").And.Contain("Sum"));
         Assert.That(functionProvider.GetFunction("today"), Is.SameAs(customFunction));
         Assert.That(customFunction.Description, Is.EqualTo("Returns the date portion of a value."));
     }
@@ -269,16 +269,18 @@ public sealed class FunctionMetadataTests
             function => function.Name,
             StringComparer.OrdinalIgnoreCase);
 
-        Assert.That(functions.Keys, Does.Contain("DATESUB").And.Contain("MONTHSUB").And.Contain("YEARSUB")
-            .And.Contain("DATEADD").And.Contain("MONTHADD").And.Contain("YEARADD").And.Contain("DATEFORMAT"));
+        Assert.That(functions.Keys, Does.Contain("DateSub").And.Contain("MonthSub").And.Contain("YearSub")
+            .And.Contain("DateAdd").And.Contain("MonthAdd").And.Contain("YearAdd").And.Contain("DateFormat"));
         Assert.That(functions.Keys, Does.Not.Contain("DATEDIFF").And.Not.Contain("STRFTIME"));
-        Assert.That(functions.Keys, Does.Contain("COUNT").And.Contain("SUM").And.Contain("AVG")
+        Assert.That(functions.Keys, Does.Contain("Count").And.Contain("Sum").And.Contain("Avg")
             .And.Not.Contain("Average").And.Not.Contain("COUNT_DISTINCT"));
-        Assert.That(functions.Keys, Does.Contain("COUNTDISTINCT").And.Contain("COALESCE").And.Contain("CONCAT")
-            .And.Contain("COUNTIF").And.Contain("LAG").And.Contain("WINDOWSUM"));
+        Assert.That(functions.Keys, Does.Contain("CountDistinct").And.Contain("Coalesce").And.Contain("Concat")
+            .And.Contain("CountIf").And.Contain("Lag").And.Contain("WindowSum")
+            .And.Contain("CountOver").And.Contain("SumOver").And.Contain("AverageOver")
+            .And.Contain("MaxOver").And.Contain("MinOver"));
         Assert.That(functions.Values.All(function => !string.IsNullOrWhiteSpace(function.Description)), Is.True);
-        Assert.That(functions["COUNT"].ResultType, Is.EqualTo(DataType.Number));
-        Assert.That(functions["DATEADD"].ResultType, Is.EqualTo(DataType.Datetime));
+        Assert.That(functions["Count"].ResultType, Is.EqualTo(DataType.Number));
+        Assert.That(functions["DateAdd"].ResultType, Is.EqualTo(DataType.Datetime));
 
         var dateAdd = new FunctionFieldDefinition("DateAdd",
             [new FieldDefinition("InvoiceDate"), new ConstFieldDefinition(2)]);
@@ -313,6 +315,40 @@ public sealed class FunctionMetadataTests
 
         Assert.That(sqlServerSql.CommandText,
             Does.Match(@"COUNT\s*\(\s*CASE\s+WHEN\s+.*\[Amount\].*>.*THEN\s+1\s+END\s*\)"));
+    }
+
+    [Test]
+    public void AggregateOverFunctionsReturnWindowScalarsWithoutGrouping()
+    {
+        var expressions = new[]
+        {
+            ("CountOver", "COUNT", "Id"),
+            ("SumOver", "SUM", "Amount"),
+            ("AverageOver", "AVG", "Amount"),
+            ("MaxOver", "MAX", "Amount"),
+            ("MinOver", "MIN", "Amount")
+        };
+
+        foreach (var (functionName, sqlFunction, fieldName) in expressions)
+        {
+            var sql = GenerateSql(
+                new FunctionFieldDefinition(
+                    functionName,
+                    [new FieldDefinition(fieldName), new FieldDefinition("Id")]),
+                dialect: new SqliteDialect());
+
+            Assert.That(
+                sql.CommandText,
+                Does.Match($@"{sqlFunction}\s*\(\s*t0\.""{fieldName}""\s*\)\s+OVER\s*\(\s*PARTITION\s+BY\s+t0\.""Id""\s*\)"),
+                functionName);
+        }
+
+        var overallAverage = GenerateSql(
+            new FunctionFieldDefinition("AverageOver", [new FieldDefinition("Amount")]),
+            dialect: new SqliteDialect());
+        Assert.That(
+            overallAverage.CommandText,
+            Does.Match(@"AVG\s*\(\s*t0\.\""Amount\""\s*\)\s+OVER\s*\(\s*\)"));
     }
 
     [Test]

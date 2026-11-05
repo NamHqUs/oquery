@@ -11,10 +11,6 @@ abstract class LambdaVisitor(TableExpression tableContext, QueryContext queryCon
 
     public TableExpression Eval(LambdaExpression lambda)
     {
-        var hasSpecialField = TableContext.ProjectionItems?.Any(e => e.Item is not FieldExpression);
-        if (hasSpecialField ?? false)
-            TableContext = new TableContextWrapperExpression(TableContext, QueryContext.GetNextAlias());
-
         foreach (var e in lambda.Parameters)
             QueryContext.Arguments.Push((e.Name!, TableContext));
 

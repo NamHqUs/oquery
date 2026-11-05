@@ -10,10 +10,10 @@ internal sealed class SqlServerFunctionDefinitionBuiltin : SqlFunctionDefinition
         base.CreateAllFunctions().Append(GetDate()).Append(Round());
 
     private SqlFunctionDefintion GetDate() =>
-        Create("GETDATE", [], DataType.Datetime, "Returns the current date and time.", "GETDATE()");
+        Create("GetDate", [], DataType.Datetime, "Returns the current date and time.", "GETDATE()");
 
     private SqlFunctionDefintion Round() =>
-        Create("ROUND", [new("value", DataType.Number), new("digits", DataType.Number)],
+        Create("Round", [new("value", DataType.Number), new("digits", DataType.Number)], 
             DataType.Number, "Rounds a number to the specified number of decimal places.",
             "ROUND({1}, {2})");
 }

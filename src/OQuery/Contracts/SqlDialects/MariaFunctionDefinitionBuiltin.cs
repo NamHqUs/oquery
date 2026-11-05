@@ -10,10 +10,10 @@ internal sealed class MariaFunctionDefinitionBuiltin : SqlFunctionDefinitionBuil
         base.CreateAllFunctions().Append(GetDate()).Append(Round());
 
     private SqlFunctionDefintion GetDate() =>
-        Create("GETDATE", [], DataType.Datetime, "Returns the current date and time.", "CURRENT_TIMESTAMP");
+        Create("GetDate", [], DataType.Datetime, "Returns the current date and time.", "CURRENT_TIMESTAMP");
 
     private SqlFunctionDefintion Round() =>
-        Create("ROUND", [new("value", DataType.Number), new("digits", DataType.Number)],
+        Create("Round", [new("value", DataType.Number), new("digits", DataType.Number)],
             DataType.Number, "Rounds a number to the specified number of decimal places.",
             "ROUND({1}, {2})");
 
@@ -52,24 +52,24 @@ internal sealed class MariaFunctionDefinitionBuiltin : SqlFunctionDefinitionBuil
         "Adds the specified number of years to a date or date-time.");
 
     protected override SqlFunctionDefintion MonthKey() =>
-        Create("MONTHKEY", [new("value", DataType.Datetime)], DataType.String,
+        Create("MonthKey", [new("value", DataType.Datetime)], DataType.String,
             "Formats a date as a year-month key.", "DATE_FORMAT({1}, '%Y-%m')");
 
     protected override SqlFunctionDefintion AgeOn() =>
-        Create("AGEON",
+        Create("AgeOn",
             [new("birthDate", DataType.Datetime), new("asOfDate", DataType.Datetime)],
             DataType.Number,
             "Returns completed years between a birth date and an as-of date.",
             "TIMESTAMPDIFF(YEAR, {1}, {2})");
 
     protected override SqlFunctionDefintion ElapsedYears() =>
-        Create("ELAPSEDYEARS",
+        Create("ElapsedYears",
             [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],
             DataType.Number, "Returns fractional years elapsed between two dates.",
             "(DATEDIFF({2}, {1}) / 365.2425)");
 
     protected override SqlFunctionDefintion Lag() =>
-        Create("LAG",
+        Create("Lag",
             [new("expression", DataType.Number), new("offset", DataType.Number), new("orderBy", DataType.String)],
             DataType.Number, "Returns the previous row's value in ascending order.",
             "LAG({1}, {2}) OVER (ORDER BY {3} ASC)");

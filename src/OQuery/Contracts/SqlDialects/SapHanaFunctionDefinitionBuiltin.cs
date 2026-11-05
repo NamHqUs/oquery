@@ -10,15 +10,15 @@ internal sealed class SapHanaFunctionDefinitionBuiltin : SqlFunctionDefinitionBu
         base.CreateAllFunctions().Append(GetDate()).Append(Round());
 
     private SqlFunctionDefintion GetDate() =>
-        Create("GETDATE", [], DataType.Datetime, "Returns the current date and time.", "CURRENT_TIMESTAMP");
+        Create("GetDate", [], DataType.Datetime, "Returns the current date and time.", "CURRENT_TIMESTAMP");
 
     private SqlFunctionDefintion Round() =>
-        Create("ROUND", [new("value", DataType.Number), new("digits", DataType.Number)],
+        Create("Round", [new("value", DataType.Number), new("digits", DataType.Number)],
             DataType.Number, "Rounds a number to the specified number of decimal places.",
         "ROUND({1}, CAST({2} AS INTEGER))");
 
     protected override SqlFunctionDefintion Concat() =>
-        Create("CONCAT",
+        Create("Concat",
             [new("first", DataType.String), new("separator", DataType.String), new("last", DataType.String)],
             DataType.String, "Concatenates three text values.", "({1} || {2} || {3})");
 
@@ -51,29 +51,29 @@ internal sealed class SapHanaFunctionDefinitionBuiltin : SqlFunctionDefinitionBu
         "Adds the specified number of years to a date or date-time.");
 
     protected override SqlFunctionDefintion MonthKey() =>
-        Create("MONTHKEY", [new("value", DataType.Datetime)], DataType.String,
+        Create("MonthKey", [new("value", DataType.Datetime)], DataType.String,
             "Formats a date as a year-month key.", "TO_VARCHAR({1}, 'YYYY-MM')");
 
     protected override SqlFunctionDefintion Coalesce() =>
-        Create("COALESCE",
+        Create("Coalesce",
             [new("value", DataType.Number), new("fallback", DataType.Number)],
             DataType.Number, "Returns the first non-null numeric value.",
             "COALESCE(CAST({1} AS DECIMAL(34, 10)), 0)");
 
     protected override SqlFunctionDefintion AgeOn() =>
-        Create("AGEON",
+        Create("AgeOn",
             [new("birthDate", DataType.Datetime), new("asOfDate", DataType.Datetime)],
             DataType.Number, "Returns completed years between a birth date and an as-of date.",
             "YEARS_BETWEEN({1}, {2})");
 
     protected override SqlFunctionDefintion ElapsedYears() =>
-        Create("ELAPSEDYEARS",
+        Create("ElapsedYears",
             [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],
             DataType.Number, "Returns fractional years elapsed between two dates.",
             "(DAYS_BETWEEN({1}, {2}) / 365.2425)");
 
     protected override SqlFunctionDefintion Lag() =>
-        Create("LAG",
+        Create("Lag",
             [new("expression", DataType.Number), new("offset", DataType.Number), new("orderBy", DataType.String)],
             DataType.Number, "Returns the previous row's value in ascending order.",
             "LAG({1}, {2}) OVER (ORDER BY {3} ASC)");

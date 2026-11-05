@@ -290,6 +290,18 @@ internal sealed class ConditionDefinitionParser
                 }
             }
 
+            if (text[index] == '(' &&
+                tokens.Count > 0 &&
+                tokens[^1].Type == TokenType.Operator &&
+                IsComparisonOperator(tokens[^1].Text) &&
+                TryFindClosingParenthesis(text, index, out var parenthesizedClosing))
+            {
+                var expression = text[index..(parenthesizedClosing + 1)];
+                tokens.Add(new Token(TokenType.FieldExpression, expression, null));
+                index = parenthesizedClosing + 1;
+                continue;
+            }
+
             if (IsIdentifierStart(text[index]))
             {
                 var identifierEnd = index + 1;
