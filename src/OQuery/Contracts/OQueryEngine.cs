@@ -53,6 +53,9 @@ public class OQueryEngine(
     public IOQuery Query(QueryDefinition queryRequest)
         => DbQueryFromQueryDto.BuildQueryable(this, queryRequest);
 
+    public IOQuery Query(QueryDefinition queryRequest, string contextName)
+        => DbQueryFromQueryDto.BuildQueryable(this, queryRequest, contextName);
+
 
     public void Dispose()
     {

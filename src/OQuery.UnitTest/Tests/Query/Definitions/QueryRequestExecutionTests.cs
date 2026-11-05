@@ -175,6 +175,29 @@ public sealed class QueryRequestExecutionTests : TestBase
     }
 
     [Test]
+    public void OQueryTextSupportsWindowProjectionBeforeItsAggregateAlias()
+    {
+        var query = _db.QueryOqr("""
+            OrderItems: ProductId, Product.Name,
+                AverageOver(TotalRevenue) Average,
+                Sum(Quantity * UnitPrice) TotalRevenue
+            WHERE TotalRevenue > Average
+            """);
+
+        var sql = query.ToSql().CommandText;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(sql, Does.Match(
+                @"(?is)AVG\s*\(\s*q0\.\""TotalRevenue\""\s*\)\s+OVER\s*\(\s*\)\s+\""Average\"""));
+            Assert.That(sql, Does.Match(
+                @"(?is)SELECT\s+q1\.\""ProductId\""[\s\S]*FROM\s+\([\s\S]*\)\s+AS\s+q1"));
+            Assert.That(sql, Does.Match(
+                @"(?is)WHERE\s+\(\s*q1\.\""TotalRevenue\""\s*>\s*q1\.\""Average\""\s*\)"));
+        });
+    }
+
+    [Test]
     public void DefinitionExecutesWithProjectionAndFilter()
     {
         var definition = new QueryDefinition("User")

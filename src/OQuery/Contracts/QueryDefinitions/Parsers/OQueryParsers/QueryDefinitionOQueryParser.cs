@@ -37,6 +37,57 @@ public static class QueryDefinitionOQueryParser
         return root;
     }
 
+    public static QueryDefinition Parse(string text, string contextName)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentException.ThrowIfNullOrWhiteSpace(contextName);
+
+        var blocks = ReadBlocks(text);
+        if (blocks.Count == 0)
+            throw new FormatException("An OQuery definition requires at least one query.");
+
+        var queries = blocks.ToDictionary(
+            block => block.Name,
+            ParseBlock,
+            StringComparer.OrdinalIgnoreCase);
+        if (!queries.TryGetValue(contextName, out var selected))
+            throw new KeyNotFoundException($"Query context [{contextName}] was not found.");
+
+        var requiredContextNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var pendingContextNames = new Queue<string>();
+        pendingContextNames.Enqueue(contextName);
+        while (pendingContextNames.Count > 0)
+        {
+            var currentName = pendingContextNames.Dequeue();
+            if (!requiredContextNames.Add(currentName) ||
+                !queries.TryGetValue(currentName, out var current))
+                continue;
+
+            if (queries.ContainsKey(current.Entity))
+                pendingContextNames.Enqueue(current.Entity);
+            foreach (var relation in current.Joins ?? [])
+            {
+                if (queries.ContainsKey(relation.RefContext))
+                    pendingContextNames.Enqueue(relation.RefContext);
+            }
+        }
+
+        var contexts = requiredContextNames
+            .Where(name => !string.Equals(name, contextName, StringComparison.OrdinalIgnoreCase))
+            .ToDictionary(name => name, name => (QueryDefinitionBase)queries[name], StringComparer.OrdinalIgnoreCase);
+
+        return new QueryDefinition(selected.Entity)
+        {
+            Projections = selected.Projections,
+            Filter = selected.Filter,
+            Sorts = selected.Sorts,
+            Take = selected.Take,
+            Skip = selected.Skip,
+            Joins = selected.Joins,
+            Contexts = contexts,
+        };
+    }
+
     private static void AddImplicitRecursiveContext(QueryDefinition root, string rootName)
     {
         var relation = root.Joins?.FirstOrDefault(candidate =>

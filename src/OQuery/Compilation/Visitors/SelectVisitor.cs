@@ -22,12 +22,7 @@ class SelectVisitor(TableExpression tableContext, QueryContext queryContext)
     {
         if (body is ConstantExpression @const && @const.Value is Dictionary<string, object?> dataRecord)
         {
-            var selectedFields = new List<ProjectionItem>();
-            foreach (var projection in BuildProjection(TableContext, dataRecord))
-            {
-                selectedFields.Add(projection);
-                TableContext.ProjectionItems = selectedFields.ToArray();
-            }
+            TableContext.ProjectionItems = BuildProjection(TableContext, dataRecord).ToArray();
         }
     }
 
@@ -82,6 +77,19 @@ class SelectVisitor(TableExpression tableContext, QueryContext queryContext)
     private IEnumerable<ProjectionItem> BuildProjection(
         TableExpression tableContext, IDictionary<string, object?> memebers, string? parentKey = null)
     {
+        if (parentKey is null)
+        {
+            tableContext.ProjectionItems = memebers
+                .Where(e => e.Value is not IDictionary<string, object?>)
+                .Where(e => !e.Key.Contains('.', StringComparison.Ordinal))
+                .Where(e => !QueryContext.GetFields(tableContext)
+                    .Any(field => string.Equals(field.Name, e.Key, StringComparison.OrdinalIgnoreCase)))
+                .Select(e => new ProjectionItem(
+                    new ValueExpression(null, typeof(QueryValue)),
+                    e.Key))
+                .ToArray();
+        }
+
         foreach (var e in memebers)
             if (e.Value is IDictionary<string, object?> subMembers)
                 foreach (var projection in BuildProjection(tableContext, subMembers, e.Key))

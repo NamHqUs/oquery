@@ -12,10 +12,28 @@ internal static class DbQueryFromQueryDto
         => BuildQueryable(context, QueryDefinitionOQueryParser.Parse(oqr));
 
     public static IOQuery BuildQueryable(OQueryEngine context, string oqr, string contextName)
+        => BuildQueryable(context, QueryDefinitionOQueryParser.Parse(oqr, contextName));
+
+    public static IOQuery BuildQueryable(
+        OQueryEngine context,
+        QueryDefinition definition,
+        string contextName)
     {
-        var definition = QueryDefinitionOQueryParser.Parse(oqr);
-        if (definition.Contexts?.TryGetValue(contextName, out var selected) != true)
+        ArgumentNullException.ThrowIfNull(definition);
+        ArgumentException.ThrowIfNullOrWhiteSpace(contextName);
+
+        if (string.Equals(definition.Entity, contextName, StringComparison.OrdinalIgnoreCase))
+            return BuildQueryable(context, definition);
+
+        if (definition.Contexts is not { } availableContexts ||
+            !availableContexts.TryGetValue(contextName, out var selected))
             throw new KeyNotFoundException($"Query context [{contextName}] was not found.");
+
+        var contexts = availableContexts
+            .Where(pair => !string.Equals(pair.Key, contextName, StringComparison.OrdinalIgnoreCase))
+            .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
+        if (!contexts.ContainsKey(definition.Entity))
+            contexts[definition.Entity] = definition;
 
         return BuildQueryable(context, new QueryDefinition(selected.Entity)
         {
@@ -25,7 +43,7 @@ internal static class DbQueryFromQueryDto
             Take = selected.Take,
             Skip = selected.Skip,
             Joins = selected.Joins,
-            Contexts = definition.Contexts,
+            Contexts = contexts,
         });
     }
     public static IOQuery BuildQueryable(OQueryEngine context, QueryDefinition definition)

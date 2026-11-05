@@ -390,6 +390,17 @@ User: Name, Manager.Name Manager-Name
 """).ToList();
 ```
 
+For definitions containing multiple named contexts, use the overload with an
+explicit entry-point context when the query should execute a context other
+than the implicit root:
+
+```csharp
+var rows = db.QueryOqr(oqr, "ProductSalesWithAverage").ToList();
+```
+
+The engine keeps the flat context dictionary available for dependency
+resolution and compiles only the selected context and its dependencies.
+
 Supported properties:
 
 - `entity`: metadata entity name.
