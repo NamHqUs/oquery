@@ -156,6 +156,30 @@ ProductMaximum is ProductSales:
 
 Declare dependent contexts in dependency order.
 
+When a UI executes one context from a complete document, the selected context
+may be written a second time to define its final projection and filter:
+
+```text
+ProductSales is OrderItems:
+    ProductId,
+    SUM(Quantity * UnitPrice) Revenue
+
+ProductSalesWithAverage is ProductSales:
+    *,
+    AverageOver(Revenue) AverageRevenue
+
+ProductSalesWithAverage:
+    *
+  WHERE Revenue > AverageRevenue
+```
+
+The second `ProductSalesWithAverage:` block is the selected outer query. The
+earlier `ProductSalesWithAverage is ProductSales:` block remains its reusable
+context definition. A `*` projection inherits all projections from the source
+context, so dependent contexts only need to add their new expressions. The
+parser accepts this repeated name only when the earlier block declares a
+source context; conflicting source declarations are rejected.
+
 ## 6. Joining contexts
 
 Join a context from the query that consumes it:

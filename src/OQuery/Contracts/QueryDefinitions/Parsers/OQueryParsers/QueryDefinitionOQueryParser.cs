@@ -10,13 +10,20 @@ public static class QueryDefinitionOQueryParser
         if (blocks.Count == 0)
             throw new FormatException("An OQuery definition requires at least one query.");
 
+        blocks = NormalizeBlocks(blocks);
         var queries = blocks.ToDictionary(
             block => block.Name,
-            ParseBlock,
+            block => ExpandBlock(block, blocks, []),
             StringComparer.OrdinalIgnoreCase);
+        var blockNames = blocks
+            .Select(block => block.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var referencedContexts = queries.Values
             .SelectMany(query => query.Joins ?? [])
             .Select(relation => relation.RefContext)
+            .Concat(blocks
+                .Select(block => block.Entity)
+                .Where(blockNames.Contains))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var rootBlock = blocks.FirstOrDefault(block => !referencedContexts.Contains(block.Name))
             ?? blocks[0];
@@ -27,7 +34,11 @@ public static class QueryDefinitionOQueryParser
         foreach (var block in blocks)
         {
             if (ReferenceEquals(block, rootBlock))
+            {
+                if (block.BaseDefinition is not null)
+                    contexts[block.Name] = ExpandBlock(block.BaseDefinition, blocks, []);
                 continue;
+            }
             if (!contexts.TryAdd(block.Name, queries[block.Name]))
                 throw new FormatException($"The query context [{block.Name}] is defined more than once.");
         }
@@ -46,16 +57,24 @@ public static class QueryDefinitionOQueryParser
         if (blocks.Count == 0)
             throw new FormatException("An OQuery definition requires at least one query.");
 
+        blocks = NormalizeBlocks(blocks);
         var queries = blocks.ToDictionary(
             block => block.Name,
-            ParseBlock,
+            block => ExpandBlock(block, blocks, []),
             StringComparer.OrdinalIgnoreCase);
         if (!queries.TryGetValue(contextName, out var selected))
             throw new KeyNotFoundException($"Query context [{contextName}] was not found.");
+        var selectedBlock = blocks.First(block =>
+            string.Equals(block.Name, contextName, StringComparison.OrdinalIgnoreCase));
 
         var requiredContextNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var pendingContextNames = new Queue<string>();
         pendingContextNames.Enqueue(contextName);
+        if (selectedBlock.BaseDefinition is not null &&
+            queries.ContainsKey(selectedBlock.BaseDefinition.Entity))
+        {
+            pendingContextNames.Enqueue(selectedBlock.BaseDefinition.Entity);
+        }
         while (pendingContextNames.Count > 0)
         {
             var currentName = pendingContextNames.Dequeue();
@@ -72,9 +91,16 @@ public static class QueryDefinitionOQueryParser
             }
         }
 
-        var contexts = requiredContextNames
-            .Where(name => !string.Equals(name, contextName, StringComparison.OrdinalIgnoreCase))
-            .ToDictionary(name => name, name => (QueryDefinitionBase)queries[name], StringComparer.OrdinalIgnoreCase);
+        var contexts = blocks
+            .Where(block =>
+                requiredContextNames.Contains(block.Name) &&
+                !string.Equals(block.Name, contextName, StringComparison.OrdinalIgnoreCase))
+            .ToDictionary(
+                block => block.Name,
+                block => (QueryDefinitionBase)queries[block.Name],
+                StringComparer.OrdinalIgnoreCase);
+        if (selectedBlock.BaseDefinition is not null)
+            contexts[selectedBlock.Name] = ExpandBlock(selectedBlock.BaseDefinition, blocks, []);
 
         return new QueryDefinition(selected.Entity)
         {
@@ -308,6 +334,86 @@ public static class QueryDefinitionOQueryParser
         return blocks;
     }
 
+    private static List<QueryBlock> NormalizeBlocks(IReadOnlyList<QueryBlock> blocks)
+    {
+        var normalized = new List<QueryBlock>(blocks.Count);
+        foreach (var group in blocks.GroupBy(block => block.Name, StringComparer.OrdinalIgnoreCase))
+        {
+            if (group.Count() == 1)
+            {
+                normalized.Add(group.Single());
+                continue;
+            }
+
+            var candidates = group.ToArray();
+            var declaredSource = candidates
+                .FirstOrDefault(block => !string.Equals(
+                    block.Name,
+                    block.Entity,
+                    StringComparison.OrdinalIgnoreCase));
+            var selected = candidates[^1];
+            if (declaredSource is null)
+                throw new FormatException($"The query context [{selected.Name}] is defined more than once.");
+
+            if (candidates.Any(block =>
+                !string.Equals(block.Entity, block.Name, StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(block.Entity, declaredSource.Entity, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new FormatException(
+                    $"The query context [{selected.Name}] is defined with conflicting source entities.");
+            }
+
+            if (string.Equals(selected.Entity, selected.Name, StringComparison.OrdinalIgnoreCase))
+                selected.BaseDefinition = declaredSource;
+            normalized.Add(selected);
+        }
+
+        return normalized;
+    }
+
+    private static QueryDefinition ExpandBlock(
+        QueryBlock block,
+        IReadOnlyList<QueryBlock> blocks,
+        HashSet<QueryBlock> expansionStack)
+    {
+        var definition = ParseBlock(block);
+        var wildcard = definition.Projections?.FirstOrDefault(IsWildcardProjection);
+        if (wildcard is null)
+            return definition;
+
+        if (!expansionStack.Add(block))
+            throw new FormatException($"Cyclic wildcard projection inheritance includes [{block.Name}].");
+
+        var sourceBlock = block.BaseDefinition ??
+            blocks.FirstOrDefault(candidate =>
+                string.Equals(candidate.Name, block.Entity, StringComparison.OrdinalIgnoreCase));
+        if (sourceBlock is null)
+            throw new FormatException(
+                $"Wildcard projection in [{block.Name}] requires a declared source context.");
+
+        var source = ExpandBlock(sourceBlock, blocks, expansionStack);
+        expansionStack.Remove(block);
+
+        var inheritedProjections = (source.Projections ?? [])
+            .Select(projection => new ProjectionDefinition(
+                new FieldDefinition(projection.Alias ?? projection.Field.ToText())));
+        var projections = inheritedProjections
+            .Concat(definition.Projections!.Where(projection => !ReferenceEquals(projection, wildcard)))
+            .ToList();
+        return new QueryDefinition(definition.Entity)
+        {
+            Projections = projections,
+            Filter = definition.Filter,
+            Sorts = definition.Sorts,
+            Take = definition.Take,
+            Skip = definition.Skip,
+            Joins = definition.Joins,
+        };
+    }
+
+    private static bool IsWildcardProjection(ProjectionDefinition projection)
+        => projection.Field is FieldDefinition { FieldName: "*" };
+
     private static string StripComment(string line)
     {
         var quote = '\0';
@@ -429,6 +535,7 @@ public static class QueryDefinitionOQueryParser
         public string Entity { get; } = entity;
         public string Projection { get; set; } = projection;
         public List<QueryClause> Clauses { get; } = [];
+        public QueryBlock? BaseDefinition { get; set; }
     }
 
     private sealed class QueryClause(string name, string value)

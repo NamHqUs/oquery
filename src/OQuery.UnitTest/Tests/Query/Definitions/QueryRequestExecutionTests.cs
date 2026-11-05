@@ -198,6 +198,112 @@ public sealed class QueryRequestExecutionTests : TestBase
     }
 
     [Test]
+    public void QueryOqrCanSelectAFilteredDependentContext()
+    {
+        var query = _db.QueryOqr("""
+            Report is Products: Id
+            ProductSales is OrderItems:
+                ProductId,
+                SUM(Quantity * UnitPrice) Revenue
+            ProductSalesWithAverage is ProductSales:
+                ProductId,
+                Revenue,
+                AverageOver(Revenue) AverageRevenue
+              WHERE Revenue > AverageRevenue
+            """, "ProductSalesWithAverage");
+
+        var sql = query.ToSql().CommandText;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(sql, Does.Contain("ProductSales"));
+            Assert.That(sql, Does.Match(
+                @"(?is)AVG\s*\(\s*q0\.\""Revenue\""\s*\)\s+OVER\s*\(\s*\)\s+\""AverageRevenue\"""));
+            Assert.That(sql, Does.Match(
+                @"(?is)WHERE\s+\(\s*q0\.\""Revenue\""\s*>\s*q0\.\""AverageRevenue\""\s*\)"));
+        });
+    }
+
+    [Test]
+    public void QueryOqrAcceptsRepeatedContextForSelectedProjection()
+    {
+        const string text = """
+            ProductSales is OrderItems:
+                ProductId,
+                SUM(Quantity * UnitPrice) Revenue
+            ProductSalesWithAverage is ProductSales:
+                ProductId,
+                Revenue,
+                AverageOver(Revenue) AverageRevenue
+            ProductSalesWithAverage:
+                ProductId,
+                Revenue,
+                AverageRevenue
+              WHERE Revenue > AverageRevenue
+            """;
+
+        var selectedQuery = _db.QueryOqr(text, "ProductSalesWithAverage");
+        var rootQuery = _db.QueryOqr(text);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(selectedQuery.ToSql().CommandText, Does.Contain("ProductSales"));
+            Assert.That(rootQuery.ToSql().CommandText, Does.Contain("ProductSales"));
+        });
+    }
+
+    [Test]
+    public void QueryOqrSelectsAnExplicitDependentRootContext()
+    {
+        var query = _db.QueryOqr("""
+            ProductSales is OrderItems:
+                ProductId,
+                SUM(Quantity * UnitPrice) Revenue
+            ProductSalesWithAverage is ProductSales:
+                ProductId,
+                Revenue,
+                AverageOver(Revenue) AverageRevenue
+            Main is ProductSalesWithAverage:
+                ProductId,
+                Revenue,
+                AverageRevenue
+              WHERE Revenue > AverageRevenue
+            """);
+
+        var sql = query.ToSql().CommandText;
+
+        Assert.That(sql, Does.Match(
+            @"(?is)WHERE\s+\(\s*q0\.\""Revenue\""\s*>\s*q0\.\""AverageRevenue\""\s*\)"));
+    }
+
+    [Test]
+    public void QueryOqrExpandsWildcardProjectionForDependentContext()
+    {
+        var query = _db.QueryOqr("""
+            ProductSales is OrderItems:
+                ProductId,
+                SUM(Quantity * UnitPrice) Revenue
+            ProductSalesWithAverage is ProductSales:
+                *,
+                AverageOver(Revenue) AverageRevenue
+            ProductSalesWithAverage:
+                *
+              WHERE Revenue > AverageRevenue
+            """, "ProductSalesWithAverage");
+
+        var sql = query.ToSql().CommandText;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(sql, Does.Contain("\"ProductId\""));
+            Assert.That(sql, Does.Contain("\"Revenue\""));
+            Assert.That(sql, Does.Contain("\"AverageRevenue\""));
+            Assert.That(sql, Does.Match(
+                @"(?is)WHERE\s+\(\s*q0\.\""Revenue\""\s*>\s*q0\.\""AverageRevenue\""\s*\)"));
+        });
+    }
+
+    [Test]
     public void DefinitionExecutesWithProjectionAndFilter()
     {
         var definition = new QueryDefinition("User")
