@@ -323,6 +323,12 @@ internal static class FieldDefinitionParser
         }
         else if (text[index] is '=' or '>' or '<')
         {
+            if (text[index] == '<' &&
+                index + 1 < text.Length &&
+                char.IsWhiteSpace(text[index + 1]))
+            {
+                return false;
+            }
             if (index + 1 < text.Length && text[index + 1] == '=')
             {
                 operatorLength = 2;

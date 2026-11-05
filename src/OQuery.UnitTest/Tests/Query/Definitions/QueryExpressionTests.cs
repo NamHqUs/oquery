@@ -117,6 +117,27 @@ public sealed class QueryExpressionTests
     }
 
     [Test]
+    public void StringAdditiveGroupUsesStringConcatenation()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        using var db = new OQueryEngine(connection, Metadata);
+        var definition = new QueryDefinition("Products")
+        {
+            Projections =
+            [
+                new ProjectionDefinition(
+                    new GroupFieldDefintion(
+                        QueryDefinitionJsonParser.ParseExpression("Name + < > + Name")),
+                    "FullName")
+            ]
+        };
+
+        var sql = db.Query(definition).ToSql();
+
+        Assert.That(sql.CommandText, Does.Contain("||"));
+    }
+
+    [Test]
     public void MultiplicationRetainsPrecedenceInsideAdditiveGroup()
     {
         using var connection = new SqliteConnection("Data Source=:memory:");

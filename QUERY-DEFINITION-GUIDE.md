@@ -107,6 +107,13 @@ Separate the expression and result alias with whitespace:
 Users: Id, Manager.Name ManagerName, Count(Members.Id) MemberCount
 ```
 
+The explicit `as` form is also accepted when an unambiguous alias marker is
+preferred, especially for generated OQuery:
+
+```text
+Users: Id, Manager.Name as ManagerName, Count(Members.Id) as MemberCount
+```
+
 ### Joins and aliases
 
 Explicit joins belong to the query that consumes the context:

@@ -10,6 +10,24 @@ internal static class DbQueryFromQueryDto
 {
     public static IOQuery BuildQueryable(OQueryEngine context, string oqr)
         => BuildQueryable(context, QueryDefinitionOQueryParser.Parse(oqr));
+
+    public static IOQuery BuildQueryable(OQueryEngine context, string oqr, string contextName)
+    {
+        var definition = QueryDefinitionOQueryParser.Parse(oqr);
+        if (definition.Contexts?.TryGetValue(contextName, out var selected) != true)
+            throw new KeyNotFoundException($"Query context [{contextName}] was not found.");
+
+        return BuildQueryable(context, new QueryDefinition(selected.Entity)
+        {
+            Projections = selected.Projections,
+            Filter = selected.Filter,
+            Sorts = selected.Sorts,
+            Take = selected.Take,
+            Skip = selected.Skip,
+            Joins = selected.Joins,
+            Contexts = definition.Contexts,
+        });
+    }
     public static IOQuery BuildQueryable(OQueryEngine context, QueryDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(context);

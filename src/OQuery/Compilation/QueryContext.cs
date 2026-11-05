@@ -160,11 +160,14 @@ class QueryContext(
             var right = values.Pop();
             var left = values.Pop();
             var currentOperation = operations.Pop();
+            var stringConcat = currentOperation == MatchOperation.Add
+                && (left.Type == typeof(string) || right.Type == typeof(string));
             values.Push(new BinarySqlExpression(
                 left,
                 currentOperation.ToSymbol(),
                 right,
-                typeof(decimal)));
+                stringConcat ? typeof(string) : typeof(decimal),
+                stringConcat));
         }
     }
 

@@ -27,19 +27,31 @@ internal class ProjectionDefinitionParser
         text = text.Trim();
         var fieldText = text;
         string? alias = null;
-        var pipeIndex = text.IndexOf('|');
-        if (pipeIndex >= 0)
+        var asAlias = System.Text.RegularExpressions.Regex.Match(
+            text,
+            @"^(?<field>.+?)\s+as\s+(?<alias>[A-Za-z_][A-Za-z0-9_]*)$",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (asAlias.Success)
         {
-            fieldText = text[..pipeIndex].Trim();
-            alias = text[(pipeIndex + 1)..].Trim();
+            fieldText = asAlias.Groups["field"].Value.TrimEnd();
+            alias = asAlias.Groups["alias"].Value;
         }
-        else
+        if (!asAlias.Success)
         {
-            var aliasStart = FindAliasStart(text);
-            if (aliasStart >= 0)
+            var pipeIndex = text.IndexOf('|');
+            if (pipeIndex >= 0)
             {
-                fieldText = text[..aliasStart].TrimEnd();
-                alias = text[(aliasStart + 1)..].Trim();
+                fieldText = text[..pipeIndex].Trim();
+                alias = text[(pipeIndex + 1)..].Trim();
+            }
+            else
+            {
+                var aliasStart = FindAliasStart(text);
+                if (aliasStart >= 0)
+                {
+                    fieldText = text[..aliasStart].TrimEnd();
+                    alias = text[(aliasStart + 1)..].Trim();
+                }
             }
         }
         if (fieldText.Length == 0)

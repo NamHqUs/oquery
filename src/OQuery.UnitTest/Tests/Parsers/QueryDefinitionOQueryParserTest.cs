@@ -54,6 +54,28 @@ internal class QueryDefinitionOQueryParserTest : TestBase
     }
 
     [Test]
+    public void ParseProjectionAliasWithAsKeyword()
+    {
+        var query = QueryDefinitionOQueryParser.Parse("User: Name as myname");
+        var projection = query.Projections!.Single();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(projection.Field.ToText(), Is.EqualTo("Name"));
+            Assert.That(projection.Alias, Is.EqualTo("myname"));
+        });
+    }
+
+    [Test]
+    public void ParseConcatenatedProjectionWithAsAlias()
+    {
+        var query = QueryDefinitionOQueryParser.Parse(
+            "Orders: Id, OrderDate, User.FirstName + < > + User.LastName as Fullname");
+
+        Assert.That(query.Projections!.Last().Alias, Is.EqualTo("Fullname"));
+    }
+
+    [Test]
     public void ParseContexts()
     {
         var oqurey = """

@@ -192,7 +192,7 @@ public static class QueryDefinitionOQueryParser
         QueryBlock? current = null;
         foreach (var rawLine in text.Split(["\r\n", "\n"], StringSplitOptions.None))
         {
-            var line = rawLine.Trim();
+            var line = StripComment(rawLine).Trim();
             if (line.Length == 0 || line.StartsWith('#'))
                 continue;
 
@@ -253,6 +253,26 @@ public static class QueryDefinitionOQueryParser
         }
 
         return blocks;
+    }
+
+    private static string StripComment(string line)
+    {
+        var quote = '\0';
+        for (var index = 0; index < line.Length; index++)
+        {
+            var character = line[index];
+            if (quote != '\0')
+            {
+                if (character == quote && (index == 0 || line[index - 1] != '\\'))
+                    quote = '\0';
+                continue;
+            }
+            if (character is '\'' or '"')
+                quote = character;
+            else if (character == '#')
+                return line[..index];
+        }
+        return line;
     }
 
     private static int ParsePositiveInt(string value, string name)
