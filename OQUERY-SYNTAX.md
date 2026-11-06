@@ -66,6 +66,9 @@ An entity-only query selects the metadata fields:
 Products
 ```
 
+The select-all and source-context wildcard semantics are defined centrally in
+[OQUERY-ENGINE.md](./OQUERY-ENGINE.md).
+
 Projection aliases use either whitespace or `as`:
 
 ```text
@@ -86,9 +89,11 @@ Products: Id, Category.Name CategoryName
     UnitPrice
 ```
 
-Each projection item is separated from the next item by either a comma or a
-line break. A line break therefore starts the next projection item even when
-the previous item has no trailing comma.
+Each projection item is separated from the next item by either a top-level
+comma or a top-level line break. A line break therefore starts the next
+projection item even when the previous item has no trailing comma. Line breaks
+inside parentheses, brackets, or angle-bracket values remain part of the
+current expression.
 
 The projection paragraph ends when a clause keyword begins:
 

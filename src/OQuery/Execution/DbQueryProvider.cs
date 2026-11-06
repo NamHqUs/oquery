@@ -52,7 +52,17 @@ class DbQueryProvider(
         return new DbReader(cmd.ExecuteReader(), compiled.ProjectionItems);
     }
 
-    public (List<Dictionary<string, object?>> Records, long TotalRecords) ExecuteWithTotalRecords(Expression expression)
+    public (List<Dictionary<string, object?>> Records, long TotalRecords) ExecuteWithTotalRecords(
+        Expression expression)
+    {
+        var result = ExecuteWithTotalRecordsAndColumns(expression);
+        return (result.Records, result.TotalRecords);
+    }
+
+    public (
+        List<Dictionary<string, object?>> Records,
+        string[] Columns,
+        long TotalRecords) ExecuteWithTotalRecordsAndColumns(Expression expression)
     {
         var compiled = Translate(expression, includeTotalRecords: true);
         var records = new List<Dictionary<string, object?>>(Execute(compiled));
@@ -61,10 +71,24 @@ class DbQueryProvider(
 
         using var cmd = CreateDbCommand(commandText, compiled.Parameters);
         var value = cmd.ExecuteScalar();
-        return (records, ConvertTotalRecords(value));
+        return (
+            records,
+            compiled.ProjectionItems.Select(item => item.Alias).ToArray(),
+            ConvertTotalRecords(value));
     }
 
     public async Task<(List<Dictionary<string, object?>> Records, long TotalRecords)> ExecuteWithTotalRecordsAsync(
+        Expression expression,
+        CancellationToken cancellationToken)
+    {
+        var result = await ExecuteWithTotalRecordsAndColumnsAsync(expression, cancellationToken);
+        return (result.Records, result.TotalRecords);
+    }
+
+    public async Task<(
+        List<Dictionary<string, object?>> Records,
+        string[] Columns,
+        long TotalRecords)> ExecuteWithTotalRecordsAndColumnsAsync(
         Expression expression,
         CancellationToken cancellationToken)
     {
@@ -74,7 +98,10 @@ class DbQueryProvider(
             ?? throw new InvalidOperationException("The total-record SQL was not generated.");
         var value = await ExecuteScalarAsync(compiled, commandText, cancellationToken);
 
-        return (records, ConvertTotalRecords(value));
+        return (
+            records,
+            compiled.ProjectionItems.Select(item => item.Alias).ToArray(),
+            ConvertTotalRecords(value));
     }
 
     public object? ExecuteScalar(Expression expression)

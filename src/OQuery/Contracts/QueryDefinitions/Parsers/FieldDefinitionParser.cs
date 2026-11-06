@@ -366,7 +366,7 @@ internal static class FieldDefinitionParser
             char.IsWhiteSpace(text[index + operatorLength]);
     }
 
-    internal static List<string> SplitTopLevel(string text, char delimiter)
+    internal static List<string> SplitTopLevel(string text, params char[] delimiters)
     {
         var parts = new List<string>();
         var start = 0;
@@ -401,7 +401,7 @@ internal static class FieldDefinitionParser
                     break;
             }
 
-            if (text[i] == delimiter && parentheses == 0 && brackets == 0 && constraints == 0)
+            if (delimiters.Contains(text[i]) && parentheses == 0 && brackets == 0 && constraints == 0)
             {
                 parts.Add(text[start..i].Trim());
                 start = i + 1;

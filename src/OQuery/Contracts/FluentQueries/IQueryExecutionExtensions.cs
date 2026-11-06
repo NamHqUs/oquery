@@ -25,7 +25,8 @@ public static partial class FluentQueryExtensions
         where T : new()
         => [.. source.ToList().Select(Execution.StrongTypeMaterializer.Materialize<T>)];
 
-    public static (List<Dictionary<string, object?>> Records, long TotalRecords) ToListWithTotalRecords(this IOQuery source)
+    public static (List<Dictionary<string, object?>> Records, long TotalRecords) ToListWithTotalRecords(
+        this IOQuery source)
         =>  GetTotalRecordsProvider(source.Provider).ExecuteWithTotalRecords(source.Expression);
 
     public static (List<T> Records, long TotalRecords) ToListWithTotalRecords<T>(this IOQuery source)
@@ -56,6 +57,15 @@ public static partial class FluentQueryExtensions
         CancellationToken cancellationToken = default)
         => GetTotalRecordsProvider(source.Provider)
             .ExecuteWithTotalRecordsAsync(source.Expression, cancellationToken);
+
+    public static Task<(
+        List<Dictionary<string, object?>> Records,
+        string[] Columns,
+        long TotalRecords)> ToListWithTotalRecordsAndColumnsAsync(
+        this IOQuery source,
+        CancellationToken cancellationToken = default)
+        => GetTotalRecordsProvider(source.Provider)
+            .ExecuteWithTotalRecordsAndColumnsAsync(source.Expression, cancellationToken);
 
     public static async Task<(List<T> Records, long TotalRecords)> ToListWithTotalRecordsAsync<T>(
         this IOQuery source,

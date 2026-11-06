@@ -9,6 +9,9 @@ regression test before changing the rule.
 Authoring syntax belongs in [OQUERY-SYNTAX.md](./OQUERY-SYNTAX.md). This
 document intentionally does not repeat syntax examples.
 
+All semantic rules have one owner: this document. The other OQuery documents
+define their own representation and must refer here for execution meaning.
+
 ## 1. Execution pipeline
 
 The engine processes a query through these stages:
@@ -65,6 +68,12 @@ that are available in its compilation scope. The compiler must reject:
 context aliases and declaration order, creating CTE table expressions, and
 building context joins.
 
+When a user executes one context from a complete OQuery document, the engine
+must compile only the selected context and its transitive named dependencies.
+Unrelated blocks are not part of that execution graph and must not prevent the
+selected context from running. A malformed selected block or a malformed
+dependency remains an execution error.
+
 ## 4. Projection alias scope
 
 All projection aliases declared in one context belong to one symbol scope.
@@ -87,6 +96,14 @@ forward alias declaration. It must continue to resolve as the source field.
 resolves an alias before falling back to metadata field lookup. The alias
 scope must also be available when a function argument references an alias
 declared later in the projection list.
+
+An empty projection is a select-all request for the current source. A
+projection wildcard inherits the complete projection of the source context,
+not only the source entity metadata. Explicit projection items after the
+wildcard are appended to the inherited fields.
+
+This rule is authoritative for OQuery text, `QueryDefinition` JSON, and
+compiler behavior. Do not copy or redefine it in another document.
 
 ## 5. Projection dependency layers
 
@@ -192,4 +209,3 @@ cover the same semantic path.
 | SQL dependency layers and SQL rendering | `SqlStatementGenerator` |
 | Metadata field and entity resolution | `MetadataProvider` and `Entity` |
 | Query execution | `DbQueryProvider` |
-

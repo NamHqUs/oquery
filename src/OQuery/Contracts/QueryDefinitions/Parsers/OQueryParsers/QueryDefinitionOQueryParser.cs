@@ -37,6 +37,64 @@ public static class QueryDefinitionOQueryParser
         return root;
     }
 
+    public static QueryDefinition Parse(string text, string contextName)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentException.ThrowIfNullOrWhiteSpace(contextName);
+
+        var blocks = ReadBlocks(text);
+        var blocksByName = blocks.ToDictionary(
+            block => block.Name,
+            StringComparer.OrdinalIgnoreCase);
+        if (!blocksByName.TryGetValue(contextName, out var selectedBlock))
+            throw new KeyNotFoundException($"The OQuery context [{contextName}] was not found.");
+
+        var dependencies = new Dictionary<string, QueryDefinitionBase>(
+            StringComparer.OrdinalIgnoreCase);
+        AddDependencies(selectedBlock);
+        var selected = ParseBlock(selectedBlock);
+        return new QueryDefinition(selected.Entity)
+        {
+            Projections = selected.Projections,
+            Filter = selected.Filter,
+            Sorts = selected.Sorts,
+            Take = selected.Take,
+            Skip = selected.Skip,
+            Joins = selected.Joins,
+            Contexts = dependencies
+        };
+
+        void AddDependencies(QueryBlock block)
+        {
+            if (block.Clauses.Any(clause => clause.Name == "join"))
+            {
+                foreach (var clause in block.Clauses.Where(clause => clause.Name == "join"))
+                {
+                    var relation = ParseJoin(clause.Value);
+                    if (blocksByName.TryGetValue(relation.RefContext, out var relationBlock)
+                        && IsNamedContext(relationBlock))
+                        AddDependency(relationBlock);
+                }
+            }
+
+            if (blocksByName.TryGetValue(block.Entity, out var sourceBlock)
+                && IsNamedContext(sourceBlock))
+                AddDependency(sourceBlock);
+        }
+
+        void AddDependency(QueryBlock block)
+        {
+            if (dependencies.ContainsKey(block.Name))
+                return;
+            var definition = ParseBlock(block);
+            dependencies.Add(block.Name, definition);
+            AddDependencies(block);
+        }
+
+        static bool IsNamedContext(QueryBlock block)
+            => !string.Equals(block.Name, block.Entity, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static void AddImplicitRecursiveContext(QueryDefinition root, string rootName)
     {
         var relation = root.Joins?.FirstOrDefault(candidate =>
@@ -232,7 +290,7 @@ public static class QueryDefinitionOQueryParser
                 if (current.Clauses.Count > 0)
                     current.Clauses[^1].Value = $"{current.Clauses[^1].Value} {line}".Trim();
                 else
-                    current.Projection = $"{current.Projection} {line}".Trim();
+                    current.Projection = $"{current.Projection}\n{line}".Trim();
                 continue;
             }
             var typedJoin = System.Text.RegularExpressions.Regex.Match(

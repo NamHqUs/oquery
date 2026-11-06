@@ -38,7 +38,7 @@ public record QueryDefinition : QueryDefinitionBase
     public string ToText()
     {
         var sb = new StringBuilder();
-        sb.Append($"Entity: {Entity} ")
+        sb.AppendLine($"Entity: {Entity} ")
         .AppendLine($"Projections: {string.Join(", ", Projections?.Select(p => p.ToText()) ?? [])}")
         .AppendLine($"Filter: {Filter?.ToText() ?? "null"}")
         .AppendLine($"Sorts: {string.Join(", ", Sorts?.Select(s => s.ToText()) ?? [])}")

@@ -5,9 +5,8 @@ This document defines the current canonical JSON contract for
 syntax or compiler internals.
 
 - Use [OQUERY-SYNTAX.md](./OQUERY-SYNTAX.md) for OQuery text.
-- Use [QUERY-DEFINITION-GUIDE.md](./QUERY-DEFINITION-GUIDE.md) for semantic
-  modeling.
-- Use [OQUERY-ENGINE.md](./OQUERY-ENGINE.md) for execution invariants.
+- Use [OQUERY-ENGINE.md](./OQUERY-ENGINE.md) for semantic modeling and
+  execution invariants.
 
 The model types are defined under
 [`src/OQuery/Contracts/QueryDefinitions`](./src/OQuery/Contracts/QueryDefinitions).
@@ -52,6 +51,10 @@ Properties:
 `take`, `skip`, and `relations`. Only the top-level `QueryDefinition` owns
 `contexts`.
 
+The execution meaning of an empty `projection` and the `*` field is defined
+centrally in [OQUERY-ENGINE.md](./OQUERY-ENGINE.md). This document only
+defines how those values are represented in JSON.
+
 ## 2. Projection definitions
 
 A projection contains a `field` node and an optional `alias`:
@@ -89,6 +92,10 @@ requested projection order.
 
 `field` contains a logical field or relation path. Physical schema names do
 not belong in this property.
+
+The special field path `*` is serialized as a normal field node. Its execution
+semantics are defined in [OQUERY-ENGINE.md](./OQUERY-ENGINE.md), not by the
+JSON serializer.
 
 ### Value
 

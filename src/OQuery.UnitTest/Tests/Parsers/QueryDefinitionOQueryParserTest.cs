@@ -54,6 +54,23 @@ internal class QueryDefinitionOQueryParserTest : TestBase
     }
 
     [Test]
+    public void ParseProjectionItemsSeparatedByIndentedLines()
+    {
+        var query = QueryDefinitionOQueryParser.Parse("""
+            User: Id, Name
+                Manager.Name
+                Sum(Id)
+            """);
+
+        Assert.That(query.Projections!.Select(projection => projection.ToText()).ToArray(), Is.EqualTo([
+            "Id",
+            "Name",
+            "Manager.Name",
+            "Sum(Id)"
+        ]));
+    }
+
+    [Test]
     public void ParseProjectionAliasWithAsKeyword()
     {
         var query = QueryDefinitionOQueryParser.Parse("User: Name as myname");
@@ -122,6 +139,40 @@ internal class QueryDefinitionOQueryParserTest : TestBase
             Assert.That(ref2.Joins[0].JoinType, Is.EqualTo(QueryJoinType.Inner));
             Assert.That(ref2.Joins[0].Condition!.ToText(), Is.EqualTo("ManagerId = Ref1.Id"));
         });
+    }
+
+    [Test]
+    public void ParseSelectedContextIgnoresUnrelatedInvalidBlocks()
+    {
+        var oquery = """
+            Products:
+
+            ref1 is Products:
+
+            ref2 is Products: Count(Id)asfsdfs
+            """;
+
+        var query = QueryDefinitionOQueryParser.Parse(oquery, "Products");
+
+        Assert.That(query.Entity, Is.EqualTo("Products"));
+        Assert.That(query.Contexts, Is.Empty);
+        Assert.That(query.Projections, Is.Empty);
+    }
+
+    [Test]
+    public void ParseSelectedContextIncludesNamedDependencies()
+    {
+        var oquery = """
+            Products:
+            ref1 is Products: Id
+            ref2 is ref1: *, Count(Id) Total
+            """;
+
+        var query = QueryDefinitionOQueryParser.Parse(oquery, "ref2");
+
+        Assert.That(query.Entity, Is.EqualTo("ref1"));
+        Assert.That(query.Contexts!.Keys, Is.EqualTo(["ref1"]));
+        Assert.That(query.Contexts["ref1"].Entity, Is.EqualTo("Products"));
     }
 
     [Test]

@@ -15,7 +15,7 @@ internal class ProjectionDefinitionParser
     public static List<ProjectionDefinition> Parse(string text)
         => string.IsNullOrWhiteSpace(text)
             ? []
-            : FieldDefinitionParser.SplitTopLevel(text, ',')
+            : FieldDefinitionParser.SplitTopLevel(text, ',', '\n')
             .Where(part => !string.IsNullOrWhiteSpace(part))
             .Select(FromText)
             .Where(e => e is not null)
