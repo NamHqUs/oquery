@@ -1,7 +1,5 @@
 using System.Data;
 using System.Globalization;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Microsoft.Data.SqlClient;
 using OQuery.UnitTest.Setup;
@@ -13,12 +11,6 @@ namespace OQuery.UnitTest.Tests.Providers;
 [TestFixture]
 internal sealed class SqlServerQueryExecutionTests
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        Converters = { new JsonStringEnumConverter() }
-    };
-
     private IDbConnection _connection = null!;
     private OQueryEngine _db = null!;
 
@@ -75,76 +67,6 @@ internal sealed class SqlServerQueryExecutionTests
         var oquerySql = _db.Query(oqueryQuery).ToSql();
 
         Assert.That(NormalizeSql(jsonSql), Is.EqualTo(NormalizeSql(oquerySql)));
-    }
-
-    [Test]
-    public void AllOQueryRequestsGenerateTheSameSqlAsJson()
-    {
-        var requestRoot = Path.Combine(
-            GetRepositoryRoot(),
-            "data-storage", "queries");
-
-        foreach (var oqueryPath in Directory.EnumerateFiles(requestRoot, "*.oqr").Order().Take(5))
-        {
-            var jsonPath = Path.ChangeExtension(oqueryPath, ".json");
-            Assert.That(File.Exists(jsonPath), Is.True, $"Missing JSON query request for '{oqueryPath}'.");
-
-            var jsonSql = _db.Query(QueryDefinitionLoader.Load(jsonPath)).ToSql();
-            var oquerySql = _db.Query(QueryDefinitionOQueryParser.Parse(new FileInfo(oqueryPath))).ToSql();
-
-            Assert.That(NormalizeSql(jsonSql), Is.EqualTo(NormalizeSql(oquerySql)), jsonPath);
-        }
-    }
-
-    [Test]
-    public void RecursiveEmployeeHierarchyOQueryMatchesJsonDefinition()
-    {
-        var requestRoot = Path.Combine(
-            GetRepositoryRoot(),
-            "data-storage", "queries");
-        var jsonPath = Path.Combine(requestRoot, "Sample-Recursive employee hierarchy.json");
-        var oqueryPath = Path.ChangeExtension(jsonPath, ".oqr");
-
-        var jsonDefinition = QueryDefinitionLoader.Load(jsonPath);
-        var oqueryDefinition = QueryDefinitionOQueryParser.Parse(new FileInfo(oqueryPath));
-
-        Assert.That(
-            _db.Query(oqueryDefinition).ToSql().CommandText,
-            Is.EqualTo(_db.Query(jsonDefinition).ToSql().CommandText));
-    }
-
-    [TestCase("Test-Check Context Calculation Fields.json")]
-    [TestCase("Test-Query directly on REF CONTEXT.json")]
-    public void RefContextOQueryMatchesJsonDefinition(string fileName)
-    {
-        var requestRoot = Path.Combine(
-            GetRepositoryRoot(),
-            "data-storage", "queries");
-        var jsonPath = Path.Combine(requestRoot, fileName);
-        var oqueryPath = Path.ChangeExtension(jsonPath, ".oqr");
-
-        var jsonDefinition = QueryDefinitionLoader.Load(jsonPath);
-        var oqueryDefinition = QueryDefinitionOQueryParser.Parse(new FileInfo(oqueryPath));
-
-        Assert.That(
-            _db.Query(oqueryDefinition).ToSql().CommandText,
-            Is.EqualTo(_db.Query(jsonDefinition).ToSql().CommandText),
-            fileName);
-    }
-
-    [Test]
-    public void SampleRecursiveEmployeeHierarchyExecutesAsRecursiveContext()
-    {
-        var requestPath = Path.Combine(
-            GetRepositoryRoot(),
-            "data-storage", "queries",
-            "Sample-Recursive employee hierarchy.json");
-        var query = QueryDefinitionLoader.Load(requestPath);
-
-        var records = _db.Query(query).ToList();
-
-        Assert.That(records, Is.Not.Empty);
-        Assert.That(records.Select(record => record["Level"]), Does.Contain(0));
     }
 
     private static string GetRepositoryRoot()

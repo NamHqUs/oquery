@@ -60,7 +60,10 @@ internal class ProjectionDefinitionParser
         var field = fields.Length == 1
             ? fields[0]
             : new GroupFieldDefintion(fields);
-        return new ProjectionDefinition(field, alias);
+        return new ProjectionDefinition(field, alias)
+        {
+            AliasSeparator = text.Contains('|') ? " | " : null
+        };
     }
 
     private static int FindAliasStart(string text)

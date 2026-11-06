@@ -16,6 +16,7 @@ class QueryContext(
     private bool _parseContextAggregatesAsScalar;
     public readonly Stack<(string ArgumentName, TableExpression TableContext)> Arguments = new();
     private readonly List<DbParameter> _dbParameters = [];
+    private bool _parseAggregateArgumentsAsFields;
 
     public IEnumerable<DbParameter> DbParameters => _dbParameters;
     public bool SupportsRecursiveCte => sqlDialect.SupportsRecursiveCte;
@@ -65,10 +66,31 @@ class QueryContext(
 
     public SqlExpression ParseFieldPath(TableExpression tableContext, string fieldPath)
     {
-        if (tableContext.ProjectionItems
-            .FirstOrDefault(e => string.Equals(e.Alias, fieldPath, StringComparison.OrdinalIgnoreCase))
-            is { Alias: var alias, Item: var projection })
-            return new ProjectionAliasExpression(alias, projection.Type);
+        if (string.Equals(fieldPath.Replace(" ", string.Empty), "COUNT()", StringComparison.OrdinalIgnoreCase))
+            throw new UnauthorizedAccessException(
+                "COUNT(*) is not allowed. Specify an authorized field to count.");
+
+        var isKnownField = !fieldPath.Contains('.')
+            && tableContext is not CteTableExpression
+            && GetFields(tableContext)
+                .Any(field => string.Equals(field.Name, fieldPath, StringComparison.OrdinalIgnoreCase));
+        if (!isKnownField &&
+            !fieldPath.Contains('.') &&
+            (!_parseAggregateArgumentsAsFields || tableContext is not CteTableExpression) &&
+            tableContext.Entity is Entity metadataEntity &&
+            metadataEntity.Fields.Any(field =>
+                string.Equals(field.Name, fieldPath, StringComparison.OrdinalIgnoreCase)))
+            metaProvider.GetField(tableContext.Entity, fieldPath);
+
+        if (!isKnownField &&
+            !fieldPath.Contains('.') &&
+            (!_parseAggregateArgumentsAsFields || tableContext is not CteTableExpression))
+        {
+            var projection = tableContext.ProjectionItems
+                .FirstOrDefault(item => string.Equals(item.Alias, fieldPath, StringComparison.OrdinalIgnoreCase));
+            if (projection is not null && projection.Item is not ProjectionAliasExpression)
+                return new ProjectionAliasExpression(projection.Alias, projection.Item.Type);
+        }
 
         var separator = fieldPath.IndexOf('.');
         if (separator > 0)
@@ -228,13 +250,23 @@ class QueryContext(
             suppliedArguments.Length > definition.Arguments.Count)
             throw new FormatException($"Unsupported function or argument count [{expression.FunctionName}].");
 
-        var arguments = new FunctionSqlArgument?[definition.Arguments.Count];
-        for (var index = 0; index < definition.Arguments.Count; index++)
+        var previousParseAggregateArgumentsAsFields = _parseAggregateArgumentsAsFields;
+        _parseAggregateArgumentsAsFields = true;
+        FunctionSqlArgument?[] arguments;
+        try
         {
-            var argumentDefinition = definition.Arguments[index];
-            arguments[index] = index < suppliedArguments.Length
-                ? ParseFunctionArgument(tableContext, argumentDefinition, suppliedArguments[index], depth + 1)
-                : ParseDefaultFunctionArgument(tableContext, argumentDefinition, depth + 1);
+            arguments = new FunctionSqlArgument?[definition.Arguments.Count];
+            for (var index = 0; index < definition.Arguments.Count; index++)
+            {
+                var argumentDefinition = definition.Arguments[index];
+                arguments[index] = index < suppliedArguments.Length
+                    ? ParseFunctionArgument(tableContext, argumentDefinition, suppliedArguments[index], depth + 1)
+                    : ParseDefaultFunctionArgument(tableContext, argumentDefinition, depth + 1);
+            }
+        }
+        finally
+        {
+            _parseAggregateArgumentsAsFields = previousParseAggregateArgumentsAsFields;
         }
 
         if (string.Equals(definition.Name, "Count", StringComparison.OrdinalIgnoreCase) &&

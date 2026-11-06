@@ -51,6 +51,9 @@ internal static class FieldDefinitionParser
 
     private static IFieldDefinition ParseArgument(string text)
     {
+        if (IsNumericLiteral(text.Trim()))
+            return new ConstFieldDefinition(ParseConstant(text.Trim()));
+
         if (IsWrappedBy(text, '(', ')'))
             return new GroupFieldDefintion(ParseExpression(text[1..^1]));
 

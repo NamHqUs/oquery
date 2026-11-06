@@ -1,4 +1,5 @@
 using System.Text;
+using OQuery.Compilation.Models;
 namespace OQuery.Compilation.Expressions;
 
 class AggregateExpression : TableExpression
@@ -10,7 +11,9 @@ class AggregateExpression : TableExpression
     public AggregateExpression(TableExpression tableContext, string aggregation, bool groupWithQuery = false) : base(tableContext)
     {
         GroupWithQuery = groupWithQuery;
-        ProjectionItems = [];
+        ProjectionItems = HasProjectionAlias(tableContext)
+            ? tableContext.ProjectionItems.ToList()
+            : [];
         var i = aggregation.IndexOf('$');
         SqlSelect = new StringBuilder(i < 0 ? aggregation : aggregation[..i]);
 
@@ -25,9 +28,26 @@ class AggregateExpression : TableExpression
     {
         GroupWithQuery = groupWithQuery;
         FunctionExpression = functionExpression;
-        ProjectionItems = [];
+        ProjectionItems = HasProjectionAlias(tableContext)
+            ? tableContext.ProjectionItems.ToList()
+            : [];
+        if (ProjectionItems.Any() && functionExpression.Arguments
+            .OfType<FunctionSqlExpressionArgument>()
+            .Select(argument => argument.Expression)
+            .OfType<FieldExpression>()
+            .FirstOrDefault() is { } field &&
+            ProjectionItems.All(item => !string.Equals(item.Alias, field.MetaField.Name, StringComparison.OrdinalIgnoreCase)))
+        {
+            ProjectionItems = ProjectionItems
+                .Append(new ProjectionItem(field))
+                .ToList();
+        }
         SqlSelect = new StringBuilder();
     }
+
+    private static bool HasProjectionAlias(TableExpression tableContext)
+        => tableContext.SqlWhere.Concat(tableContext.SqlHaving)
+            .Any(expression => expression.ContainsProjectionAlias());
 
     protected override StringBuilder TranslateSelect()
         => SqlSelect ?? base.TranslateSelect();

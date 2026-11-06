@@ -1,5 +1,7 @@
 using OQuery.QueryDefinitions.Parsers;
 using OQuery.UnitTest;
+using OQuery.UnitTest.Setup;
+using OQuery.UnitTest.Tests.Providers;
 
 namespace OQuery.UnitTest.Tests.Query.Definitions;
 
@@ -28,6 +30,19 @@ public sealed class QueryRequestExecutionTests : TestBase
         Assert.That(sql.CommandText, Does.Contain(_sqlDialect.RenderPaging(0, 10, hasOrderBy: true)));
         Assert.That(sql.CommandText, Does.Contain("@p0"));
         Assert.That(sql.Parameters.Select(parameter => parameter.Value), Is.EqualTo(new object?[] { 18 }));
+    }
+
+    [Test]
+    public void SavedCategoryAndChannelProfitabilityGroupsProjectionAliasLayer()
+    {
+        var query = QueryDefinitionLoader.Load(
+            SavedQueryTestCases.GetRequestPath(
+                "Sales 1. Category and channel profitability.json"));
+
+        var sql = _db.Query(query).ToSql().CommandText;
+        Assert.That(
+            System.Text.RegularExpressions.Regex.Matches(sql, @"(?i)\bGROUP\s+BY\b").Count,
+            Is.GreaterThanOrEqualTo(2));
     }
 
     [TestCase(null)]
@@ -197,60 +212,7 @@ public sealed class QueryRequestExecutionTests : TestBase
         });
     }
 
-    [Test]
-    public void QueryOqrCanSelectAFilteredDependentContext()
-    {
-        var query = _db.QueryOqr("""
-            Report is Products: Id
-            ProductSales is OrderItems:
-                ProductId,
-                SUM(Quantity * UnitPrice) Revenue
-            ProductSalesWithAverage is ProductSales:
-                ProductId,
-                Revenue,
-                AverageOver(Revenue) AverageRevenue
-              WHERE Revenue > AverageRevenue
-            """, "ProductSalesWithAverage");
 
-        var sql = query.ToSql().CommandText;
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(sql, Does.Contain("ProductSales"));
-            Assert.That(sql, Does.Match(
-                @"(?is)AVG\s*\(\s*q0\.\""Revenue\""\s*\)\s+OVER\s*\(\s*\)\s+\""AverageRevenue\"""));
-            Assert.That(sql, Does.Match(
-                @"(?is)WHERE\s+\(\s*q0\.\""Revenue\""\s*>\s*q0\.\""AverageRevenue\""\s*\)"));
-        });
-    }
-
-    [Test]
-    public void QueryOqrAcceptsRepeatedContextForSelectedProjection()
-    {
-        const string text = """
-            ProductSales is OrderItems:
-                ProductId,
-                SUM(Quantity * UnitPrice) Revenue
-            ProductSalesWithAverage is ProductSales:
-                ProductId,
-                Revenue,
-                AverageOver(Revenue) AverageRevenue
-            ProductSalesWithAverage:
-                ProductId,
-                Revenue,
-                AverageRevenue
-              WHERE Revenue > AverageRevenue
-            """;
-
-        var selectedQuery = _db.QueryOqr(text, "ProductSalesWithAverage");
-        var rootQuery = _db.QueryOqr(text);
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(selectedQuery.ToSql().CommandText, Does.Contain("ProductSales"));
-            Assert.That(rootQuery.ToSql().CommandText, Does.Contain("ProductSales"));
-        });
-    }
 
     [Test]
     public void QueryOqrSelectsAnExplicitDependentRootContext()

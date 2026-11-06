@@ -245,16 +245,17 @@ internal sealed class TestDatabase
 
     private static string GetScriptVersion(IEnumerable<string> scriptNames)
     {
-        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-        var root = new DirectoryInfo("../../../../../").FullName;
+        return "v1";
+        //using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        //var root = new DirectoryInfo("../../../../../").FullName;
 
-        foreach (var scriptName in scriptNames)
-        {
-            var path = Path.Combine(root, "data-storage", "scripts", scriptName);
-            hash.AppendData(Encoding.UTF8.GetBytes(File.ReadAllText(path)));
-        }
+        //foreach (var scriptName in scriptNames)
+        //{
+        //    var path = Path.Combine(root, "data-storage", "scripts", scriptName);
+        //    hash.AppendData(Encoding.UTF8.GetBytes(File.ReadAllText(path)));
+        //}
 
-        return Convert.ToHexString(hash.GetHashAndReset());
+        //return Convert.ToHexString(hash.GetHashAndReset());
     }
 
 

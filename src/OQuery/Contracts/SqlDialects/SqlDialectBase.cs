@@ -15,6 +15,8 @@ public abstract class SqlDialectBase : ISqlDialect
     public virtual string RenderCteIdentifier(string identifier)
         => QuoteIdentifier(identifier);
     public abstract string RenderTable(Entity entity);
+    public virtual string RenderSubqueryAlias(string alias)
+        => $"AS {alias}";
     public abstract string RenderBoolean(bool value);
     public abstract string RenderStringLiteral(string value);
     public abstract string RenderStringConcatenation(string left, string right);

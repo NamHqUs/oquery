@@ -13,6 +13,8 @@ public interface ISqlDialect
     string RenderCteIdentifier(string identifier)
         => QuoteIdentifier(identifier);
     string RenderTable(Entity entity);
+    string RenderSubqueryAlias(string alias)
+        => $"AS {alias}";
     string RenderBoolean(bool value);
     string RenderStringLiteral(string value);
     string RenderStringConcatenation(string left, string right);

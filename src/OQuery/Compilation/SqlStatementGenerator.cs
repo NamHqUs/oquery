@@ -28,7 +28,7 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         query.EnsureDefaultProjection();
         var limitedQuery = new TakeExpression(query.WithoutPaging(), maximumRecords);
         var alias = dialect.QuoteIdentifier("__bounded_count");
-        var text = $"{RenderCommonTableExpressions(query)}SELECT COUNT(1)\nFROM ({RenderQuery(limitedQuery, includeCtes: false)}) AS {alias}";
+        var text = $"{RenderCommonTableExpressions(query)}SELECT COUNT(1)\nFROM ({RenderQuery(limitedQuery, includeCtes: false)}) {dialect.RenderSubqueryAlias(alias)}";
         dialect.ValidateSqlStatement(text);
 
         return new SqlStatement(text, parameters.ToArray());
@@ -192,6 +192,12 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         out string renderedQuery)
     {
         var projectionItems = query.ProjectionItems.ToArray();
+        if (projectionItems.Length == 0
+            && !query.SqlWhere.Concat(query.SqlHaving).Any(expression => expression.ContainsProjectionAlias()))
+        {
+            renderedQuery = string.Empty;
+            return false;
+        }
         var projectionByAlias = projectionItems.ToDictionary(
             item => item.Alias,
             StringComparer.OrdinalIgnoreCase);
@@ -207,7 +213,9 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
             if (!visiting.Add(alias))
                 throw new FormatException($"Projection aliases cannot contain a cycle involving [{alias}].");
 
-            var dependencies = item.Item.ProjectionAliases().ToArray();
+            var dependencies = item.Item.ProjectionAliases()
+                .Where(dependency => !string.Equals(dependency, alias, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
             level = dependencies.Length == 0
                 ? 0
                 : dependencies.Max(dependency => GetLevel(dependency)) + 1;
@@ -268,7 +276,21 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
                 .ToArray();
 
             inner = $"SELECT {string.Join(",\n", selectItems)}\n" +
-                $"FROM (\n{Indent(inner)}\n) AS {sourceAlias}";
+                $"FROM (\n{Indent(inner)}\n) {dialect.RenderSubqueryAlias(sourceAlias)}";
+            if (currentItems.Any(item => item.Item.ContainsGroupedAggregate()))
+            {
+                var groupBy = availableItems
+                    .Select(item => $"{sourceAlias}.{dialect.QuoteIdentifier(item.Alias)}")
+                    .Concat(RenderLayerGroupExpressions(
+                        currentItems
+                            .Where(item => !item.Item.ContainsGroupedAggregate())
+                            .Select(item => item.Item),
+                        sourceAlias))
+                    .Distinct(StringComparer.Ordinal)
+                    .ToArray();
+                if (groupBy.Length > 0)
+                    inner += "\nGROUP BY " + string.Join(", ", groupBy);
+            }
             previousAlias = sourceAlias;
         }
 
@@ -283,7 +305,7 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
             try
             {
                 inner = $"SELECT {string.Join(",\n", selectItems)}\n" +
-                    $"FROM (\n{Indent(inner)}\n) AS {sourceAlias}\n" +
+                    $"FROM (\n{Indent(inner)}\n) {dialect.RenderSubqueryAlias(sourceAlias)}\n" +
                     $"WHERE {string.Join("\n\tAND ", aliasPredicates.Select(RenderExpression))}";
             }
             finally
@@ -291,6 +313,18 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
                 _projectionSourceAlias = null;
             }
             finalSourceAlias = sourceAlias;
+        }
+
+        if (query is AggregateExpression { FunctionExpression: not null } aggregate)
+        {
+            var aggregateSourceAlias = $"q{maxLevel + 1}";
+            var aggregateSql = RenderAggregateSelect(aggregate)
+                .Replace(
+                    $"{query.Alias}.",
+                    $"{aggregateSourceAlias}.",
+                    StringComparison.Ordinal);
+            inner = $"SELECT {aggregateSql}\n" +
+                $"FROM (\n{Indent(inner)}\n) {dialect.RenderSubqueryAlias(aggregateSourceAlias)}";
         }
 
         if (query.IsTake)
@@ -325,6 +359,22 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
             ? RenderCommonTableExpressions(query) + inner
             : inner;
         return true;
+    }
+
+    private IEnumerable<string> RenderLayerGroupExpressions(
+        IEnumerable<SqlExpression> expressions,
+        string sourceAlias)
+    {
+        var previousAlias = _projectionSourceAlias;
+        _projectionSourceAlias = sourceAlias;
+        try
+        {
+            return expressions.Select(RenderExpression).ToArray();
+        }
+        finally
+        {
+            _projectionSourceAlias = previousAlias;
+        }
     }
 
     private string RenderLayerProjection(ProjectionItem item, string sourceAlias)

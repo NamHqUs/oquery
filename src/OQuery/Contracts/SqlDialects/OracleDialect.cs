@@ -26,6 +26,8 @@ public sealed class OracleDialect : SqlDialectBase
         => entity.IsRawSql
             ? ValidateRawSqlEntity(entity.DbTable)
             : QuoteIdentifier(entity.DbTable ?? entity.Name);
+    public override string RenderSubqueryAlias(string alias)
+        => alias;
 
     public override string RenderBoolean(bool value) => value ? "1" : "0";
     public override string RenderStringLiteral(string value) => $"'{value.Replace("'", "''")}'";

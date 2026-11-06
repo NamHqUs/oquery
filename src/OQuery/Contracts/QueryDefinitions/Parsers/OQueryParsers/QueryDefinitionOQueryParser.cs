@@ -15,18 +15,13 @@ public static class QueryDefinitionOQueryParser
             block => block.Name,
             block => ExpandBlock(block, blocks, []),
             StringComparer.OrdinalIgnoreCase);
-        var blockNames = blocks
-            .Select(block => block.Name)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var referencedContexts = queries.Values
             .SelectMany(query => query.Joins ?? [])
             .Select(relation => relation.RefContext)
-            .Concat(blocks
-                .Select(block => block.Entity)
-                .Where(blockNames.Contains))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var rootBlock = blocks.FirstOrDefault(block => !referencedContexts.Contains(block.Name))
-            ?? blocks[0];
+        var rootBlock = queries.Values.Any(query => query.Joins is { Count: > 0 })
+            ? blocks.FirstOrDefault(block => !referencedContexts.Contains(block.Name)) ?? blocks[0]
+            : blocks[^1];
         var root = queries[rootBlock.Name];
         var contexts = root.Contexts
             ?? throw new FormatException("The root OQuery definition cannot have null contexts.");
