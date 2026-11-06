@@ -50,7 +50,7 @@
   - { name: Department, refEntity: Departments, type: Lookup, refKeys: [{ dbColumn: DepartmentId, refDbColumn: Id }] }
   - { name: Location, refEntity: Locations, type: Lookup, refKeys: [{ dbColumn: LocationId, refDbColumn: Id }] }
   - { name: Manager, refEntity: Employees, type: Lookup, refKeys: [{ dbColumn: ManagerId, refDbColumn: Id }] }
-  - { name: DirectReports, refEntity: Employees, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: ManagerId }] }
+  - { name: Members, refEntity: Employees, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: ManagerId }] }
   - { name: SalesOrders, refEntity: Orders, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: SalesRepId }] }
   - { name: PhysicianVisits, refEntity: Visits, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: DoctorId }] }
   - { name: AgentPolicies, refEntity: Policies, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: AgentId }] }

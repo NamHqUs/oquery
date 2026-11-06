@@ -17,6 +17,9 @@ public abstract class QueryValue
     public bool IsNull() => throw new NotImplementedException();
     public bool IsNotNull() => throw new NotImplementedException();
     public bool CompareTemplate(object value, string template) => throw new NotImplementedException();
+    public QueryValue Count() => throw new NotImplementedException();
+    public QueryValue Sum() => throw new NotImplementedException();
+    public QueryValue Average() => throw new NotImplementedException();
     public static QueryValue Parameter(object? value) => throw new NotImplementedException();
     public static QueryValue QueryExpression(IFieldDefinition expression) => throw new NotImplementedException();
 

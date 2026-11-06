@@ -35,6 +35,64 @@ public static partial class FluentQueryExtensions
     public static IOQuery Select(this IOQuery source, Expression<Func<IQueryParameter, Dictionary<string, object?>>> selection)
         => source.CreateQuery(MethodBase.GetCurrentMethod()!, Expression.Quote(selection));
 
+    public static IOQuery Select(
+        this IOQuery source,
+        Expression<Func<IQueryParameter, IRecursiveQueryParameter, Dictionary<string, object?>>> selection)
+        => source.CreateQuery(MethodBase.GetCurrentMethod()!, Expression.Quote(selection));
+
+    public static IOQuery Select<TProjection>(
+        this IOQuery source,
+        Expression<Func<IQueryParameter, TProjection>> selection)
+    {
+        if (selection.Body is not NewExpression { Members: not null } projection)
+            throw new NotSupportedException("Select projections must be anonymous objects.");
+
+        var dictionaryType = typeof(Dictionary<string, object?>);
+        var dictionary = Expression.New(dictionaryType);
+        var addMethod = dictionaryType.GetMethod(nameof(Dictionary<string, object?>.Add))!;
+        var initializers = projection.Members
+            .Select((member, index) => Expression.ElementInit(
+                addMethod,
+                Expression.Constant(member.Name),
+                Expression.Convert(projection.Arguments[index], typeof(object))));
+        var dictionaryProjection = Expression.Lambda<Func<IQueryParameter, Dictionary<string, object?>>>(
+            Expression.ListInit(dictionary, initializers),
+            selection.Parameters);
+        return source.Select(dictionaryProjection);
+    }
+
+    public static IOQuery Recursive(this IOQuery source, string relationName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(relationName);
+        return source.CreateQuery(MethodBase.GetCurrentMethod()!, Expression.Constant(relationName));
+    }
+
+    public static IOQuery Recursive(
+        this IOQuery source,
+        string relationName,
+        Expression<Func<IQueryParameter, IRecursiveQueryParameter, Dictionary<string, object?>>> projection)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(relationName);
+        ArgumentNullException.ThrowIfNull(projection);
+        return source.CreateQuery(
+            MethodBase.GetCurrentMethod()!,
+            Expression.Constant(relationName),
+            Expression.Quote(projection));
+    }
+
+    public static IOQuery Recursive<TProjection>(
+        this IOQuery source,
+        string relationName,
+        Expression<Func<IQueryParameter, IRecursiveQueryParameter, TProjection>> projection)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(relationName);
+        ArgumentNullException.ThrowIfNull(projection);
+        return source.CreateQuery(
+            ((MethodInfo)MethodBase.GetCurrentMethod()!).MakeGenericMethod(typeof(TProjection)),
+            Expression.Constant(relationName),
+            Expression.Quote(projection));
+    }
+
     public static IOQuery Where(this IOQuery source, Expression<Func<IQueryParameter, bool>> predicate)
         => source.CreateQuery(MethodBase.GetCurrentMethod()!, Expression.Quote(predicate));
 

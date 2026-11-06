@@ -29,6 +29,9 @@ class QueryVisitor(QueryContext queryContext) : ExpressionVisitor
         if (declaringType == typeof(IQueryParameter))
             return _parameterVisitor.Value.Eval(node);
 
+        if (declaringType == typeof(QueryValue))
+            return _parameterVisitor.Value.Eval(node);
+
         var instance = Visit(node.Object)!;
         if (instance.Type != node.Method.DeclaringType)
             instance = Expression.Convert(instance, node.Method.DeclaringType!);

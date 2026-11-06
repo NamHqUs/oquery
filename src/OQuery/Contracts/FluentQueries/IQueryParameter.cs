@@ -8,3 +8,8 @@ public interface IQueryParameter
 
     IOQuery Query(string fieldName);
 }
+
+public interface IRecursiveQueryParameter : IQueryParameter
+{
+    QueryValue Count(string fieldName);
+}

@@ -85,8 +85,8 @@ class QueryContext(
                     return ParseFieldPath(joinedTable, fieldPath[(separator + 1)..]);
         }
 
-        if (TryParseAggregateFunction(fieldPath, out var wrappedAggregate))
-            return ParseFunctionExpression(tableContext, wrappedAggregate, 0);
+        if (TryParseFunction(fieldPath, out var wrappedFunction))
+            return ParseFunctionExpression(tableContext, wrappedFunction, 0);
 
         var i = FindLastUnnestedDot(fieldPath);
         var relationPath = i < 0 ? null : fieldPath[..i];
@@ -494,6 +494,17 @@ class QueryContext(
         if (FieldDefinitionParser.Parse(fieldName) is not FunctionFieldDefinition parsedFunction ||
             !functionProvider.TryGetFunction(parsedFunction.FunctionName, out var definition) ||
             definition is not { IsAggregate: true })
+            return false;
+
+        function = parsedFunction;
+        return true;
+    }
+
+    private bool TryParseFunction(string fieldName, out FunctionFieldDefinition function)
+    {
+        function = null!;
+        if (FieldDefinitionParser.Parse(fieldName) is not FunctionFieldDefinition parsedFunction ||
+            !functionProvider.TryGetFunction(parsedFunction.FunctionName, out _))
             return false;
 
         function = parsedFunction;

@@ -2,6 +2,7 @@ using OQuery;
 using OQuery.Compilation.Expressions;
 using OQuery.Compilation.Utilities;
 using OQuery.Execution;
+using OQuery.QueryDefinitions.Parsers;
 using OQuery.QueryBuilderDto.Parsers;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -20,12 +21,191 @@ class ClauseVisitor(QueryContext queryContext)
         while (methodCall.Arguments[0] is MethodCallExpression method)
             statements.Insert(0, methodCall = method);
 
+        if (statements.Any(statement => statement.Method.Name == nameof(FluentQueryExtensions.Recursive)))
+            return EvalRecursive(statements);
+
         var tableContext = CreateTableContext(statements);
 
         foreach (var statement in statements)
             tableContext = ProcessStatement(tableContext, statement);
 
         return tableContext;
+    }
+
+    private TableExpression EvalRecursive(IReadOnlyList<MethodCallExpression> statements)
+    {
+        if (statements.Any(statement =>
+                statement.Method.Name is not nameof(FluentQueryExtensions.Recursive)
+                    and not nameof(FluentQueryExtensions.Select)
+                    and not nameof(FluentQueryExtensions.ToList)))
+            throw new NotSupportedException(
+                "Recursive queries currently support only Recursive, Select, and ToList.");
+        var recursiveStatement = statements.Single(statement =>
+            statement.Method.Name == nameof(FluentQueryExtensions.Recursive));
+        var selectStatement = statements.FirstOrDefault(statement =>
+            statement.Method.Name == nameof(FluentQueryExtensions.Select));
+        var combinedProjection = recursiveStatement.Arguments.Count == 3
+            ? (LambdaExpression)recursiveStatement.Arguments[2].StripQuotes()
+            : null;
+        if (combinedProjection is null && selectStatement is null)
+            throw new FormatException("Recursive queries require a projection.");
+        if (combinedProjection is null &&
+            (statements.Count < 2 ||
+             !ReferenceEquals(statements[0], recursiveStatement) ||
+             !ReferenceEquals(statements[1], selectStatement!)))
+            throw new NotSupportedException(
+                "Recursive queries require Query(entity).Recursive(relation).Select(dictionary).");
+        if (recursiveStatement.Arguments[0] is not ConstantExpression { Value: DbQueryable source } ||
+            recursiveStatement.Arguments[1] is not ConstantExpression { Value: string relationName })
+            throw new NotSupportedException(
+                "Recursive queries require Query(entity).Recursive(relation).Select(dictionary).");
+        var selectionLambda = combinedProjection
+            ?? (LambdaExpression)selectStatement!.Arguments[1].StripQuotes();
+        var selection = ReadRecursiveSelection(selectionLambda, relationName);
+
+        var sourceEntity = source.Provider.Entity;
+        var relation = sourceEntity.GetRelation(relationName);
+        if (relation.Type != RelationType.Collection ||
+            !string.Equals(relation.RefEntity, sourceEntity.Name, StringComparison.OrdinalIgnoreCase))
+            throw new FormatException(
+                $"Recursive relation [{relationName}] must be a collection relation back to [{sourceEntity.Name}].");
+        if (relation.RefKeys.Count != 1)
+            throw new NotSupportedException(
+                $"Recursive relation [{relationName}] must have exactly one key pair.");
+
+        var key = relation.RefKeys[0];
+        var contextName = $"{sourceEntity.Name}Tree";
+        var projections = selection.Select(entry =>
+        {
+            var value = entry.Value as string
+                ?? throw new NotSupportedException(
+                    "Recursive projections must use string field expressions.");
+            var field = value.StartsWith($"{relation.Name}.", StringComparison.OrdinalIgnoreCase)
+                ? value[(relation.Name.Length + 1)..] switch
+                {
+                    var aggregate when aggregate.StartsWith("Count(", StringComparison.OrdinalIgnoreCase)
+                        => $"CountOver(member.{aggregate[6..^1]}, manager.{key.DbColumn})",
+                    var memberField => $"member.{memberField}"
+                }
+                : value;
+            return new ProjectionDefinition(
+                QueryDefinitionJsonParser.ParseExpression(field)[0],
+                entry.Key);
+        }).ToList();
+
+        var definition = new QueryDefinition(sourceEntity.Name)
+        {
+            Projections = projections,
+            Contexts = new Dictionary<string, QueryDefinitionBase>(StringComparer.OrdinalIgnoreCase)
+            {
+                [contextName] = new QueryDefinitionBase(sourceEntity.Name)
+                {
+                    Projections =
+                    [
+                        new ProjectionDefinition($"member.{key.DbColumn}", key.DbColumn)
+                    ]
+                }
+            },
+            Joins =
+            [
+                new JoinDefinition(
+                    contextName,
+                    "member",
+                    QueryDefinitionJsonParser.ParseJoinCondition(
+                        $"{key.DbColumn} = member.{key.RefDbColumn}"),
+                    QueryJoinType.Inner)
+            ]
+        };
+
+        return new QueryDefinitionVisitor(QueryContext).Eval(definition);
+    }
+
+    private static Dictionary<string, object?> ReadRecursiveSelection(
+        LambdaExpression selection,
+        string relationName)
+    {
+        if (selection.Parameters.Count == 1 &&
+            selection.Compile().DynamicInvoke(new object?[] { null }) is Dictionary<string, object?> stringSelection)
+            return stringSelection;
+
+        if (selection.Parameters.Count != 2)
+            throw new NotSupportedException(
+                "Recursive projections require a string dictionary or a two-scope Select lambda.");
+
+        var manager = selection.Parameters[0];
+        var members = selection.Parameters[1];
+        var result = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        if (selection.Body is NewExpression anonymousProjection &&
+            anonymousProjection.Members is not null)
+        {
+            for (var index = 0; index < anonymousProjection.Members.Count; index++)
+            {
+                result[anonymousProjection.Members[index].Name] = ReadRecursiveValue(
+                    anonymousProjection.Arguments[index],
+                    manager,
+                    members,
+                    relationName);
+            }
+            return result;
+        }
+
+        if (selection.Body is not ListInitExpression list)
+            throw new NotSupportedException(
+                "Recursive projections require an anonymous object or string dictionary.");
+
+        foreach (var initializer in list.Initializers)
+        {
+            if (initializer.Arguments.Count != 2 ||
+                initializer.Arguments[0] is not ConstantExpression { Value: string alias })
+                throw new FormatException("Recursive projection aliases must be constant strings.");
+
+            result[alias] = ReadRecursiveValue(initializer.Arguments[1], manager, members, relationName);
+        }
+
+        return result;
+    }
+
+    private static string ReadRecursiveValue(
+        Expression expression,
+        ParameterExpression manager,
+        ParameterExpression members,
+        string relationName)
+    {
+        expression = expression.StripQuotes();
+        if (expression is UnaryExpression { NodeType: ExpressionType.Convert } convert)
+            expression = convert.Operand;
+
+        if (expression is not MethodCallExpression method)
+            throw new NotSupportedException(
+                "Recursive projections support field access and member Count only.");
+
+        if (method.Method.DeclaringType == typeof(QueryValue) &&
+            method.Object is MethodCallExpression
+            {
+                Method.Name: "get_Item",
+                Object: var aggregateScope,
+                Arguments: [ConstantExpression { Value: string aggregateField }]
+            })
+        {
+            if (aggregateScope == manager)
+                throw new FormatException(
+                    $"{method.Method.Name}() requires a collection scope.");
+            if (aggregateScope == members)
+                return $"{relationName}.{method.Method.Name}({aggregateField})";
+        }
+
+        if (method.Arguments.Count == 0 ||
+            method.Arguments[0] is not ConstantExpression { Value: string field })
+            throw new NotSupportedException(
+                "Recursive projections support field access and member Count only.");
+
+        if (method.Object == manager && method.Method.Name == "get_Item")
+            return field;
+        if (method.Object == members && method.Method.Name == "get_Item")
+            return $"{relationName}.{field}";
+
+        throw new NotSupportedException(
+            "Recursive projections support field access and member Count only.");
     }
 
     private TableExpression CreateTableContext(List<MethodCallExpression> statements)

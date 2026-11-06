@@ -25,6 +25,8 @@ class SelectVisitor(TableExpression tableContext, QueryContext queryContext)
             TableContext.PendingProjectionAliases = dataRecord
                 .Where(entry => entry.Value is not IFieldDefinition field
                     || !string.Equals(entry.Key, field.ToText(), StringComparison.OrdinalIgnoreCase))
+                .Where(entry => entry.Value is not string fieldPath
+                    || !string.Equals(entry.Key, fieldPath, StringComparison.OrdinalIgnoreCase))
                 .ToDictionary(entry => entry.Key, _ => typeof(object), StringComparer.OrdinalIgnoreCase);
             var selectedFields = new List<ProjectionItem>();
             foreach (var projection in BuildProjection(TableContext, dataRecord))

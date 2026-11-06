@@ -44,7 +44,7 @@
         "arguments": [
           {
             "kind": "field",
-            "field": "DirectReports.Id"
+            "field": "Members.Id"
           }
         ]
       },
@@ -57,7 +57,7 @@
         "arguments": [
           {
             "kind": "field",
-            "field": "DirectReports.LocationId"
+            "field": "Members.LocationId"
           }
         ]
       },
@@ -74,7 +74,7 @@
             "arguments": [
               {
                 "kind": "field",
-                "field": "DirectReports.Salary"
+                "field": "Members.Salary"
               }
             ]
           },
@@ -114,7 +114,7 @@
             "arguments": [
               {
                 "kind": "field",
-                "field": "DirectReports.Salary"
+                "field": "Members.Salary"
               }
             ]
           },
@@ -134,7 +134,7 @@
         "logicalOperator": 0,
         "left": {
           "kind": "field",
-          "field": "DirectReports.Id"
+          "field": "Members.Id"
         },
         "operation": 13,
         "right": null,
