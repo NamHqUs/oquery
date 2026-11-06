@@ -22,6 +22,10 @@ class SelectVisitor(TableExpression tableContext, QueryContext queryContext)
     {
         if (body is ConstantExpression @const && @const.Value is Dictionary<string, object?> dataRecord)
         {
+            TableContext.PendingProjectionAliases = dataRecord
+                .Where(entry => entry.Value is not IFieldDefinition field
+                    || !string.Equals(entry.Key, field.ToText(), StringComparison.OrdinalIgnoreCase))
+                .ToDictionary(entry => entry.Key, _ => typeof(object), StringComparer.OrdinalIgnoreCase);
             var selectedFields = new List<ProjectionItem>();
             foreach (var projection in BuildProjection(TableContext, dataRecord))
             {
@@ -82,40 +86,111 @@ class SelectVisitor(TableExpression tableContext, QueryContext queryContext)
     private IEnumerable<ProjectionItem> BuildProjection(
         TableExpression tableContext, IDictionary<string, object?> memebers, string? parentKey = null)
     {
-        foreach (var e in memebers)
-            if (e.Value is IDictionary<string, object?> subMembers)
-                foreach (var projection in BuildProjection(tableContext, subMembers, e.Key))
-                    yield return projection;
-            else
+        var parsedMembers = OrderProjectionMembers(memebers)
+            .ToDictionary(
+                member => member.Key,
+                member => BuildProjectionItems(tableContext, member.Value, parentKey, member.Key).ToArray(),
+                StringComparer.OrdinalIgnoreCase);
+
+        foreach (var member in memebers)
+            foreach (var projection in parsedMembers[member.Key])
+                yield return projection;
+    }
+
+    private IEnumerable<ProjectionItem> BuildProjectionItems(
+        TableExpression tableContext,
+        object? value,
+        string? parentKey,
+        string key)
+    {
+        if (value is IDictionary<string, object?> subMembers)
+        {
+            foreach (var projection in BuildProjection(tableContext, subMembers, key))
+                yield return projection;
+            yield break;
+        }
+
+        var wildcardPath = value as string;
+        if (wildcardPath == "*" ||
+            wildcardPath?.EndsWith(".*", StringComparison.Ordinal) == true)
+        {
+            var wildcardTable = wildcardPath == "*"
+                ? tableContext
+                : QueryContext.ResolveTableContext(tableContext, wildcardPath[..^2]);
+            foreach (var field in QueryContext.GetFields(wildcardTable))
+                yield return new ProjectionItem(
+                    new FieldExpression(
+                        wildcardTable.Alias,
+                        field),
+                    parentKey == null ? field.Name : $"{parentKey}.{field.Name}");
+            yield break;
+        }
+
+        var sql = value switch
+        {
+            SqlExpression expression => expression,
+            IFieldDefinition[] expressions => QueryContext.ParseQueryExpression(tableContext, expressions),
+            IFieldDefinition expression => QueryContext.ParseQueryExpression(tableContext, expression),
+            string fieldPath => QueryContext.ParseFieldPath(tableContext, fieldPath),
+            _ => throw new NotSupportedException($"Unsupported projection value [{value?.GetType().Name ?? "null"}].")
+        };
+
+        var alias = parentKey == null ? key : string.Format("{0}.{1}", parentKey, key);
+        yield return new ProjectionItem(sql, alias);
+    }
+
+    private static IReadOnlyList<KeyValuePair<string, object?>> OrderProjectionMembers(
+        IDictionary<string, object?> members)
+    {
+        var aliases = members.Keys.ToDictionary(key => key, key => key, StringComparer.OrdinalIgnoreCase);
+        var ordered = new List<KeyValuePair<string, object?>>(members.Count);
+        var visiting = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var member in members)
+            Visit(member.Key);
+
+        return ordered;
+
+        void Visit(string key)
+        {
+            if (visited.Contains(key)) return;
+            if (!visiting.Add(key))
+                throw new FormatException($"Projection aliases cannot contain a cycle involving [{key}].");
+
+            foreach (var dependency in GetProjectionDependencies(members[key]))
             {
-                var wildcardPath = e.Value as string;
-                if (wildcardPath == "*" ||
-                    wildcardPath?.EndsWith(".*", StringComparison.Ordinal) == true)
-                {
-                    var wildcardTable = wildcardPath == "*"
-                        ? tableContext
-                        : QueryContext.ResolveTableContext(tableContext, wildcardPath[..^2]);
-                    foreach (var field in QueryContext.GetFields(wildcardTable))
-                        yield return new ProjectionItem(
-                            new FieldExpression(
-                                wildcardTable.Alias,
-                                field),
-                            parentKey == null ? field.Name : $"{parentKey}.{field.Name}");
-                    continue;
-                }
-
-                var sql = e.Value switch
-                {
-                    SqlExpression expression => expression,
-                    IFieldDefinition[] expressions => QueryContext.ParseQueryExpression(tableContext, expressions),
-                    IFieldDefinition expression => QueryContext.ParseQueryExpression(tableContext, expression),
-                    string fieldPath => QueryContext.ParseFieldPath(tableContext, fieldPath),
-                    _ => throw new NotSupportedException($"Unsupported projection value [{e.Value?.GetType().Name ?? "null"}].")
-                };
-
-                var alias = parentKey == null ? e.Key : string.Format("{0}.{1}", parentKey, e.Key);
-                yield return new ProjectionItem(sql, alias);
+                if (aliases.TryGetValue(dependency, out var dependencyKey) &&
+                    !string.Equals(dependencyKey, key, StringComparison.OrdinalIgnoreCase))
+                    Visit(dependencyKey);
             }
+
+            visiting.Remove(key);
+            visited.Add(key);
+            ordered.Add(new KeyValuePair<string, object?>(key, members[key]));
+        }
+    }
+
+    private static IEnumerable<string> GetProjectionDependencies(object? value)
+    {
+        switch (value)
+        {
+            case IFieldDefinition[] fields:
+                foreach (var field in fields.SelectMany(GetProjectionDependencies))
+                    yield return field;
+                yield break;
+            case FieldDefinition field:
+                yield return field.FieldName;
+                yield break;
+            case FunctionFieldDefinition function:
+                foreach (var argument in function.Arguments.SelectMany(GetProjectionDependencies))
+                    yield return argument;
+                yield break;
+            case GroupFieldDefintion group:
+                foreach (var field in group.Fields.SelectMany(GetProjectionDependencies))
+                    yield return field;
+                yield break;
+        }
     }
 
 }

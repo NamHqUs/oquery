@@ -26,6 +26,8 @@ internal sealed record OrderExpression(SqlExpression Expression, bool Descending
 class TableExpression(IEntity entity, string alias, IReadOnlyList<Field> fields) : SqlExpression(typeof(IOQuery))
 {
     public IEnumerable<ProjectionItem> ProjectionItems = [];
+    public IDictionary<string, Type> PendingProjectionAliases { get; set; } =
+        new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
     public List<CommonTableExpression> CommonTableExpressions { get; } = [];
     public List<SqlExpression> SqlWhere { get; } = [];
     public List<SqlExpression> SqlHaving { get; } = [];
@@ -50,6 +52,9 @@ class TableExpression(IEntity entity, string alias, IReadOnlyList<Field> fields)
     protected TableExpression(TableExpression source) : this(source.Entity, source.Alias, source.MetadataFields)
     {
         ProjectionItems = source.ProjectionItems.ToList();
+        PendingProjectionAliases = new Dictionary<string, Type>(
+            source.PendingProjectionAliases,
+            StringComparer.OrdinalIgnoreCase);
         CommonTableExpressions.AddRange(source.CommonTableExpressions);
         SqlWhere.AddRange(source.SqlWhere);
         SqlHaving.AddRange(source.SqlHaving);

@@ -1,909 +1,168 @@
-# QueryDefinition semantic modeling guide
+# QueryDefinition modeling guide
 
-This guide records the important query-shape lessons from the sample reports.
-The goal is not to reproduce SQL syntax. The goal is to preserve the same
-business context and result using entities, relation paths, projections,
-filters, aggregates, contexts, and controlled functions.
+This guide explains how to model a business query with the current
+`QueryDefinition` model. It focuses on query shape, result grain, context
+composition, and execution behavior.
 
-The legacy YAML examples below are intentionally abbreviated. They show the
-semantic `QueryDefinition` shape, not the current authoring format. The
-canonical backend JSON projection shape is documented in
-[`QUERY-MODEL-REFERENCE.md`](./QUERY-MODEL-REFERENCE.md).
+For authoring OQuery text, use [OQUERY-SYNTAX.md](./OQUERY-SYNTAX.md).
+For the serialized JSON contract, use
+[QUERY-MODEL-REFERENCE.md](./QUERY-MODEL-REFERENCE.md). For compiler
+invariants and source-of-truth responsibilities, use
+[OQUERY-ENGINE.md](./OQUERY-ENGINE.md).
 
-Complete sample requests and their serialized counterparts are stored in
-[`data-storage/queries`](./data-storage/queries).
+## 1. Start with the result grain
 
-## OQuery text syntax
+Define what one output row represents before choosing fields or functions:
 
-Saved query definitions use the compact `.oqr` format. A query header uses the
-entity name as its default name:
+- one entity;
+- one parent and a calculated child total;
+- one row per period;
+- one row per context key;
+- one row per hierarchy member.
 
-```text
-Users: Id, Name, BestMonth.Revenue
-  Where Status = <Active>
-  Order BestMonth.Revenue DESC
-  Take 25
-  Left Join BestMonth on Id = BestMonth.UserId
-```
+Every non-aggregate projection field defines or participates in the result
+grain. Keep independent one-to-many calculations in separate contexts when
+combining them would multiply rows.
 
-A reusable context puts its name before its source entity. If the names are
-the same, the source is omitted:
+## 2. Choose the root query
 
-```text
-BestMonth is Orders: UserId, MAX(Amount) Revenue
-  Where Status = <Completed>
-```
+The root query is the main execution entry point. An unqualified OQuery
+header uses its source entity as the context name. An explicit context name
+overrides that name.
 
-The header grammar is `[context-name] is [entity]: projection`. `where`, `order`,
-`skip`, `take`, and `join` are optional indented clauses. Join types are written
-before `join`, for example `left join` or `inner join`; a bare `join` defaults
-to `inner join`, matching SQL. A join condition is
-explicit because it describes how the consuming query uses the context; the
-context definition remains reusable by other queries. The parser resolves
-contexts after reading all blocks, so a context can be referenced before its
-definition.
+The root owns the final result columns, root filter, ordering, and paging.
+Contexts are supporting query blocks that the root consumes.
 
-## OQuery syntax reference
+## 3. Use a context for a reusable relation
 
-### Query headers
+A context is appropriate when a calculation:
 
-```text
-Users: Id, Name
-```
+- has a different result grain from the root;
+- must be reused by more than one consumer;
+- must be aggregated before another calculation;
+- needs independent filtering or paging;
+- represents a recursive or derived result.
 
-An entity-only query is the compact form of selecting every field exposed by
-the metadata:
+Keep the context output narrow. Include the key required by its consumer and
+only the fields needed by later projections or join conditions.
 
-```text
-Users
-```
+## 4. Story: aggregate at a stable grain
 
-Equivalent SQL intent:
-
-```sql
-SELECT *
-FROM Users;
-```
-
-The single name is both the query name and source entity. A reusable context
-whose name differs from its source uses `is`:
-
-```text
-BestMonth is Orders: UserId, MAX(Amount) Revenue
-```
-
-The header grammar is:
-
-```text
-[ContextName] [is SourceEntity]: Projection
-```
-
-### Clauses
-
-Clauses are indented under their query header:
-
-```text
-Users: Id, Name
-  Where Status = <Active>
-  Order Name ASC
-  Skip 20
-  Take 25
-```
-
-Keywords are case-insensitive. The canonical writer uses `Where`, `Order`,
-`Skip`, `Take`, and join types such as `Left Join`.
-
-### Projection aliases
-
-Use the expression-to-name form consistently:
-
-```text
-Users: Id, Manager.Name ManagerName, Count(Members.Id) MemberCount
-```
-
-Separate the expression and result alias with whitespace:
-
-```text
-Users: Id, Manager.Name ManagerName, Count(Members.Id) MemberCount
-```
-
-The explicit `as` form is also accepted when an unambiguous alias marker is
-preferred, especially for generated OQuery:
-
-```text
-Users: Id, Manager.Name as ManagerName, Count(Members.Id) as MemberCount
-```
-
-### Joins and aliases
-
-Explicit joins belong to the query that consumes the context:
-
-```text
-Products: Id, Name,
-    RevenueByMonth.Month Month,
-    RevenueByMonth.Revenue Revenue
-  Left Join RevenueByMonth On Id = RevenueByMonth.ProductId
-  Order Revenue DESC
-  Take 20
-
-RevenueByMonth is InvoiceLines: ProductId,
-    MonthKey(Invoice.IssueDate) Month,
-    SUM(Quantity * UnitPrice) Revenue,
-    CountDistinct(InvoiceId) Orders
-  Where Invoice.Status = <Paid>
-```
-
-A reusable context can be joined more than once with a separate alias:
-
-```text
-User: Id, ref1.Name Manager1, newRef1.Name Manager2
-  Left Join ref1 On ManagerId = ref1.Id
-  Left Join ref1 newRef1 On ManagerId = newRef1.Id
-
-ref1 is User: Id, Name
-```
-
-`ref1` is the shared context name. `newRef1` is only the alias for the second
-join instance. A bare `Join` means `Inner Join`; use `Left Join`, `Right Join`,
-or `Full Join` explicitly when optional rows are required.
-
-### Multiline values
-
-Projection and clause values can continue on indented lines:
-
-```text
-Visits: Diagnosis.Name Diagnosis,
-    Diagnosis.Category DiagnosisCategory,
-    CountDistinct(Id) VisitCount
-  Order VisitCount DESC,
-    Diagnosis.Name ASC
-  Left Join VisitLabs On Id = VisitLabs.VisitId
-```
-
-Continuation lines are joined until the next recognized clause or query
-header.
-
-## Automatic query behavior
-
-OQuery turns intent into relational operations using registered metadata.
-
-```text
-Users: Id, Name, Manager.Name
-```
-
-The relation path can generate the required join automatically.
-
-```text
-Users: Id, Name, Count(Members.Id) TotalMembers
-```
-
-Mixing regular fields and aggregates establishes the result grain and derives
-the required `GROUP BY`.
-
-```text
-Users: Id, Name, Count(Members.Id) TotalMembers
-  Where TotalMembers > 12
-```
-
-Aggregate predicates are routed to `HAVING`; row predicates remain `WHERE`.
-This lets users express the business condition without manually moving the
-predicate between SQL clauses.
-
-### Grouped and scalar aggregates
-
-An aggregate query is grouped when its projection contains both an aggregate
-expression and at least one non-aggregate field. The non-aggregate fields
-define the result grain and are emitted in the generated `GROUP BY` clause:
+Use one context when a child collection must become one row per parent key:
 
 ```text
 ProductSales is OrderItems: ProductId,
     SUM(Quantity * UnitPrice) TotalRevenue
 ```
 
-This represents one row per `ProductId`:
+`ProductId` defines the context grain. `TotalRevenue` is calculated within
+that grain. A consumer can join this context without creating one row per
+order item.
 
-```sql
-SELECT ProductId, SUM(Quantity * UnitPrice) AS TotalRevenue
-FROM OrderItems
-GROUP BY ProductId
-```
+## 5. Story: dependent aggregation
 
-An aggregate-only projection is a scalar aggregate query. It returns one row
-and does not introduce a grouping key:
+Use dependent contexts when one aggregate must be completed before another
+aggregate begins:
 
 ```text
-AverageRevenue is ProductSales:
-    AVG(TotalRevenue) AverageTotalRevenue
+ProductSales is OrderItems: ProductId,
+    SUM(Quantity * UnitPrice) TotalRevenue
+
+ProductMaximum is ProductSales:
+    MAX(TotalRevenue) MaximumRevenue
 ```
 
-When an aggregate function references a field through a named context from an
-outer query, the aggregate is also scalar over the complete context. It is
-rendered as a scalar subquery rather than as an aggregate in the outer query:
+Declare the source context before the context that consumes it. The compiler
+creates the required derived layers and preserves the dependency boundary.
+
+## 6. Story: consume a context from the root
+
+The consuming query declares the relationship and its join condition:
 
 ```text
 Products: Id,
-    Name,
     ProductSales.TotalRevenue TotalRevenue
-  Inner Join ProductSales On Id = ProductSales.ProductId
-  Where ProductSales.TotalRevenue > AVG(ProductSales.TotalRevenue)
+  Left Join ProductSales On Id = ProductSales.ProductId
 ```
 
-The context-qualified aggregate above represents:
+The context defines the calculated value; the root decides how that value is
+matched to its own rows. Do not hide a row-multiplying relationship behind a
+context that is expected to return one row per parent.
 
-```sql
-WHERE ProductSales.TotalRevenue >
-(
-    SELECT AVG(TotalRevenue)
-    FROM ProductSales
-)
-```
+## 7. Story: aliases are a context-wide scope
 
-The distinction is:
-
-- aggregate plus non-aggregate projection fields: grouped query;
-- aggregate-only projection: one-row scalar aggregate query;
-- aggregate over a context-qualified field in a filter: scalar subquery over
-  that context; do not generate scalar aggregate statements in projections.
-
-### Aggregate-over window functions
-
-Use the explicit `*Over` functions when an aggregate value must be returned as
-a scalar column without collapsing the result rows:
+All projection aliases in one context are available regardless of their
+position in the requested output:
 
 ```text
-Products: Id,
-    Name,
-    ProductSales.TotalRevenue TotalRevenue,
-    AverageOver(ProductSales.TotalRevenue, ProductSales.ProductId) AverageTotalRevenue,
-    SumOver(ProductSales.TotalRevenue, ProductSales.ProductId) PartitionRevenue,
-    CountOver(ProductSales.ProductId, ProductSales.ProductId) PartitionProductCount,
-    MaxOver(ProductSales.TotalRevenue, ProductSales.ProductId) MaximumRevenue,
-    MinOver(ProductSales.TotalRevenue, ProductSales.ProductId) MinimumRevenue
-  Inner Join ProductSales On Id = ProductSales.ProductId
+OrderItems:
+    AverageOver(TotalRevenue) AverageRevenue,
+    SUM(Quantity * UnitPrice) TotalRevenue
 ```
 
-`CountOver`, `SumOver`, `AverageOver`, `MaxOver`, and `MinOver` are window
-functions, not grouping aggregates. Each takes one required argument and one
-optional partition argument. Without the second argument, the function
-operates over the complete result set:
+The requested result order is preserved, while the engine resolves and
+materializes the dependency before compiling `AverageRevenue`. See
+[OQUERY-ENGINE.md](./OQUERY-ENGINE.md) for the compiler invariant.
 
-```text
-AverageOver(ProductSales.TotalRevenue) OverallAverage
-```
+Do not create cycles between aliases. Split cyclic calculations into separate
+contexts with an explicit dependency direction.
 
-With the second argument, it operates within each partition:
+## 8. Aggregates and windows
 
-```text
-AverageOver(ProductSales.TotalRevenue, ProductSales.ProductId) AveragePerProduct
-```
+Use a grouping aggregate when the result should collapse to a grouping grain.
+Use `CountOver`, `SumOver`, `AverageOver`, `MaxOver`, or `MinOver` when the
+result must retain one row per input record and repeat a calculated value.
 
-The functions render as
-`COUNT(...) OVER (PARTITION BY ...)`, `SUM(...) OVER (PARTITION BY ...)`,
-`AVG(...) OVER (PARTITION BY ...)`, `MAX(...) OVER (PARTITION BY ...)`, and
-`MIN(...) OVER (PARTITION BY ...)`, respectively. The `OVER` form preserves
-one result row per input row and repeats the aggregate value across the
-complete result set or selected partition.
+Aggregate filters on the current grouped query are part of the aggregate
+stage. A scalar aggregate over a context-qualified field is a separate
+context-level calculation, not a raw SQL fragment.
 
-## Reusable contexts and isolated composition
+## 9. Filtering, ordering, and paging
 
-Contexts form a named dependency graph. A context owns the relationships it
-declares, and its definition can be reused by multiple consumers:
+- Filter source rows before grouping whenever the predicate uses only source
+  fields.
+- Filter aliases only after their projection layer exists.
+- Order by a logical field or a materialized alias.
+- Apply paging at the result grain.
+- Add deterministic secondary ordering when ties matter.
 
-```text
-Products: Id, RevenueByMonth.Revenue Revenue
-  Left Join RevenueByMonth On Id = RevenueByMonth.ProductId
+Do not add `GroupBy` or `Having` properties to `QueryDefinition`; grouping is
+derived from the projection and filter expressions.
 
-RevenueByMonth is InvoiceLines: ProductId,
-    SUM(Quantity * UnitPrice) Revenue
-  Where Invoice.Status = <Paid>
-```
+## 10. Recursive contexts
 
-The engine emits dependent CTEs in declaration order. A context can be tested
-on its own by selecting only its block:
+Use one explicitly named context for a recursive hierarchy. The context must
+identify its recursive relationship through the supported join structure, and
+the selected SQL dialect must support recursive CTEs.
 
-```text
-ref1 is User: Id, Name
-```
+Keep the anchor projection and recursive projection compatible. Include the
+fields required by the recursive join and the fields required by the final
+result.
 
-This supports an incremental workflow: test a context, test its dependent
-context, then execute the root query.
+## 11. Functions and provider boundaries
 
-## Application vocabulary
+Use registered functions for provider-specific behavior. A function
+definition supplies its argument count, argument types, result type, and SQL
+template for each supported dialect.
 
-Registered typed functions extend the language with domain concepts:
+Do not embed schema-qualified names or raw SQL in field paths. Logical names
+come from metadata; physical table names and provider syntax are generated by
+the engine.
 
-```text
-Users: Id,
-    CountIf(Status = <Active>) ActiveMembers,
-    AvgIf(Age, Status = <Active>) AverageActiveAge
-```
+## 12. Validation checklist
 
-Functions can define typed arguments, validation, editor completion, and
-provider-specific SQL templates. This keeps business vocabulary such as
-`CountIf`, `AgeOn`, `MonthKey`, and `RiskScore` out of duplicated raw SQL.
+Before saving a query definition, verify:
 
-## Security and provider boundaries
+1. The root result grain is explicit.
+2. Every context returns the grain expected by its consumer.
+3. Contexts are declared in dependency order.
+4. Every referenced context exists.
+5. Context aliases are unique within the consuming query.
+6. Projection aliases are not cyclic.
+7. Alias filters and sorts occur after their aliases are materialized.
+8. Paging is applied to the intended grain.
+9. Functions are registered and have valid arguments.
+10. Entities, fields, relations, and functions are authorized metadata.
 
-OQuery is designed for controlled read queries:
-
-1. Metadata defines the allowed entities, fields, relationships, and functions.
-2. Authorization is checked against the query metadata before SQL is trusted.
-3. Values become database parameters; user values are not concatenated into SQL.
-4. The selected SQL dialect renders quoting, paging, functions, and provider
-   differences.
-
-OQuery is not a replacement for DDL, DML, stored procedures, or database
-administration. Its scope is metadata-driven, parameterized read queries.
-
-## Using the UI
-
-1. Open **Data sources** and inspect entities, fields, and relationships.
-2. Open **Query Builder** and start with an entity such as `Users`.
-3. Switch to **OQuery** mode to edit the compact text directly.
-4. Use **Check OQuery** to parse and normalize the definition.
-5. Select a complete root or context block to execute only that query graph.
-6. Use **Get SQL** to inspect the generated statement and parameters.
-7. Save the query as a reusable report after the result is correct.
-
-The editor supports Tab and Shift+Tab indentation, selected-row deletion with
-Ctrl+X, undo with Ctrl+Z, and multiline projections and clauses.
-
-Long projections may continue on indented lines. Continuation lines are joined
-until the next recognized clause:
-
-```text
-Visits: Diagnosis.Name Diagnosis,
-    Diagnosis.Category DiagnosisCategory,
-    ROUND(<100> * SUM(Amount) / NULLIF(SUM(Total), <0>), <2>) Percent
-  Where Status = <Completed>
-  Take 10
-```
-
-Projection fields can use either a block sequence or YAML's inline sequence
-syntax:
-
-```yaml
-Entity: Users
-Projection: [Id, Name]
-```
-
-## Flat context graph
-
-Contexts are stored once in the `Contexts` dictionary. The dictionary key is
-the context name and is the identity used by `Relations`. A relation contains
-only the referenced context name and join metadata; it does not embed another
-query definition.
-
-```yaml
-Entity: Employees
-Relations:
-  - RefContext: C1
-  - RefContext: C2
-
-Contexts:
-  C1:
-    Entity: Departments
-    Projection:
-      - Id
-
-  C2:
-    Entity: Employees
-    Relations:
-      - RefContext: C1
-        Alias: Department
-        Condition: DepartmentId = C1.Id
-        JoinType: Left
-```
-
-This shape allows multiple contexts to share `C1` without repeating its
-definition. The parser still accepts the older nested `Contexts` and
-`ExtraRelations` forms and normalizes them into this graph. Missing context
-references and conflicting definitions are rejected during parsing.
-
-The YAML writer uses the DTO names `Relations` and `RefContext`, never
-`ExtraRelations` or `RefContextId`. Context names appear only as dictionary
-keys, not additional `Id` or `Name` properties. Null `Alias`, `Condition`,
-and `JoinType` properties are omitted. An omitted canonical YAML `JoinType`
-round-trips as null; an explicitly supplied `Left` remains `Left`.
-Legacy `ExtraRelations` input retains its historical default of `Left`.
-
-## Core rules
-
-1. Start with the result grain: one row per user, policy, department, order,
-   or other business key.
-2. Put each independent one-to-many aggregate in its own context.
-3. A context must return one row per key used by its join condition unless the
-   result intentionally needs detail rows.
-4. Declare dependent contexts in dependency order. A later context may use an
-   earlier context as its source.
-5. Use relation paths for correlated values when the relationship is
-   deterministic, for example `PaymentDate >= Policy.StartDate`.
-6. Use registered, typed functions for provider-specific expressions such as
-   `CountIf`, `AvgIf`, `Rank`, and `RowNumber`. Do not create Raw SQL entities
-   or bypass the compiler.
-7. Apply paging at the result grain. For grouped reports, aggregate in a
-   context and page the outer result when necessary.
-8. Add deterministic secondary ordering when the original SQL leaves ties
-   unspecified and the test compares row order.
-
-## 1. Nested aggregation through dependent contexts
-
-### Original SQL
-
-```sql
-WITH customer_month AS
-(
-    SELECT
-        CustomerId,
-        YEAR(OrderDate) AS SalesYear,
-        MONTH(OrderDate) AS SalesMonth,
-        SUM(Amount) AS MonthlyRevenue
-    FROM Orders
-    GROUP BY CustomerId, YEAR(OrderDate), MONTH(OrderDate)
-)
-SELECT
-    Region,
-    AVG(MAX(MonthlyRevenue)) AS AverageBestMonth
-FROM customer_month
-GROUP BY Region;
-```
-
-### Semantic QueryDefinition shape
-
-```yaml
-Entity: Users
-Projection:
-  - State Region
-  - AVG(CustomerBestMonth.BestMonthRevenue) AverageBestMonth
-Contexts:
-  - Name: CustomerMonth
-    Query:
-      Entity: Orders
-      Projection:
-        - UserId
-        - YEAR(OrderDate) SalesYear
-        - MONTH(OrderDate) SalesMonth
-        - SUM(Items.Quantity * Items.UnitPrice - Items.DiscountAmount) MonthlyRevenue
-      Filter: Status = 'Completed'
-
-  - Name: CustomerBestMonth
-    Query:
-      Entity: CustomerMonth
-      Projection:
-        - UserId
-        - MAX(MonthlyRevenue) BestMonthRevenue
-    Join: Users.Id = CustomerBestMonth.UserId
-```
-
-`CustomerMonth` is declared before `CustomerBestMonth`. The second context
-uses the first context as its source, so the two aggregation grains remain
-separate.
-
-Sample request:
-[Sample-Nested customer monthly peak by region.json](./data-storage/queries/Sample-Nested%20customer%20monthly%20peak%20by%20region.json)
-
-## 2. Per-parent detail paging/top-N
-
-### Original SQL
-
-```sql
-SELECT
-    c.Id,
-    c.Name,
-    o.Id,
-    o.OrderDate,
-    o.Amount
-FROM Customers c
-OUTER APPLY
-(
-    SELECT TOP (3)
-        o.Id,
-        o.OrderDate,
-        o.Amount
-    FROM Orders o
-    WHERE o.CustomerId = c.Id
-    ORDER BY o.OrderDate DESC
-) o;
-```
-
-### Semantic QueryDefinition shape
-
-```yaml
-Entity: Users
-Projection:
-  - Id CustomerId
-  - Concat(FirstName, ' ', LastName) Customer
-  - RecentOrders.Id OrderId
-  - RecentOrders.OrderDate OrderDate
-  - RecentOrders.OrderAmount OrderAmount
-Filter: RecentOrders.OrderRank <= 3
-Contexts:
-  - Name: RankedOrders
-    Query:
-      Entity: Orders
-      Projection:
-        - UserId
-        - Id
-        - OrderDate
-        - SUM(Items.Quantity * Items.UnitPrice - Items.DiscountAmount) OrderAmount
-        - RowNumber(UserId, OrderDate) OrderRank
-      Filter: Status = 'Completed'
-
-  - Name: RecentOrders
-    Query:
-      Entity: RankedOrders
-      Projection:
-        - UserId
-        - Id
-        - OrderDate
-        - OrderAmount
-        - OrderRank
-    Join: Users.Id = RecentOrders.UserId
-```
-
-`RowNumber` is partitioned by the parent key, and the outer filter is applied
-after the window value has been materialized in the dependent context. This is
-per-parent top-N, not one global page of orders.
-
-Sample request:
-[Sample-Correlated top three orders per customer.json](./data-storage/queries/Sample-Correlated%20top%20three%20orders%20per%20customer.json)
-
-## 3. UNION as a common-root existence filter
-
-### Original SQL
-
-```sql
-SELECT UserId
-FROM Orders
-WHERE Status = 'Completed'
-
-UNION
-
-SELECT UserId
-FROM Policies
-WHERE Status = 'Active';
-```
-
-### Semantic QueryDefinition shape
-
-```yaml
-Entity: Users
-Projection:
-  - Id UserId
-Filter: CompletedOrders.UserId IS NOT NULL
-     OR ActivePolicies.UserId IS NOT NULL
-Contexts:
-  - Name: CompletedOrders
-    Query:
-      Entity: Orders
-      Projection:
-        - UserId
-        - CountDistinct(Id) MatchCount
-      Filter: Status = 'Completed'
-    Join: Users.Id = CompletedOrders.UserId
-    JoinType: Left
-
-  - Name: ActivePolicies
-    Query:
-      Entity: Policies
-      Projection:
-        - UserId
-        - CountDistinct(Id) MatchCount
-      Filter: Status = 'Active'
-    Join: Users.Id = ActivePolicies.UserId
-    JoinType: Left
-```
-
-The common `Users` root turns the set union into an existence predicate.
-`CountDistinct` makes each context one row per user, preventing duplicate
-users after the joins.
-
-Do not replace `UNION` with `CompletedOrders EXISTS ActivePolicies` unless
-intersection semantics are intended. `EXISTS` in that form means both sets,
-not either set.
-
-Sample request:
-[Sample-Union completed orders and active policies.json](./data-storage/queries/Sample-Union%20completed%20orders%20and%20active%20policies.json)
-
-## 4. Recursive hierarchy
-
-### Original SQL
-
-```sql
-WITH EmployeeTree AS
-(
-    SELECT Id, ManagerId
-    FROM Employees
-    WHERE ManagerId IS NULL
-
-    UNION ALL
-
-    SELECT e.Id, e.ManagerId
-    FROM Employees e
-    JOIN EmployeeTree t ON e.ManagerId = t.Id
-)
-SELECT
-    manager.FirstName AS ManagerName,
-    member.FirstName AS MemberName,
-    COUNT(member.Id) OVER (
-        PARTITION BY manager.Id
-    ) AS TotalMembers
-FROM EmployeeTree tree
-JOIN Employees member ON member.Id = tree.Id
-LEFT JOIN Employees manager ON manager.Id = tree.ManagerId
-GROUP BY manager.FirstName, member.FirstName;
-```
-
-### Intended QueryDefinition shape
-
-```yaml
-Entity: Employees
-Projection:
-  - Id
-  - ManagerId
-  - 0 Level
-Filter: Id = @RootManagerId
-Contexts:
-  - Name: EmployeeTree
-    Query:
-      Entity: Employees
-      Projection:
-        - Id
-        - ManagerId
-        - Difference(EmployeeTree.Level, -1) Level
-      Join: Employees.ManagerId = EmployeeTree.Id
-      Repeat: Until no rows
-```
-
-This sample requires repeated evaluation of the same relationship until a
-fixed point is reached. The compiler emits a recursive CTE for this shape,
-including the anchor query and the recursive query. A finite relation path
-such as `Manager.DirectReports` remains supported as well.
-
-Recursive shorthand keeps the CTE projection limited to the fields required
-for traversal. Calculated fields and aggregates that reference the recursive
-member are rendered by the query consuming the CTE, after recursion has
-completed:
-
-```text
-EmployeeTree is Employees:
-    FirstName ManagerName,
-    member.FirstName MemberName,
-    CountOver(member.Id, manager.Id) TotalMembers
-  Inner Join EmployeeTree member On Id = member.ManagerId
-```
-
-The anchor and recursive members therefore retain the same physical traversal
-columns, while `MemberName` and the windowed `TotalMembers` are calculated in
-the outer query. This avoids placing an aggregate inside the recursive member,
-preserves one row per member, and keeps the recursive CTE column shape valid.
-
-Sample request:
-[Sample-Recursive employee hierarchy.json](./data-storage/queries/Sample-Recursive%20employee%20hierarchy.json)
-
-## 5. Correlated aggregate through a relation path
-
-### Original SQL
-
-```sql
-SELECT
-    c.Id,
-    c.Name,
-    (
-        SELECT SUM(o.Amount)
-        FROM Orders o
-        WHERE o.CustomerId = c.Id
-          AND o.OrderDate >= c.CustomerSince
-    ) AS RevenueSinceSignup
-FROM Customers c;
-```
-
-### Semantic QueryDefinition shape
-
-NorthStar uses policy enrollment as the outer business record and paid
-premium payments as the revenue rows.
-
-```yaml
-Entity: Policies
-Projection:
-  - Id PolicyId
-  - Concat(User.FirstName, ' ', User.LastName) Member
-  - Coalesce(RevenueSinceStart.PremiumRevenue, 0) RevenueSinceSignup
-Contexts:
-  - Name: RevenueSinceStart
-    Query:
-      Entity: PremiumPayments
-      Projection:
-        - PolicyId
-        - SUM(Amount) PremiumRevenue
-      Filter: Status = 'Paid'
-            AND PaymentDate >= Policy.StartDate
-    Join: Policies.Id = RevenueSinceStart.PolicyId
-    JoinType: Left
-```
-
-The outer-row value is available through the normal relation path
-`Policy.StartDate`, so a correlated subquery is unnecessary.
-
-Sample request:
-[Sample-Correlated revenue since policy start.json](./data-storage/queries/Sample-Correlated%20revenue%20since%20policy%20start.json)
-
-## 6. Partitioned ranking
-
-### Original SQL
-
-```sql
-SELECT
-    DepartmentId,
-    EmployeeId,
-    Salary,
-    RANK() OVER
-    (
-        PARTITION BY DepartmentId
-        ORDER BY Salary DESC
-    ) AS DepartmentRank
-FROM Employees;
-```
-
-### Semantic QueryDefinition shape
-
-```yaml
-Entity: Employees
-Projection:
-  - DepartmentId
-  - Id EmployeeId
-  - Salary
-  - Rank(DepartmentId, Salary) DepartmentRank
-Sorts:
-  - DepartmentId ASC
-  - DepartmentRank ASC
-  - EmployeeId ASC
-```
-
-`Rank` is a registered typed function with provider-specific templates. It is
-not a Raw SQL field or compiler escape hatch.
-
-Sample request:
-[Sample-Department salary rank.json](./data-storage/queries/Sample-Department%20salary%20rank.json)
-
-## 7. Complex filters and filter grain
-
-Filters are boolean expression trees over fields, relation paths, expressions,
-context fields, and aggregates. The filter model supports nested parentheses,
-`AND`, `OR`, comparisons, `LIKE`, `BETWEEN`, `IN`, null checks, and
-parameterized values.
-
-### Dictionary<string, object?>-level filters
-
-```sql
-SELECT *
-FROM Employees
-WHERE
-    (DepartmentId = 10 OR DepartmentId = 20)
-    AND (EmploymentType = 'Full-time' OR Salary >= 100000);
-```
-
-```yaml
-Entity: Employees
-Filter: >
-  (DepartmentId = 10 OR DepartmentId = 20)
-  AND (EmploymentType = 'Full-time' OR Salary >= 100000)
-```
-
-### Aggregate filters
-
-```sql
-SELECT DepartmentId, COUNT(*) AS Employees
-FROM Employees
-GROUP BY DepartmentId
-HAVING COUNT(*) >= 5;
-```
-
-```yaml
-Entity: Employees
-Projection:
-  - DepartmentId
-  - COUNT(Id) Employees
-Filter: COUNT(Id) >= 5
-```
-
-Aggregate predicates are routed to `HAVING` by the compiler.
-
-### Filters across independent contexts
-
-```yaml
-Entity: Users
-Projection:
-  - Id UserId
-Filter: OrderSummary.OrderCount > 3
-     OR PolicySummary.PolicyCount > 0
-Contexts:
-  - Name: OrderSummary
-    Query:
-      Entity: Orders
-      Projection:
-        - UserId
-        - CountDistinct(Id) OrderCount
-    Join: Users.Id = OrderSummary.UserId
-    JoinType: Left
-
-  - Name: PolicySummary
-    Query:
-      Entity: Policies
-      Projection:
-        - UserId
-        - CountDistinct(Id) PolicyCount
-    Join: Users.Id = PolicySummary.UserId
-    JoinType: Left
-```
-
-Independent one-to-many branches should be aggregated in separate contexts
-before applying the outer boolean filter. This prevents one branch from
-multiplying rows from another branch.
-
-### Mixed row and aggregate predicates
-
-A boolean expression must be evaluated at one consistent result grain. Do not
-mix a raw row predicate and a group aggregate directly:
-
-```text
-Status = 'Active' OR OrderCount > 3
-```
-
-Instead, convert the row predicate into an aggregate at the group grain:
-
-```yaml
-Projection:
-  - CountIf(Status = 'Active') ActiveCount
-  - CountDistinct(Orders.Id) OrderCount
-Filter: ActiveCount > 0 OR OrderCount > 3
-```
-
-This makes both sides of the `OR` group-level predicates. Unary `NOT` is not a
-general text-filter operator; use the supported negative operators such as
-`<>`, `NOT LIKE`, `NOT IN`, and `IS NOT NULL`, or apply an equivalent
-De Morgan transformation.
-
-## Validation principle
-
-For every sample, validate both meanings separately:
-
-1. Confirm the original business semantics can be represented by the
-   `QueryDefinition` structure.
-2. Execute the generated dynamic SQL against real data.
-3. Execute an independent reference statement.
-4. Compare columns, row count, nulls, values, and ordering.
-
-The independent SQL statement is allowed only as a test oracle. The saved
-request and dynamic engine must use normal metadata, contexts, expressions,
-and registered functions.
-
-## General capability boundary
-
-The important boundary is not SQL syntax. It is whether the query can be
-transformed into a finite dependency graph of relational contexts:
-
-```text
-Entity
-  -> relation paths
-  -> dependent contexts
-  -> projections, filters, aggregates, and windows
-  -> outer result
-```
-
-Contexts may depend on earlier contexts, so a query can be represented as a
-finite context DAG. This covers the tested transformations for CTEs, nested
-aggregation, union-style logic, correlated aggregates, per-parent top-N, and
-partitioned ranking even when the generated SQL has a different shape from
-the original statement.
-
-Therefore, for finite SQL `SELECT` queries, no non-recursive context-level
-counterexample has been established by the samples in this guide. A missing
-provider-specific function is a missing registered function definition, not
-an inherent QueryDefinition context limitation.
-
-Recursive or fixpoint evaluation is supported when the selected SQL dialect
-supports recursive CTEs. The compiler emits the dialect-specific recursive CTE
-form, rejects recursive queries on unsupported dialects, and validates that the
-anchor and recursive projections have the same columns in the declared CTE
-order; ordinary finite context dependencies continue to use regular CTEs.
+Use the OQuery parser and generated SQL as validation steps. Do not validate
+by assembling SQL manually.

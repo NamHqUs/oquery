@@ -54,6 +54,10 @@ the complete text can be copied directly into a query window.
   providers, async APIs, and troubleshooting.
 - Read the [technical guide](./TECH.md) for the compiler pipeline and important
   classes.
+- Read the [OQuery syntax guide](./OQUERY-SYNTAX.md) for authoring rules and
+  valid query forms.
+- Read the [OQuery engine rules](./OQUERY-ENGINE.md) for execution invariants,
+  compiler responsibilities, and the engine source of truth.
 - See the [query model reference](./QUERY-MODEL-REFERENCE.md) for the
   canonical backend JSON format for projections and query contexts.
 

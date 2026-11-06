@@ -38,6 +38,28 @@ Example:
 Products: Id, Name, Category
 ```
 
+An entity header without an explicit context name is the main execution entry
+point. It is equivalent to naming the context after the source entity:
+
+```text
+OrderItems:
+```
+
+means:
+
+```text
+OrderItems is OrderItems:
+```
+
+Use the explicit `ContextName is SourceEntity` form only when the main entry
+point needs a different context name:
+
+```text
+ProductSales is OrderItems:
+    Product.Name,
+    SUM(Quantity * UnitPrice) TotalRevenue
+```
+
 An entity-only query selects the metadata fields:
 
 ```text
@@ -55,6 +77,29 @@ Use aliases when an expression should have a stable result-column name:
 ```text
 Products: SUM(OrderItems.Quantity) UnitsSold
 ```
+
+Projection is the paragraph after an entity header. It continues across lines
+until a query clause or a new context declaration begins:
+
+```text
+Products: Id, Category.Name CategoryName
+    UnitPrice
+```
+
+Each projection item is separated from the next item by either a comma or a
+line break. A line break therefore starts the next projection item even when
+the previous item has no trailing comma.
+
+The projection paragraph ends when a clause keyword begins:
+
+```text
+Products: Id, Category.Name CategoryName
+  Where UnitPrice > <10>
+```
+
+After a field or relation path is complete, whitespace may introduce an
+alias. The editor should not suggest another field until a comma begins the
+next projection item.
 
 ## 3. Clauses
 
@@ -77,6 +122,7 @@ Supported query clauses include:
 - `Order`
 - `Skip`
 - `Take`
+- `Join` (inner join by default)
 - `Inner Join`
 - `Left Join`
 - `Right Join`
@@ -136,6 +182,11 @@ The general form is:
 ContextName is SourceEntity: Projection
 ```
 
+The source entity name is also the default main execution context when no
+explicit context name is provided. Therefore, `OrderItems:` is the shorthand
+main entry point for `OrderItems is OrderItems:`. Use a different context name
+only when the query intentionally overrides the entry-point name.
+
 Contexts are useful for:
 
 - per-parent aggregation;
@@ -167,6 +218,13 @@ Products: Id,
   Inner Join ProductSales On Id = ProductSales.ProductId
 ```
 
+`Join` without a type is an inner join:
+
+```text
+Products: Id
+  Join ProductSales On Id = ProductSales.ProductId
+```
+
 Use an explicit condition when the context has one row per parent key:
 
 ```text
@@ -195,12 +253,6 @@ ProductSales is OrderItems: ProductId,
 ```
 
 This means one result row per `ProductId` and generates the equivalent of:
-
-```sql
-SELECT ProductId, SUM(Quantity * UnitPrice) AS TotalRevenue
-FROM OrderItems
-GROUP BY ProductId
-```
 
 The standard grouping aggregates are:
 
@@ -249,14 +301,6 @@ Products: Id,
 ```
 
 The filter represents:
-
-```sql
-WHERE ProductSales.TotalRevenue >
-(
-    SELECT AVG(TotalRevenue)
-    FROM ProductSales
-)
-```
 
 This is the supported way to compare a grouped value with an aggregate over
 the complete context without writing SQL manually.
@@ -333,29 +377,25 @@ a grouping aggregate and must not move a row predicate to `HAVING`.
 
 ## 10. Projection alias dependencies
 
-Projection aliases can be referenced by later projection expressions and
-predicates:
+All projection aliases declared in the same context are available to every
+projection expression and predicate in that context, regardless of their
+position. This lets a report place a calculated total in the final result
+column while an earlier expression uses that total:
 
 ```text
 OrderItems:
     ProductId,
-    SUM(Quantity * UnitPrice) TotalRevenue,
     AverageOver(TotalRevenue) AverageRevenue,
+    SUM(Quantity * UnitPrice) TotalRevenue,
     CountOver(TotalRevenue) RevenueCount
   Where TotalRevenue > AverageRevenue
 ```
 
-The compiler materializes aliases in dependency layers. `TotalRevenue` is
-created in the grouped query, `AverageRevenue` and `RevenueCount` are created
-in the same next layer because both depend only on `TotalRevenue`, and the
-alias filter is applied in the following outer query.
+The result keeps the requested projection order. A calculated total can
+therefore remain the final report column even when earlier expressions use it.
 
-Aliases at the same dependency depth must share a layer. The compiler must
-generate the minimum number of derived-table wrappers; it must not wrap
-`RevenueCount` around `AverageRevenue` merely because it appears later in the
-projection.
-
-An alias dependency cycle is invalid:
+An alias dependency cycle is invalid and should be rewritten as separate
+contexts:
 
 ```text
 Orders:
@@ -363,10 +403,8 @@ Orders:
     TotalB + <1> TotalA
 ```
 
-Alias references in `Where`, `Order`, or another projection expression are
-resolved only after the referenced projection layer has been materialized.
-Predicates that use only source fields remain in the inner query so they can
-still be applied before grouping or window calculations.
+Aliases can also be used in `Where` and `Order` expressions in the same
+context.
 
 ## 11. Expressions and functions
 

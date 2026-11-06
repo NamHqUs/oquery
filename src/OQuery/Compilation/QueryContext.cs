@@ -69,6 +69,8 @@ class QueryContext(
             .FirstOrDefault(e => string.Equals(e.Alias, fieldPath, StringComparison.OrdinalIgnoreCase))
             is { Alias: var alias, Item: var projection })
             return new ProjectionAliasExpression(alias, projection.Type);
+        if (tableContext.PendingProjectionAliases.TryGetValue(fieldPath, out var pendingType))
+            return new ProjectionAliasExpression(fieldPath, pendingType);
 
         var separator = fieldPath.IndexOf('.');
         if (separator > 0)
