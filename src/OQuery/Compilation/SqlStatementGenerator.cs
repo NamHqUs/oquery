@@ -11,6 +11,7 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 {
     private IReadOnlyDictionary<string, IEntity> _entities = new Dictionary<string, IEntity>();
     private string? _projectionSourceAlias;
+    private string? _recursiveSourceAlias;
 
     public SqlStatement Generate(TableExpression query, IEnumerable<DbParameter> parameters)
     {
@@ -77,6 +78,8 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         IReadOnlyList<SqlExpression>? havingExpressionsOverride = null,
         bool includeTrailingClauses = true)
     {
+        var previousRecursiveSourceAlias = _recursiveSourceAlias;
+        _recursiveSourceAlias = recursivePart ? query.Alias : null;
         query.EnsureDefaultProjection();
         var projectionItems = projectionItemsOverride ?? query.ProjectionItems.ToArray();
         var whereExpressions = whereExpressionsOverride ?? query.SqlWhere;
@@ -105,7 +108,7 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
                             && item.Item is FieldExpression
                             ? ", "
                             : ",\n";
-                    return $"{separator}{RenderProjection(item, hasGroupedAggregate, recursivePart)}";
+                    return $"{separator}{RenderProjection(item, hasGroupedAggregate, recursivePart, query.Alias)}";
                 }));
         }
 
@@ -183,6 +186,7 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         if (includeCtes)
             text = RenderCommonTableExpressions(query) + text;
 
+        _recursiveSourceAlias = previousRecursiveSourceAlias;
         return text;
     }
 
@@ -359,18 +363,24 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
     private string RenderProjection(
         ProjectionItem item,
         bool hasGroupedAggregate = false,
-        bool recursivePart = false)
+        bool recursivePart = false,
+        string? recursiveSourceAlias = null)
     {
         if (hasGroupedAggregate && item.Item is AggregateExpression { GroupWithQuery: true } aggregate)
             return $"{RenderAggregateSelect(aggregate)} {dialect.QuoteIdentifier(item.Alias)}";
 
-        var expression = RenderExpression(item.Item);
+        var projection = recursivePart &&
+            recursiveSourceAlias is not null &&
+            item.Item is FieldExpression { TableAlias.Length: 0 } field
+            ? new FieldExpression(recursiveSourceAlias, field.MetaField)
+            : item.Item;
+        var expression = RenderExpression(projection);
         if (recursivePart)
             expression = dialect.RenderRecursiveProjection(new(
-                item.Item.Type,
-                item.Item is FieldExpression,
+                projection.Type,
+                projection is FieldExpression,
                 expression));
-        if (item.Item is not FieldExpression and not FunctionSqlExpression)
+        if (projection is not FieldExpression and not FunctionSqlExpression)
             expression = $"({expression})";
 
         return $"{expression} {dialect.QuoteIdentifier(item.Alias)}";
@@ -547,22 +557,25 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
     private string RenderField(FieldExpression field)
     {
-        if (!_entities.TryGetValue(field.TableAlias, out var entity))
+        var tableAlias = field.TableAlias.Length == 0
+            ? _recursiveSourceAlias
+            : field.TableAlias;
+        if (tableAlias is not null && !_entities.TryGetValue(tableAlias, out var entity))
             throw new InvalidOperationException(
-                $"The query field alias [{field.TableAlias}] could not be resolved during SQL generation.");
+                $"The query field alias [{tableAlias}] could not be resolved during SQL generation.");
 
         if (field.MetaField.IsRawSql)
         {
             var rawSql = field.MetaField.DbColumn ?? field.MetaField.Name;
-            return field.TableAlias.Length == 0
+            return tableAlias is null
                 ? $"({rawSql})"
-                : $"({rawSql.Replace("@", field.TableAlias + ".")})";
+                : $"({rawSql.Replace("@", tableAlias + ".")})";
         }
 
         var dbColumn = field.MetaField.DbColumn ?? field.MetaField.Name;
-        return field.TableAlias.Length == 0
+        return tableAlias is null
             ? $"({dbColumn})"
-            : $"{field.TableAlias}.{dialect.QuoteIdentifier(dbColumn)}";
+            : $"{tableAlias}.{dialect.QuoteIdentifier(dbColumn)}";
     }
 
     private static Dictionary<string, IEntity> GetEntities(

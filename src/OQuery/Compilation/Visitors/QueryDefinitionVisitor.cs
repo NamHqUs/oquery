@@ -688,6 +688,11 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         {
             table.PendingProjectionAliases = projections
                 .Where(projection => !string.IsNullOrWhiteSpace(projection.Alias))
+                .Where(projection => !queryContext.GetFields(table.Entity)
+                    .Any(field => string.Equals(
+                        field.Name,
+                        projection.Alias,
+                        StringComparison.OrdinalIgnoreCase)))
                 .Select(projection => projection.Alias!)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(alias => alias, _ => typeof(object), StringComparer.OrdinalIgnoreCase);
