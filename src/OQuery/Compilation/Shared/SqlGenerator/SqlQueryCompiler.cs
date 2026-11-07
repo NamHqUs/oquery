@@ -22,7 +22,11 @@ internal sealed class SqlQueryCompiler(
         Expression expression,
         bool includeTotalRecords = false)
     {
-        var queryContext = new QueryContext(metaProvider, functionProvider, sqlDialect);
+        var queryContext = new QueryCompilationResolver(
+            metaProvider,
+            functionProvider,
+            sqlDialect,
+            new CompilationState());
         var tableExpression = (TableExpression)new QueryVisitor(queryContext).Visit(expression);
         var statementGenerator = new SqlStatementGenerator(sqlDialect);
         var generatedSql = statementGenerator.Generate(tableExpression, queryContext.DbParameters);

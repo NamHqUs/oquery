@@ -5,7 +5,7 @@ using System.Linq.Expressions;
 
 namespace OQuery.Compilation.Visitors;
 
-class WhereVisitor(TableExpression tableContext, QueryContext queryContext)
+class WhereVisitor(TableExpression tableContext, QueryCompilationResolver queryContext)
     : LambdaVisitor(tableContext, queryContext)
 {
     protected override void OnProcessResult(Expression body)

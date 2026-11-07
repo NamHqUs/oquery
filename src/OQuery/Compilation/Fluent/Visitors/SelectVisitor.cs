@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 
 namespace OQuery.Compilation.Visitors;
 
-class SelectVisitor(TableExpression tableContext, QueryContext queryContext)
+class SelectVisitor(TableExpression tableContext, QueryCompilationResolver queryContext)
     : LambdaVisitor(tableContext, queryContext)
 {
     protected override Expression VisitConstant(ConstantExpression node)

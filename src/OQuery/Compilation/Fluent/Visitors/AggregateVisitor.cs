@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 
 namespace OQuery.Compilation.Visitors;
 
-class AggregateVisitor(TableExpression tableContext, QueryContext queryContext)
+class AggregateVisitor(TableExpression tableContext, QueryCompilationResolver queryContext)
 {
     public AggregateExpression Eval(ConstantExpression expression)
     {

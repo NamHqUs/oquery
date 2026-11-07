@@ -4,7 +4,7 @@ using System.Linq.Expressions;
 
 namespace OQuery.Compilation.Visitors;
 
-abstract class LambdaVisitor(TableExpression tableContext, QueryContext queryContext)
+abstract class LambdaVisitor(TableExpression tableContext, QueryCompilationResolver queryContext)
     : QueryVisitor(queryContext)
 {
     protected TableExpression TableContext = tableContext;

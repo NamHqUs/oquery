@@ -108,40 +108,7 @@ public static class QueryDefinitionOQueryParser
             => !string.Equals(block.Name, block.Entity, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static void AddImplicitRecursiveContext(QueryDefinition root, string rootName)
-    {
-        var relation = root.Joins?.FirstOrDefault(candidate =>
-            string.Equals(candidate.RefContext, rootName, StringComparison.OrdinalIgnoreCase));
-        if (relation is null || root.Contexts is null || root.Contexts.ContainsKey(rootName))
-            return;
 
-        var alias = string.IsNullOrWhiteSpace(relation.Alias) ? rootName : relation.Alias;
-        var contextFieldAliases = root.Projections
-            .Select(projection => (Field: projection.Field, projection.Alias))
-            .Where(item => item.Field is FieldDefinition field
-                && !field.FieldName.Contains('.')
-                && !string.IsNullOrWhiteSpace(item.Alias))
-            .ToDictionary(
-                item => ((FieldDefinition)item.Field).FieldName,
-                item => item.Alias!,
-                StringComparer.OrdinalIgnoreCase);
-        var projectionText = root.Projections
-            .Select(projection => projection.ToText())
-            .Select(text => System.Text.RegularExpressions.Regex.Replace(
-                text,
-                $@"(?<![A-Za-z0-9_]){System.Text.RegularExpressions.Regex.Escape(alias)}\.",
-                $"{rootName}.",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
-            .Select(text => System.Text.RegularExpressions.Regex.Replace(
-                text,
-                $@"(?<context>{System.Text.RegularExpressions.Regex.Escape(rootName)})\.(?<field>[A-Za-z_][A-Za-z0-9_]*)",
-                match => $"{match.Groups["context"].Value}.{contextFieldAliases.GetValueOrDefault(match.Groups["field"].Value, match.Groups["field"].Value)}",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase));
-        root.Contexts[rootName] = new QueryDefinition(root.Entity)
-        {
-            Projections = projectionText.SelectMany(ProjectionDefinitionParser.Parse).ToList(),
-        };
-    }
 
     public static QueryDefinition Parse(FileInfo file)
     {
@@ -357,6 +324,41 @@ public static class QueryDefinitionOQueryParser
         => int.TryParse(value, out var result) && result >= 0
             ? result
             : throw new FormatException($"{name} must be a non-negative integer.");
+
+    private static void AddImplicitRecursiveContext(QueryDefinition root, string rootName)
+    {
+        var relation = root.Joins?.FirstOrDefault(candidate =>
+            string.Equals(candidate.RefContext, rootName, StringComparison.OrdinalIgnoreCase));
+        if (relation is null || root.Contexts is null || root.Contexts.ContainsKey(rootName))
+            return;
+
+        var alias = string.IsNullOrWhiteSpace(relation.Alias) ? rootName : relation.Alias;
+        var contextFieldAliases = root.Projections
+            .Select(projection => (Field: projection.Field, projection.Alias))
+            .Where(item => item.Field is FieldDefinition field
+                && !field.FieldName.Contains('.')
+                && !string.IsNullOrWhiteSpace(item.Alias))
+            .ToDictionary(
+                item => ((FieldDefinition)item.Field).FieldName,
+                item => item.Alias!,
+                StringComparer.OrdinalIgnoreCase);
+        var projectionText = root.Projections
+            .Select(projection => projection.ToText())
+            .Select(text => System.Text.RegularExpressions.Regex.Replace(
+                text,
+                $@"(?<![A-Za-z0-9_]){System.Text.RegularExpressions.Regex.Escape(alias)}\.",
+                $"{rootName}.",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+            .Select(text => System.Text.RegularExpressions.Regex.Replace(
+                text,
+                $@"(?<context>{System.Text.RegularExpressions.Regex.Escape(rootName)})\.(?<field>[A-Za-z_][A-Za-z0-9_]*)",
+                match => $"{match.Groups["context"].Value}.{contextFieldAliases.GetValueOrDefault(match.Groups["field"].Value, match.Groups["field"].Value)}",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase));
+        root.Contexts[rootName] = new QueryDefinition(root.Entity)
+        {
+            Projections = projectionText.SelectMany(ProjectionDefinitionParser.Parse).ToList(),
+        };
+    }
 
     private static void WriteBlock(
         List<string> lines,

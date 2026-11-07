@@ -3,9 +3,9 @@ using System.Linq.Expressions;
 
 namespace OQuery.Compilation.Visitors;
 
-class QueryVisitor(QueryContext queryContext) : ExpressionVisitor
+class QueryVisitor(QueryCompilationResolver queryContext) : ExpressionVisitor
 {
-    protected readonly QueryContext QueryContext = queryContext;
+    protected readonly QueryCompilationResolver QueryContext = queryContext;
 
     private readonly Lazy<ParameterVisitor> _parameterVisitor =
         new(() => new ParameterVisitor(queryContext));

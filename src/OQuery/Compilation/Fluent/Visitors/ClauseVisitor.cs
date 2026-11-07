@@ -9,10 +9,10 @@ using System.Reflection;
 
 namespace OQuery.Compilation.Visitors;
 
-class ClauseVisitor(QueryContext queryContext)
+class ClauseVisitor(QueryCompilationResolver queryContext)
 {
     private static readonly MethodInfo _queryMethod = typeof(IQueryParameter).GetMethod(nameof(IQueryParameter.Query))!;
-    protected QueryContext QueryContext { get; } = queryContext;
+    protected QueryCompilationResolver QueryContext { get; } = queryContext;
 
     public SqlExpression Eval(MethodCallExpression methodCall)
     {

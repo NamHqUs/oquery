@@ -7,17 +7,16 @@ using static OQuery.SqlFunctionDefintion;
 
 namespace OQuery.Compilation;
 
-class QueryContext(
+class QueryCompilationResolver(
     IMetadataProvider metaProvider,
     IFunctionProvider functionProvider,
-    ISqlDialect sqlDialect)
+    ISqlDialect sqlDialect,
+    CompilationState state)
 {
-    private int _aliasCount;
-    private bool _parseContextAggregatesAsScalar;
-    public readonly Stack<(string ArgumentName, TableExpression TableContext)> Arguments = new();
-    private readonly List<DbParameter> _dbParameters = [];
+    private readonly CompilationState _state = state;
+    public Stack<(string ArgumentName, TableExpression TableContext)> Arguments => _state.Arguments;
 
-    public IEnumerable<DbParameter> DbParameters => _dbParameters;
+    public IEnumerable<DbParameter> DbParameters => _state.DbParameters;
     public bool SupportsRecursiveCte => sqlDialect.SupportsRecursiveCte;
 
     public IEntity GetEntity(string entityName)
@@ -137,15 +136,15 @@ class QueryContext(
 
     public SqlExpression ParseScalarQueryExpression(TableExpression tableContext, IFieldDefinition expression)
     {
-        var previous = _parseContextAggregatesAsScalar;
-        _parseContextAggregatesAsScalar = true;
+        var previous = _state.ParseContextAggregatesAsScalar;
+        _state.ParseContextAggregatesAsScalar = true;
         try
         {
             return ParseQueryExpression(tableContext, expression);
         }
         finally
         {
-            _parseContextAggregatesAsScalar = previous;
+            _state.ParseContextAggregatesAsScalar = previous;
         }
     }
 
@@ -296,7 +295,7 @@ class QueryContext(
                 "COUNT(*) is not allowed. Specify an authorized field to count.");
         }
 
-        if (_parseContextAggregatesAsScalar &&
+        if (_state.ParseContextAggregatesAsScalar &&
             TryParseContextAggregate(tableContext, expression, definition, depth, out var contextAggregate))
             return contextAggregate;
 
@@ -919,21 +918,21 @@ class QueryContext(
 
         if (value is bool b)
         {
-            var boolName = string.Format("@p{0}", _dbParameters.Count);
-            _dbParameters.Add(new DbParameter(boolName, sqlDialect.NormalizeParameterValue(b)));
+            var boolName = string.Format("@p{0}", _state.DbParameters.Count);
+            _state.DbParameters.Add(new DbParameter(boolName, sqlDialect.NormalizeParameterValue(b)));
             return boolName;
         }
 
         if (!forceParameter && value is string st && !st.Contains('\''))
             return $"'{st}'";
 
-        var name = string.Format("@p{0}", _dbParameters.Count);
-        _dbParameters.Add(new DbParameter(name, sqlDialect.NormalizeParameterValue(value)));
+        var name = string.Format("@p{0}", _state.DbParameters.Count);
+        _state.DbParameters.Add(new DbParameter(name, sqlDialect.NormalizeParameterValue(value)));
 
         return name;
     }
-    public string GetNextAlias() => "t" + _aliasCount++;
+    public string GetNextAlias() => "t" + _state.AliasCount++;
 
     public string GetNextInternalAlias(string name)
-        => $"__oq_{name}_{_aliasCount++}";
+        => $"__oq_{name}_{_state.AliasCount++}";
 }

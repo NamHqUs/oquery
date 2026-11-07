@@ -14,7 +14,7 @@ internal sealed class ContextBinding(string name, QueryDefinitionBase query, Joi
     public QueryJoinType JoinType => relation.JoinType ?? QueryJoinType.Left;
 }
 
-internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
+internal sealed class QueryDefinitionVisitor(QueryCompilationResolver queryContext)
 {
     public TableExpression Eval(QueryDefinition definition)
     {
@@ -789,7 +789,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
 }
 
 internal sealed class JoinConditionVisitor(
-    QueryContext queryContext,
+    QueryCompilationResolver queryContext,
     TableExpression leftTable,
     TableExpression rightTable,
     IReadOnlyDictionary<string, TableExpression> contextTables)

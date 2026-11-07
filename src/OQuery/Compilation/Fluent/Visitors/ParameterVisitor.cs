@@ -5,7 +5,7 @@ using System.Linq.Expressions;
 
 namespace OQuery.Compilation.Visitors;
 
-class ParameterVisitor(QueryContext queryContext) : QueryVisitor(queryContext)
+class ParameterVisitor(QueryCompilationResolver queryContext) : QueryVisitor(queryContext)
 {
     public SqlExpression Eval(MethodCallExpression node)
     {
