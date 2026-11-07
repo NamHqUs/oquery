@@ -36,7 +36,9 @@ internal sealed class SqlQueryCompiler(
         return new CompiledQuery(
             generatedSql.CommandText,
             generatedSql.Parameters,
-            tableExpression.ProjectionItems.ToArray(),
+            tableExpression.ProjectionItems
+                .Where(item => !item.IsHidden)
+                .ToArray(),
             totalRecordsSql?.CommandText);
     }
 }

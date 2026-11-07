@@ -686,6 +686,11 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         var projections = definition.Projections.ToArray();
         if (projections.Length > 0)
         {
+            table.PendingProjectionAliases = projections
+                .Where(projection => !string.IsNullOrWhiteSpace(projection.Alias))
+                .Select(projection => projection.Alias!)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(alias => alias, _ => typeof(object), StringComparer.OrdinalIgnoreCase);
             var projectionItems = new List<ProjectionItem>();
             foreach (var projection in projections)
             {
@@ -749,9 +754,14 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             yield break;
         }
 
-        yield return new ProjectionItem(
+        var pipelineItems = new List<ProjectionItem>();
+        var expression = queryContext.ExpandAggregatePipeline(
             queryContext.ParseQueryExpression(table, projection.Field),
-            GetProjectionAlias(projection));
+            pipelineItems);
+        foreach (var pipelineItem in pipelineItems)
+            yield return pipelineItem;
+
+        yield return new ProjectionItem(expression, GetProjectionAlias(projection));
     }
 
     private static string GetProjectionAlias(ProjectionDefinition projection)

@@ -2,10 +2,11 @@ using OQuery.Compilation.Expressions;
 
 namespace OQuery.Compilation.Models;
 
-class ProjectionItem(SqlExpression item, string alias)
+class ProjectionItem(SqlExpression item, string alias, bool isHidden = false)
 {
     public readonly string Alias = alias;
     public readonly SqlExpression Item = item;
+    public readonly bool IsHidden = isHidden;
 
     public ProjectionItem(FieldExpression fieldExpression)
         : this(fieldExpression, fieldExpression.MetaField.Name)

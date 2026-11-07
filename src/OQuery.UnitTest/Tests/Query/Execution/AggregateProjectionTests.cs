@@ -87,7 +87,7 @@ public sealed class AggregateProjectionTests : TestBase
         var query = _db.Query("User")
             .Select(
                 "Name",
-                "Members.Sum(Age).Avg()");
+                "Members.Sum(Age).Avg().Sum()");
 
         var data = query.ToList();
 
@@ -95,13 +95,20 @@ public sealed class AggregateProjectionTests : TestBase
     }
 
     [Test]
-    public void CollectionField_Projection_RejectsMultipleResultAggregates()
+    public void OQueryDefinition_ResolvesFluentAggregateProjectionAliases()
     {
-        Assert.That(
-            () => _db.Query("User")
-                .Select("Name", "Members.Sum(Age).Avg().Sum()")
-                .ToList(),
-            Throws.TypeOf<FormatException>());
+        var query = _db.QueryOqr("""
+            Report is Products:
+                Name,
+                Revenue.Avg().Sum() Average,
+                OrderItems.Sum(Quantity * UnitPrice) Revenue
+            WHERE Revenue > Average
+            """);
+
+        var sql = query.ToSql().CommandText;
+
+        Assert.That(sql, Does.Contain("Average"));
+        Assert.That(sql, Does.Contain("Revenue"));
     }
 
     [Test]

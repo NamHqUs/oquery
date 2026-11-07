@@ -428,9 +428,10 @@ Supported result-level suffixes are:
 .Min()
 ```
 
-Only one result-level aggregate may be chained. A second result-level
-aggregate is invalid because it would aggregate a value that is already
-repeated across the current result rows.
+Additional result-level aggregates may be chained. Each suffix is evaluated
+in a new query stage, so a pipeline such as
+`OrderItems.Sum(Quantity * UnitPrice).Avg().Sum()` remains valid without
+nested window functions in the generated SQL.
 
 ## 8. Aggregate filters and scalar context aggregates
 

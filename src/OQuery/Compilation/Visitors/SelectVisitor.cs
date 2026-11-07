@@ -137,6 +137,11 @@ class SelectVisitor(TableExpression tableContext, QueryContext queryContext)
             _ => throw new NotSupportedException($"Unsupported projection value [{value?.GetType().Name ?? "null"}].")
         };
 
+        var pipelineItems = new List<ProjectionItem>();
+        sql = QueryContext.ExpandAggregatePipeline(sql, pipelineItems);
+        foreach (var pipelineItem in pipelineItems)
+            yield return pipelineItem;
+
         var alias = parentKey == null ? key : string.Format("{0}.{1}", parentKey, key);
         yield return new ProjectionItem(sql, alias);
     }

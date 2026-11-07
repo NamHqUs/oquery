@@ -321,6 +321,21 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
                 : query.Take,
             query.Orders.Count != 0);
 
+        var hiddenItems = projectionItems
+            .Where(item => item.IsHidden)
+            .ToArray();
+        if (hiddenItems.Length != 0)
+        {
+            var outputAlias = $"q{maxLevel + 1}";
+            var visibleItems = projectionItems
+                .Where(item => !item.IsHidden)
+                .Select(item =>
+                    $"{outputAlias}.{dialect.QuoteIdentifier(item.Alias)} {dialect.QuoteIdentifier(item.Alias)}")
+                .ToArray();
+            inner = $"SELECT {string.Join(",\n", visibleItems)}\n" +
+                $"FROM (\n{Indent(inner)}\n) AS {outputAlias}";
+        }
+
         renderedQuery = includeCtes
             ? RenderCommonTableExpressions(query) + inner
             : inner;

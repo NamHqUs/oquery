@@ -141,6 +141,42 @@ class QueryContext(
         }
     }
 
+    public SqlExpression ExpandAggregatePipeline(
+        SqlExpression expression,
+        IList<ProjectionItem> pipelineItems)
+    {
+        if (expression is not FunctionSqlExpression function)
+            return expression;
+
+        var arguments = function.Arguments
+            .Select(argument =>
+            {
+                if (argument is not FunctionSqlExpressionArgument expressionArgument)
+                    return argument;
+
+                var nested = ExpandAggregatePipeline(expressionArgument.Expression, pipelineItems);
+                if (IsAggregateOver(function) && nested is FunctionSqlExpression nestedFunction &&
+                    IsAggregateOver(nestedFunction))
+                {
+                    var alias = GetNextInternalAlias("pipeline");
+                    pipelineItems.Add(new ProjectionItem(nestedFunction, alias, true));
+                    nested = new ProjectionAliasExpression(alias, nested.Type);
+                }
+
+                return new FunctionSqlExpressionArgument(nested);
+            })
+            .ToArray();
+
+        return new FunctionSqlExpression(function.Definition, arguments);
+    }
+
+    private static bool IsAggregateOver(FunctionSqlExpression function)
+        => function.Definition.Name.Equals("AverageOver", StringComparison.OrdinalIgnoreCase) ||
+            function.Definition.Name.Equals("CountOver", StringComparison.OrdinalIgnoreCase) ||
+            function.Definition.Name.Equals("MaxOver", StringComparison.OrdinalIgnoreCase) ||
+            function.Definition.Name.Equals("MinOver", StringComparison.OrdinalIgnoreCase) ||
+            function.Definition.Name.Equals("SumOver", StringComparison.OrdinalIgnoreCase);
+
     public SqlExpression ParseQueryExpression(TableExpression tableContext, IFieldDefinition[] expressions, int depth = 0)
     {
         if (depth > 32)

@@ -68,13 +68,6 @@ internal static class FieldDefinitionParser
                         throw new FormatException("An aggregate pipeline requires a source expression.");
 
                     var source = Parse(sourceText);
-                    if (source is FunctionFieldDefinition { FunctionName: { } functionName } &&
-                        IsAggregateOverFunction(functionName))
-                    {
-                        throw new FormatException(
-                            "An aggregate pipeline cannot apply more than one result aggregate.");
-                    }
-
                     pipeline = new FunctionFieldDefinition(
                         GetAggregateOverFunctionName(suffix[..opening]),
                         [source]);
@@ -95,13 +88,6 @@ internal static class FieldDefinitionParser
             functionName.Equals("Min", StringComparison.OrdinalIgnoreCase) ||
             functionName.Equals("Minimum", StringComparison.OrdinalIgnoreCase) ||
             functionName.Equals("Sum", StringComparison.OrdinalIgnoreCase);
-
-    private static bool IsAggregateOverFunction(string functionName)
-        => functionName.Equals("AverageOver", StringComparison.OrdinalIgnoreCase) ||
-            functionName.Equals("CountOver", StringComparison.OrdinalIgnoreCase) ||
-            functionName.Equals("MaxOver", StringComparison.OrdinalIgnoreCase) ||
-            functionName.Equals("MinOver", StringComparison.OrdinalIgnoreCase) ||
-            functionName.Equals("SumOver", StringComparison.OrdinalIgnoreCase);
 
     private static string GetAggregateOverFunctionName(string functionName)
         => functionName.ToUpperInvariant() switch
