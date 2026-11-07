@@ -49,14 +49,18 @@ var employees = db.Query("Employees")
 
 The relation must be a collection pointing back to the source entity and must
 have one key pair. The projection receives a manager scope and a members
-scope. Collection aggregates use the same field syntax as scalar expressions:
+scope. Collection aggregates start from the collection boundary. The aggregate
+argument identifies the related field or expression:
 
 ```csharp
 e["Members"].Count();
-e["Members.Age"].Sum();
+e["Members"].Sum("Age");
+e["Members"].Sum("Age + 1");
 ```
 
 Calling an aggregate on a scalar field is rejected during query translation.
+For example, `e["Members.Age"].Sum()` is invalid because `Members.Age` is a
+scalar field path, not a collection boundary.
 The relation name is the only recursive implementation detail exposed to the
 caller.
 
@@ -107,13 +111,35 @@ var adults = db.Query("User")
 
 `Where` accepts `Expression<Func<IQueryParameter, bool>>`. Fields are accessed
 with the indexer, and related collections can use `Query` with `Any` or
-`Count`:
+`NotAny`:
 
 ```csharp
 var results = db.Query("User")
     .Where(e => e["Age"] > 32 && e["IsMale"] == true)
     .Where(e => e.Query("Members").Any(member => member["IsMale"] == e["IsMale"]))
+    .Where(e => e.Query("Members").NotAny(member => member["Name"] == "David"))
     .ToList();
+```
+
+The equivalent OQuery text uses the join-like existence operators:
+
+```text
+User: Name
+  Where Members HasAny Name = <Bob>
+```
+
+```text
+User: Name
+  Where Members HasNone Name = <David>
+```
+
+`HasAny` and `HasNone` accept a relation, entity, or named context. The
+condition is evaluated in that source scope, and an explicit source alias can
+be used when the condition also references the outer context:
+
+```text
+User: Id
+  Where Members Member HasAny Member.Name = <Bob>
 ```
 
 `QueryValue` supports equality and comparison operators plus `Like`,

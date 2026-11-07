@@ -31,4 +31,15 @@ internal sealed class FilterParserTests : TestBase
 
         Assert.That(filter!.ToText(), Is.EqualTo("Total = Minimum + <1>"));
     }
+
+    [Test]
+    public void Filter_ParsesExistsAndNotExistsContextConditions()
+    {
+        var filter = QueryDefinitionJsonParser.ParseFilter(
+            "(Members HasAny Name = <Bob>) AND Members HasNone Name = <David>");
+
+        Assert.That(
+            filter!.ToText(),
+            Is.EqualTo("Members HasAny Name = <Bob> AND Members HasNone Name = <David>"));
+    }
 }

@@ -124,8 +124,85 @@ internal static class DbQueryFromQueryDto
         {
             ConditionDefinition group => CreateLogicalFilter(group, parameter),
             ConditionStatementDefinition binary => CreateCondition(binary, parameter),
+            ExistsConditionDefinition exists => CreateExistsCondition(exists, parameter),
             _ => throw new ArgumentOutOfRangeException(nameof(filter))
         };
+
+    private static Expression CreateExistsCondition(
+        ExistsConditionDefinition filter,
+        ParameterExpression parameter)
+    {
+        if (filter.Context.Value is not string contextName ||
+            string.IsNullOrWhiteSpace(contextName))
+            throw new FormatException("An exists condition requires a context name.");
+
+        var innerParameter = Expression.Parameter(typeof(IQueryParameter), "existsRecord");
+        var condition = filter.Condition is null
+            ? null
+            : RewriteExistsCondition(filter.Condition, filter.Alias);
+        var innerBody = filter.Condition is null
+            ? Expression.Constant(true)
+            : CreateFilterBody(condition!, innerParameter);
+        var predicate = Expression.Lambda<Func<IQueryParameter, bool>>(innerBody, innerParameter);
+        var query = Expression.Call(
+            parameter,
+            typeof(IQueryParameter).GetMethod(nameof(IQueryParameter.Query))!,
+            Expression.Constant(contextName));
+        var any = Expression.Call(
+            typeof(FluentQueryExtensions),
+            filter.Negated
+                ? nameof(FluentQueryExtensions.NotAny)
+                : nameof(FluentQueryExtensions.Any),
+            null,
+            query,
+            predicate);
+        return any;
+    }
+
+    private static IConditionDefintion RewriteExistsCondition(
+        IConditionDefintion condition,
+        string? alias)
+        => condition switch
+        {
+            ConditionDefinition group => new ConditionDefinition(
+                group.LogicalOperation,
+                group.Filters.Select(filter => RewriteExistsCondition(filter, alias)).ToArray()),
+            ConditionStatementDefinition statement => statement with
+            {
+                Left = RewriteExistsField(statement.Left, alias),
+                Right = statement.Right is null
+                    ? null
+                    : RewriteExistsField(statement.Right, alias)
+            },
+            ExistsConditionDefinition nested => nested with
+            {
+                Condition = nested.Condition is null
+                    ? null
+                    : RewriteExistsCondition(nested.Condition, nested.Alias)
+            },
+            _ => condition
+        };
+
+    private static IFieldDefinition RewriteExistsField(
+        IFieldDefinition field,
+        string? alias)
+    {
+        if (field is FieldDefinition fieldDefinition &&
+            !string.IsNullOrWhiteSpace(alias) &&
+            fieldDefinition.FieldName.StartsWith(alias + ".", StringComparison.OrdinalIgnoreCase))
+            return fieldDefinition with
+            {
+                FieldName = fieldDefinition.FieldName[(alias.Length + 1)..]
+            };
+
+        if (field is GroupFieldDefintion group)
+            return group with
+            {
+                Fields = group.Fields.Select(value => RewriteExistsField(value, alias)).ToArray()
+            };
+
+        return field;
+    }
 
     private static Expression CreateLogicalFilter(
         ConditionDefinition group,

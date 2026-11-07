@@ -88,10 +88,37 @@ internal sealed class ConditionDefinitionParser
             return grouped;
         }
 
+        if (Peek("exists") || Peek("notexists"))
+            return ParseExists();
+
         var left = Next();
         if (left.Type is not (TokenType.Identifier or TokenType.Field or TokenType.FieldExpression))
             throw new FormatException($"Expected a filter field, received [{left.Text}].");
         var leftField = new FieldDefinition(left.Text);
+
+        string? existsAlias = null;
+        if (PeekAt(1, "hasany") || PeekAt(1, "hasnone"))
+            existsAlias = Next().Text;
+
+        if (Match("hasany") || Match("hasnone"))
+        {
+            var negated = _tokens[_position - 1].Text.Equals("hasnone", StringComparison.OrdinalIgnoreCase);
+            IConditionDefintion? condition = null;
+            if (!IsEnd() && !Peek(")"))
+            {
+                var parenthesized = Match("(");
+                condition = ParseOr();
+                if (parenthesized)
+                    Expect(")");
+            }
+
+            return new ExistsConditionDefinition(
+                new ConstFieldDefinition(left.Text),
+                existsAlias,
+                condition,
+                negated);
+        }
+
         var operationToken = Next();
         if (operationToken.Type != TokenType.Operator)
             throw new FormatException($"Expected a filter operator, received [{operationToken.Text}].");
@@ -130,6 +157,41 @@ internal sealed class ConditionDefinitionParser
         {
             Parameterized = true
         };
+    }
+
+    private ExistsConditionDefinition ParseExists()
+    {
+        var negated = Match("notexists");
+        if (!negated)
+            Expect("exists");
+
+        var context = Next();
+        if (context.Type is not (TokenType.Identifier or TokenType.Field))
+            throw new FormatException($"Expected an exists context, received [{context.Text}].");
+
+        string? alias = null;
+        if (!Peek("on") && !Peek(")") && !IsEnd())
+        {
+            var aliasToken = Next();
+            if (aliasToken.Type is not (TokenType.Identifier or TokenType.Field))
+                throw new FormatException($"Expected an exists alias, received [{aliasToken.Text}].");
+            alias = aliasToken.Text;
+        }
+
+        IConditionDefintion? condition = null;
+        if (Match("on"))
+        {
+            var parenthesized = Match("(");
+            condition = ParseOr();
+            if (parenthesized)
+                Expect(")");
+        }
+
+        return new ExistsConditionDefinition(
+            new ConstFieldDefinition(context.Text),
+            alias,
+            condition,
+            negated);
     }
 
     private IFieldDefinition? ParseFilterValue(string operation)
@@ -232,6 +294,17 @@ internal sealed class ConditionDefinitionParser
         _position++;
         return true;
     }
+
+    private bool Peek(string text)
+        => _position < _tokens.Count &&
+           _tokens[_position].Text.Equals(text, StringComparison.OrdinalIgnoreCase);
+
+    private bool PeekAt(int offset, string text)
+        => _position + offset < _tokens.Count &&
+           _tokens[_position + offset].Text.Equals(text, StringComparison.OrdinalIgnoreCase);
+
+    private bool IsEnd()
+        => _position >= _tokens.Count || _tokens[_position].Type == TokenType.End;
 
     private static List<Token> Tokenize(string text)
     {

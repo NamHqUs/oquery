@@ -9,6 +9,31 @@ internal sealed record JoinExpression(
     string JoinType,
     IReadOnlyList<SqlExpression> Conditions);
 
+internal sealed class GroupedAggregateTableExpression : TableExpression
+{
+    public TableExpression Source { get; }
+    public IReadOnlyList<(string Alias, FunctionSqlExpression Function)> Aggregates => _aggregates;
+    private readonly List<(string Alias, FunctionSqlExpression Function)> _aggregates = [];
+    public IReadOnlyList<Field> Keys { get; }
+
+    public GroupedAggregateTableExpression(
+        TableExpression source,
+        string alias,
+        IReadOnlyList<Field> keys)
+        : base(source.Entity, alias, keys)
+    {
+        Source = source;
+        Keys = keys;
+    }
+
+    public string AddAggregate(FunctionSqlExpression function)
+    {
+        var alias = $"a{_aggregates.Count}";
+        _aggregates.Add((alias, function));
+        return alias;
+    }
+}
+
 internal abstract record CommonTableExpression(string Name);
 
 internal sealed record StandardCommonTableExpression(string Name, TableExpression Query)
@@ -42,6 +67,7 @@ class TableExpression(IEntity entity, string alias, IReadOnlyList<Field> fields)
     internal IReadOnlyList<Field> AuthorizedFields => MetadataFields;
     public string? CommonTableExpressionName { get; protected set; }
     public readonly Dictionary<string, TableExpression> JoinedTables = [];
+    public readonly Dictionary<string, GroupedAggregateTableExpression> GroupedAggregateJoins = [];
     public TableExpression? JoinRoot { get; set; }
     protected int? TakeCount;
     protected int? SkipCount;
@@ -99,6 +125,30 @@ class TableExpression(IEntity entity, string alias, IReadOnlyList<Field> fields)
 
     internal void SetMetadataFields(IReadOnlyList<Field> fields)
         => MetadataFields = fields;
+
+    internal TableExpression CloneForSubquery()
+    {
+        var clone = this is CteTableExpression cte
+            ? new CteTableExpression(cte.Name, cte.Entity, cte.Alias, cte.AuthorizedFields)
+            : new TableExpression(Entity, Alias, AuthorizedFields);
+
+        clone.ProjectionItems = ProjectionItems.ToList();
+        clone.PendingProjectionAliases = new Dictionary<string, Type>(
+            PendingProjectionAliases,
+            StringComparer.OrdinalIgnoreCase);
+        clone.CommonTableExpressions.AddRange(CommonTableExpressions);
+        clone.SqlWhere.AddRange(SqlWhere);
+        clone.SqlHaving.AddRange(SqlHaving);
+        clone.Joins.AddRange(Joins);
+        clone.Orders.AddRange(Orders);
+        clone.GroupByExpressions.AddRange(GroupByExpressions);
+        clone.SqlSelect = SqlSelect;
+        clone.SqlOrder = SqlOrder;
+        clone.JoinRoot = JoinRoot;
+        foreach (var pair in JoinedTables)
+            clone.JoinedTables[pair.Key] = pair.Value;
+        return clone;
+    }
 }
 
 internal sealed class CteTableExpression : TableExpression

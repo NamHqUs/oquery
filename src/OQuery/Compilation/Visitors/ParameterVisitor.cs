@@ -1,4 +1,6 @@
 using OQuery.Compilation.Expressions;
+using OQuery.Compilation.Utilities;
+using OQuery.QueryBuilderDto.Parsers;
 using System.Linq.Expressions;
 
 namespace OQuery.Compilation.Visitors;
@@ -16,6 +18,10 @@ class ParameterVisitor(QueryContext queryContext) : QueryVisitor(queryContext)
             case nameof(QueryValue.Sum):
             case nameof(QueryValue.Average):
                 return CreateCollectionAggregate(node);
+
+            case nameof(QueryValue.Any):
+            case nameof(QueryValue.NotAny):
+                return CreateCollectionAny(node, node.Method.Name == nameof(QueryValue.NotAny));
 
             default:
                 throw new NotImplementedException(string.Format("not support method {0}.{1}", node.Method.DeclaringType?.Name, node.Method.Name));
@@ -36,31 +42,72 @@ class ParameterVisitor(QueryContext queryContext) : QueryVisitor(queryContext)
         var tableContext = QueryContext.Arguments
             .First(e => e.ArgumentName == parameter.Name)
             .TableContext;
-        var lastSeparator = fieldPath.LastIndexOf('.');
-        var relationPath = lastSeparator < 0 ? fieldPath : fieldPath[..lastSeparator];
-        var fieldName = lastSeparator < 0 ? null : fieldPath[(lastSeparator + 1)..];
-        if (fieldName is null)
+        var relationPath = fieldPath;
+        Relation relation;
+        try
         {
-            try
-            {
-                var relation = QueryContext.GetEntity(tableContext.Entity.Name).GetRelation(relationPath);
-                if (relation.Type != RelationType.Collection)
-                    throw new FormatException(
-                        $"{node.Method.Name}() requires a collection path; [{fieldPath}] is not a collection.");
-                fieldName = QueryContext.GetFields(QueryContext.GetEntity(relation.RefEntity))
-                    .First(field => string.Equals(field.Name, "Id", StringComparison.OrdinalIgnoreCase))
-                    .Name;
-            }
-            catch (RelationNotFoundException)
-            {
-                throw new FormatException(
-                    $"{node.Method.Name}() requires a collection path; [{fieldPath}] is a scalar field.");
-            }
+            relation = QueryContext.GetEntity(tableContext.Entity.Name).GetRelation(relationPath);
         }
+        catch (RelationNotFoundException)
+        {
+            throw new FormatException(
+                $"{node.Method.Name}() requires a collection relation; [{fieldPath}] is not a collection.");
+        }
+        if (relation.Type != RelationType.Collection)
+            throw new FormatException(
+                $"{node.Method.Name}() requires a collection relation; [{fieldPath}] is not a collection.");
+
+        var fieldName = node.Method.Name.Equals(nameof(QueryValue.Count), StringComparison.OrdinalIgnoreCase)
+            ? QueryContext.GetFields(QueryContext.GetEntity(relation.RefEntity))
+                .First(field => string.Equals(field.Name, "Id", StringComparison.OrdinalIgnoreCase))
+                .Name
+            : null;
+        if (node.Arguments.Count > 0)
+        {
+            if (node.Arguments[0] is not ConstantExpression { Value: string aggregateText } ||
+                string.IsNullOrWhiteSpace(aggregateText))
+                throw new FormatException(
+                    $"{node.Method.Name}() requires a text field or expression argument.");
+            fieldName = ParseAggregateExpression(aggregateText);
+        }
+
+        if (fieldName is null)
+            throw new FormatException(
+                $"{node.Method.Name}() requires an aggregate argument.");
 
         return QueryContext.ParseFieldPath(
             tableContext,
             $"{relationPath}.{node.Method.Name.ToUpperInvariant()}({fieldName})");
+    }
+
+    private static string ParseAggregateExpression(string text)
+    {
+        var normalized = System.Text.RegularExpressions.Regex.Replace(
+            text,
+            @"(?<![A-Za-z0-9_<])-?\d+(?:\.\d+)?(?![A-Za-z0-9_>])",
+            match => $"<{match.Value}>");
+        var expression = FieldDefinitionParser.Parse(normalized);
+        return expression.ToText();
+    }
+
+    private SqlExpression CreateCollectionAny(MethodCallExpression node, bool negated)
+    {
+        if (node.Object is not MethodCallExpression
+            {
+                Method.Name: "get_Item",
+                Object: ParameterExpression parameter
+            } fieldAccess ||
+            fieldAccess.Arguments[0] is not ConstantExpression { Value: string relationPath })
+            throw new FormatException(
+                $"{node.Method.Name}() requires a collection path.");
+
+        var tableContext = QueryContext.Arguments
+            .First(e => e.ArgumentName == parameter.Name)
+            .TableContext;
+        var innerTable = QueryContext.JoinCollection(tableContext, relationPath);
+        var predicate = (LambdaExpression)node.Arguments[0].StripQuotes();
+        innerTable = new WhereVisitor(innerTable, QueryContext).Eval(predicate);
+        return new AnyExpression(innerTable, negated);
     }
 
     //e => e["Lookup.FieldName"]

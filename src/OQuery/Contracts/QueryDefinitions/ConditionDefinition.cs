@@ -85,6 +85,25 @@ public record ConditionStatementDefinition(
         };
 }
 
+public sealed record ExistsConditionDefinition(
+    ConstFieldDefinition Context,
+    string? Alias = null,
+    IConditionDefintion? Condition = null,
+    bool Negated = false,
+    LogicalOperator? LogicalOperator = null) : IConditionDefintion
+{
+    public string ToText()
+    {
+        var operation = Negated ? "HasNone" : "HasAny";
+        var source = Context.Value?.ToString()
+            ?? throw new FormatException("An exists condition requires a context name.");
+        var alias = string.IsNullOrWhiteSpace(Alias) ? string.Empty : $" {Alias}";
+        return Condition is null
+            ? $"{source}{alias} {operation}"
+            : $"{source}{alias} {operation} {Condition.ToText()}";
+    }
+}
+
 public enum BinaryOperator
 {
     Equals,

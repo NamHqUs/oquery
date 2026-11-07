@@ -57,6 +57,80 @@ public sealed class FilterFieldTests : TestBase
     }
 
     [Test]
+    public void _03_Field_Collection_NotAny()
+    {
+        var query = _db.Query("User").Where(e => e.Query("Members").NotAny(x => x["Name"] == "Bob"));
+        var data = query.Select("Name").ToList();
+
+        Assert.That(data.Select(row => row["Name"]), Does.Not.Contain("Alice"));
+    }
+
+    [Test]
+    public void _03_Field_Collection_Any_FromFieldPath()
+    {
+        var query = _db
+            .Query("User")
+            .Select("Name")
+            .Where(user => user["Members"].Any(member => member["Name"] == "Bob"));
+
+        var data = query.ToList();
+
+        Assert.That(data.Select(row => row["Name"]).ToArray(), Is.EqualTo(["Alice"]));
+    }
+
+    [Test]
+    public void _03_Field_Collection_NotAny_FromFieldPath()
+    {
+        var query = _db
+            .Query("User")
+            .Select("Name")
+            .Where(user => user["Members"].NotAny(member => member["Name"] == "Bob"));
+
+        var data = query.ToList();
+
+        Assert.That(data.Select(row => row["Name"]), Does.Not.Contain("Alice"));
+    }
+
+    [Test]
+    public void _03_Field_Collection_Any_FromOQuery()
+    {
+        var query = _db.QueryOqr("""
+            User: Name
+              Where Members HasAny Name = <Bob>
+            """);
+
+        var data = query.ToList();
+
+        Assert.That(data.Select(row => row["Name"]).ToArray(), Is.EqualTo(["Alice"]));
+    }
+
+    [Test]
+    public void _03_Field_Collection_Any_FromOQuery_WithAlias()
+    {
+        var query = _db.QueryOqr("""
+            User: Name
+              Where Members Member HasAny Member.Name = <Bob>
+            """);
+
+        var data = query.ToList();
+
+        Assert.That(data.Select(row => row["Name"]).ToArray(), Is.EqualTo(["Alice"]));
+    }
+
+    [Test]
+    public void _03_Field_Collection_NotExists_FromOQuery()
+    {
+        var query = _db.QueryOqr("""
+            User: Name
+              Where Members HasNone Name = <Bob>
+            """);
+
+        var data = query.ToList();
+
+        Assert.That(data.Select(row => row["Name"]), Does.Not.Contain("Alice"));
+    }
+
+    [Test]
     public void _03_Field_Collection_Lookup()
     {
         var query = _db.Query("User")

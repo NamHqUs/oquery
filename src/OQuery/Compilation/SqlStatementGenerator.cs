@@ -362,9 +362,34 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
     }
 
     private string RenderTable(TableExpression table)
-        => $"{(table.CommonTableExpressionName is { } cteName
+    {
+        if (table is GroupedAggregateTableExpression grouped)
+        {
+            var previousEntities = _entities;
+            _entities = GetEntities(grouped.Source, previousEntities);
+            try
+            {
+                var keySql = grouped.Keys
+                    .Select(key => $"{RenderField(new FieldExpression(grouped.Source.Alias, key))} {dialect.QuoteIdentifier(key.Name)}");
+                var aggregateSql = grouped.Aggregates
+                    .Select(aggregate =>
+                        $"{RenderExpression(aggregate.Function)} {dialect.QuoteIdentifier(aggregate.Alias)}");
+                var selectSql = string.Join(", ", keySql.Concat(aggregateSql));
+                var groupSql = string.Join(", ", grouped.Keys.Select(key =>
+                    RenderField(new FieldExpression(grouped.Source.Alias, key))));
+
+                return $"(\nSELECT {selectSql}\nFROM {RenderTable(grouped.Source)}\nGROUP BY {groupSql}\n) {grouped.Alias}";
+            }
+            finally
+            {
+                _entities = previousEntities;
+            }
+        }
+
+        return $"{(table.CommonTableExpressionName is { } cteName
             ? dialect.RenderCteIdentifier(cteName)
             : dialect.RenderTable((Entity)table.Entity))} {table.Alias}";
+    }
 
     private string RenderCommonTableExpressions(TableExpression query)
     {
@@ -477,7 +502,10 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
             SubqueryExpression subquery => $"({RenderQuery(subquery.Query)})",
 
-            AnyExpression any => $"EXISTS({RenderQuery(any.Query, true)})",
+            AnyExpression any => $"{(any.Negated ? "NOT " : string.Empty)}EXISTS({RenderQuery(any.Query, true)})",
+
+            AggregateExpression { GroupedJoinValue: not null } aggregate =>
+                $"{(aggregate.GroupedJoinCount ? "COALESCE(" : string.Empty)}{RenderExpression(aggregate.GroupedJoinValue!)}{(aggregate.GroupedJoinCount ? ", 0)" : string.Empty)}",
 
             AggregateExpression aggregate => aggregate.GroupWithQuery
                 ? RenderAggregateSelect(aggregate)

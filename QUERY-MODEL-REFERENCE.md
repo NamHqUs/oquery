@@ -222,6 +222,47 @@ Condition `operation` values use the `BinaryOperator` enum:
 `logicalOperation` and `logicalOperator` use `LogicalOperator`: `0` is `And`
 and `1` is `Or`.
 
+### Existence condition
+
+An existence condition is a Boolean filter node. Its context is represented as
+a constant value because the token identifies a relation, entity, or named
+context rather than a field:
+
+```json
+{
+  "kind": "exists",
+  "context": {
+    "kind": "value",
+    "value": "Users"
+  },
+  "alias": "Customer",
+  "condition": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": null,
+        "left": {
+          "kind": "field",
+          "field": "Customer.Status"
+        },
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "Active"
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "negated": false
+}
+```
+
+`negated: false` renders `EXISTS`; `negated: true` renders `NOT EXISTS`.
+The condition is evaluated in the referenced context scope, while
+`CurrentContext` refers to the outer query scope. A missing condition tests
+whether any related or contextual row exists.
+
 ## 5. Relations
 
 A relation references a context by dictionary key:
@@ -244,6 +285,33 @@ Properties:
 
 The model default for `joinType` is `Left` when a `JoinDefinition` is created
 without an explicit value. Serialization preserves an explicit null.
+
+The same context may be referenced by multiple relation entries. Each entry
+must use a distinct `alias` when the consuming query needs separate relation
+instances:
+
+```json
+{
+  "refContext": "UserContext",
+  "alias": "Manager1",
+  "condition": "ManagerId = Id",
+  "joinType": "Left"
+}
+```
+
+```json
+{
+  "refContext": "UserContext",
+  "alias": "Manager2",
+  "condition": "ManagerId = Id",
+  "joinType": "Left"
+}
+```
+
+This represents two aliases of the same context and is supported by the query
+model and SQL generation. It should not be confused with a correlated
+subquery, where an inner relation is evaluated per outer row and compares
+against the outer relation instance; that requires separate subquery support.
 
 ## 6. Context graph
 

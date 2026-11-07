@@ -14,6 +14,10 @@ internal sealed class ConditionDefinitionJsonConverter : JsonConverter<IConditio
         using var document = JsonDocument.ParseValue(ref reader);
         var root = document.RootElement;
 
+        if (TryGetProperty(root, "context", out _))
+            return JsonSerializer.Deserialize<ExistsConditionDefinition>(root, options)
+                ?? throw new JsonException("The exists condition cannot be null.");
+
         return TryGetProperty(root, "filters", out _)
             ? JsonSerializer.Deserialize<ConditionDefinition>(root, options)
                 ?? throw new JsonException("The filter group cannot be null.")

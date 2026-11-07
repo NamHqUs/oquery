@@ -125,6 +125,13 @@ public static partial class FluentQueryExtensions
         var expression = source.CreateQuery(MethodBase.GetCurrentMethod()!).Expression;
         return Convert.ToBoolean(source.Provider.ExecuteScalar(expression));
     }
+
+    public static bool NotAny(this IOQuery source, Expression<Func<IQueryParameter, bool>> predicate)
+    {
+        var expression = source.CreateQuery(MethodBase.GetCurrentMethod()!).Expression;
+        return !Convert.ToBoolean(source.Provider.ExecuteScalar(expression));
+    }
+
     public static Task<bool> AnyAsync(
         this IOQuery source,
         Expression<Func<IQueryParameter, bool>> predicate,

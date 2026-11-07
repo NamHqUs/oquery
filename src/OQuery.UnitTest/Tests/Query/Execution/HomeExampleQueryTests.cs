@@ -67,7 +67,7 @@ public sealed class HomeExampleQueryTests : TestBase
             .Select(e => new
             {
                 TotalMembers = e["Members"].Count(),
-                TotalAge = e["Members.Age"].Sum()
+                TotalAge = e["Members"].Sum("Age")
             })
             .ToSql()
             .CommandText;
@@ -77,6 +77,7 @@ public sealed class HomeExampleQueryTests : TestBase
             Assert.That(sql, Does.Contain("COUNT"));
             Assert.That(sql, Does.Contain("SUM"));
             Assert.That(sql, Does.Contain("\"ManagerId\""));
+            Assert.That(sql, Does.Contain("GROUP BY"));
         });
     }
 
@@ -97,6 +98,20 @@ public sealed class HomeExampleQueryTests : TestBase
     }
 
     [Test]
+    public void CollectionAggregateAcceptsTextExpressionArgument()
+    {
+        var sql = _db.Query("User")
+            .Select(e => new
+            {
+                TotalAge = e["Members"].Sum("Age + 1")
+            })
+            .ToSql()
+            .CommandText;
+
+        Assert.That(sql, Does.Contain("SUM"));
+    }
+
+    [Test]
     public void ScalarFieldAggregateFailsDuringTranslation()
     {
         Assert.That(
@@ -107,7 +122,17 @@ public sealed class HomeExampleQueryTests : TestBase
                 })
                 .ToSql(),
             Throws.TypeOf<FormatException>()
-                .With.Message.Contains("requires a collection path"));
+                .With.Message.Contains("requires a collection relation"));
+
+        Assert.That(
+            () => _db.Query("User")
+                .Select(e => new
+                {
+                    Invalid = e["Members.Age"].Sum()
+                })
+                .ToSql(),
+            Throws.TypeOf<FormatException>()
+                .With.Message.Contains("requires a collection relation"));
     }
 
     [Test]

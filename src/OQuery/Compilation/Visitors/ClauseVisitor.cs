@@ -253,6 +253,10 @@ class ClauseVisitor(QueryContext queryContext)
                 tableContext = new WhereVisitor(tableContext, QueryContext).Eval((LambdaExpression)methodCall.Arguments[1].StripQuotes());
                 return new AnyExpression(tableContext);
 
+            case nameof(FluentQueryExtensions.NotAny):
+                tableContext = new WhereVisitor(tableContext, QueryContext).Eval((LambdaExpression)methodCall.Arguments[1].StripQuotes());
+                return new AnyExpression(tableContext, true);
+
             case nameof(FluentQueryExtensions.Take):
                 return new TakeExpression(tableContext, (int)((ConstantExpression)methodCall.Arguments[1].StripQuotes()).Value!);
 

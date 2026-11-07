@@ -243,6 +243,71 @@ A context relation without a condition declares the context as available to the
 query. It must not be used to create a row-multiplying join unless the
 generated SQL join condition is explicit.
 
+### Joining one context more than once
+
+The same context may be joined multiple times. Give each relation instance a
+different alias and use that alias in the projection and join condition:
+
+```text
+User: Name, Manager1.Name, Manager2.Age
+  Left Join "User Context" Manager1 On ManagerId = Id
+  Left Join "User Context" Manager2 On ManagerId = Id
+
+"User Context" is User: Id, Name, Age
+```
+
+`Manager1` and `Manager2` are separate relation instances of the same
+`User Context`. This supports self-joins and repeated context usage. Do not
+report repeated context aliases as unsupported.
+
+## 7. Collection existence conditions
+
+`HasAny` and `HasNone` are Boolean condition operators. Their source is an
+unquoted context reference that may resolve to a collection relation on the
+current entity, a metadata entity, or a named query context:
+
+```text
+Products: Id, Name
+  Where Users HasAny
+```
+
+The relationship is resolved from metadata when `Users` is a collection
+relation. An optional condition is scoped to the source context:
+
+```text
+Products: Id, Name
+  Where Users Customer HasAny Customer.Status = <Active>
+```
+
+The alias is optional:
+
+```text
+Products: Id, Name
+  Where Users HasAny Status = <Active>
+```
+
+Use parentheses when a collection existence condition is combined with an
+outer Boolean expression:
+
+```text
+Products: Id, Name
+  Where (Users HasAny Status = <Active>)
+    AND State = <CA>
+```
+
+`CurrentContext` refers to the outer query context. `HasNone` uses the same
+source and condition rules:
+
+```text
+Products: Id, Name
+  Where Users HasNone Customer.Status = <Inactive>
+```
+
+Existence conditions are represented in the query model as condition nodes.
+The context token is stored as a constant value and resolved semantically;
+it is not a SQL string parameter or a raw SQL field. SQL generation emits the
+dialect-specific `EXISTS` or `NOT EXISTS` subquery.
+
 ## 7. Aggregation and grouping
 
 An aggregate function is grouped when the same projection contains both:
@@ -268,6 +333,34 @@ AVG(expression)
 MAX(expression)
 MIN(expression)
 ```
+
+Collection relations also support fluent-style aggregate paths:
+
+```text
+Employees:
+    Id,
+    Members.Count() MemberCount,
+    Members.Sum(Salary) MemberSalaryTotal,
+    Members.Average(Salary) MemberAverageSalary
+```
+
+`Count()` uses the related entity key when no argument is supplied.
+`Sum`, `Average`, `Min`, and `Max` require a numeric related field:
+
+```text
+Members.Count()
+Members.Count(Id)
+Members.Sum(Salary)
+```
+
+For metadata collection relations, the SQL generator renders these parent
+aggregates through a grouped relation source joined by the relationship key.
+Multiple aggregates over the same collection reuse one grouped source.
+
+Collection aggregates are different from window aggregates. `Members.Count()`
+summarizes related rows for the current parent, while
+`CountOver(Member.Id, ManagerId)` calculates a window over the current result
+rows and preserves their detail grain.
 
 An aggregate-only context returns one aggregate row:
 

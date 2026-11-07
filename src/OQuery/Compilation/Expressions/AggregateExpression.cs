@@ -6,6 +6,8 @@ class AggregateExpression : TableExpression
     public override Type Type => typeof(double);
     public bool GroupWithQuery { get; }
     public FunctionSqlExpression? FunctionExpression { get; }
+    public SqlExpression? GroupedJoinValue { get; }
+    public bool GroupedJoinCount { get; }
 
     public AggregateExpression(TableExpression tableContext, string aggregation, bool groupWithQuery = false) : base(tableContext)
     {
@@ -21,10 +23,14 @@ class AggregateExpression : TableExpression
     public AggregateExpression(
         TableExpression tableContext,
         FunctionSqlExpression functionExpression,
-        bool groupWithQuery = false) : base(tableContext)
+        bool groupWithQuery = false,
+        SqlExpression? groupedJoinValue = null,
+        bool groupedJoinCount = false) : base(tableContext)
     {
         GroupWithQuery = groupWithQuery;
         FunctionExpression = functionExpression;
+        GroupedJoinValue = groupedJoinValue;
+        GroupedJoinCount = groupedJoinCount;
         ProjectionItems = [];
         SqlSelect = new StringBuilder();
     }

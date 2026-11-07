@@ -1,4 +1,6 @@
 #pragma warning disable IDE0130
+using System.Linq.Expressions;
+
 namespace OQuery;
 #pragma warning restore IDE0130
 
@@ -18,8 +20,13 @@ public abstract class QueryValue
     public bool IsNotNull() => throw new NotImplementedException();
     public bool CompareTemplate(object value, string template) => throw new NotImplementedException();
     public QueryValue Count() => throw new NotImplementedException();
+    public QueryValue Count(string expression) => throw new NotImplementedException();
     public QueryValue Sum() => throw new NotImplementedException();
+    public QueryValue Sum(string expression) => throw new NotImplementedException();
     public QueryValue Average() => throw new NotImplementedException();
+    public QueryValue Average(string expression) => throw new NotImplementedException();
+    public bool Any(Expression<Func<IQueryParameter, bool>> predicate) => throw new NotImplementedException();
+    public bool NotAny(Expression<Func<IQueryParameter, bool>> predicate) => throw new NotImplementedException();
     public static QueryValue Parameter(object? value) => throw new NotImplementedException();
     public static QueryValue QueryExpression(IFieldDefinition expression) => throw new NotImplementedException();
 
