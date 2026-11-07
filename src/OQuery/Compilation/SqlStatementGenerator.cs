@@ -377,8 +377,11 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
                 var selectSql = string.Join(", ", keySql.Concat(aggregateSql));
                 var groupSql = string.Join(", ", grouped.Keys.Select(key =>
                     RenderField(new FieldExpression(grouped.Source.Alias, key))));
+                var sourceSql = RenderTable(grouped.Source) +
+                    string.Concat(grouped.Source.Joins.Select(join =>
+                        $"\n\t{join.JoinType} {RenderTable(join.Table)} ON {string.Join(" AND ", join.Conditions.Select(RenderExpression))}"));
 
-                return $"(\nSELECT {selectSql}\nFROM {RenderTable(grouped.Source)}\nGROUP BY {groupSql}\n) {grouped.Alias}";
+                return $"(\nSELECT {selectSql}\nFROM {sourceSql}\nGROUP BY {groupSql}\n) {grouped.Alias}";
             }
             finally
             {
@@ -557,11 +560,11 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         {
             [table.Alias] = table.Entity
         };
-        AddJoinedEntities(table, entities, new HashSet<TableExpression>());
+        AddRelatedEntities(table, entities, new HashSet<TableExpression>());
         return entities;
     }
 
-    private static void AddJoinedEntities(
+    private static void AddRelatedEntities(
         TableExpression table,
         IDictionary<string, IEntity> entities,
         ISet<TableExpression> visited)
@@ -572,13 +575,13 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         foreach (var joinedTable in table.JoinedTables.Values)
         {
             entities[joinedTable.Alias] = joinedTable.Entity;
-            AddJoinedEntities(joinedTable, entities, visited);
+            AddRelatedEntities(joinedTable, entities, visited);
         }
 
         foreach (var join in table.Joins)
         {
             entities[join.Table.Alias] = join.Table.Entity;
-            AddJoinedEntities(join.Table, entities, visited);
+            AddRelatedEntities(join.Table, entities, visited);
         }
     }
 

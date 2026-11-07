@@ -21,17 +21,28 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         if (definition.Contexts is not { Count: > 0 })
             throw new FormatException("A query-definition expression requires at least one context.");
 
-        var contextBindings = (definition.Joins ?? []).Select(relation =>
-        {
-            if (!definition.Contexts!.TryGetValue(relation.RefContext, out var query))
-                throw new FormatException($"Query relation references unknown context [{relation.RefContext}].");
-            return new ContextBinding(relation.RefContext, query, relation);
-        }).ToList();
-        if (contextBindings.Count == 0)
-            contextBindings.AddRange(definition.Contexts!.Select(pair =>
-                new ContextBinding(pair.Key, pair.Value, new JoinDefinition(pair.Key))));
         var definitions = new Dictionary<string, ContextBinding>(StringComparer.OrdinalIgnoreCase);
-        List<ContextBinding> cteDefinitions = [];
+        foreach (var (name, query) in definition.Contexts)
+        {
+            var relation = definition.Joins?.FirstOrDefault(candidate =>
+                string.Equals(candidate.RefContext, name, StringComparison.OrdinalIgnoreCase))
+                ?? new JoinDefinition(name);
+            definitions.Add(name, new ContextBinding(name, query, relation));
+        }
+
+        var contextBindings = (definition.Joins ?? [])
+            .Select(relation =>
+            {
+                if (!definitions.TryGetValue(relation.RefContext, out var context))
+                    throw new FormatException(
+                        $"Query relation references unknown context [{relation.RefContext}].");
+                return new ContextBinding(context.Name, context.Query, relation);
+            })
+            .ToList();
+        if (contextBindings.Count == 0)
+            contextBindings.AddRange(definitions.Values);
+
+        List<ContextBinding> cteDefinitions = definitions.Values.ToList();
         HashSet<string> aliases = new(StringComparer.OrdinalIgnoreCase);
         foreach (var context in contextBindings)
         {

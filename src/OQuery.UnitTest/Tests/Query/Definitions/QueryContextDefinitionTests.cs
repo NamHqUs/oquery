@@ -9,6 +9,113 @@ namespace OQuery.UnitTest.Tests.Query.Definitions;
 public sealed class QueryContextDefinitionTests : TestBase
 {
     [Test]
+    public void NestedContextsAreAvailableToTheQueryEngine()
+    {
+        using var db = CreateContext(
+            new SqlServerDialect(),
+            new Entity(
+                "Users",
+                [
+                    new Field("Id", "Id"),
+                    new Field("Name", "Name"),
+                ]),
+            new Entity(
+                "Orders",
+                [
+                    new Field("Id", "Id"),
+                    new Field("UserId", "UserId"),
+                ]),
+            new Entity(
+                "OrderItems",
+                [
+                    new Field("OrderId", "OrderId"),
+                    new Field("Quantity", "Quantity"),
+                    new Field("UnitPrice", "UnitPrice"),
+                ]));
+
+        var query = QueryDefinitionOQueryParser.Parse("""
+            OrderTotals is OrderItems:
+                OrderId,
+                SUM(Quantity * UnitPrice) OrderTotal
+
+            UserOrderTotals is Orders:
+                UserId,
+                COUNT(Id) OrderCount,
+                SUM(OrderTotals.OrderTotal) CustomerRevenue
+              Left Join OrderTotals
+                On Id = OrderTotals.OrderId
+
+            UserReport is Users:
+                Id,
+                Name,
+                UserOrderTotals.OrderCount OrderCount,
+                UserOrderTotals.CustomerRevenue CustomerRevenue
+              Left Join UserOrderTotals
+                On Id = UserOrderTotals.UserId
+            """);
+
+        var sql = db.Query(query).ToSql().CommandText;
+
+        Assert.That(sql, Does.Contain("[OrderTotals]"));
+        Assert.That(sql, Does.Contain("[UserOrderTotals]"));
+        Assert.That(sql, Does.Contain("SUM"));
+    }
+
+    [Test]
+    public void SelectedContextExecutesWithDependenciesInDependencyOrder()
+    {
+        using var db = CreateContext(
+            new SqlServerDialect(),
+            new Entity(
+                "Users",
+                [
+                    new Field("Id", "Id"),
+                    new Field("Name", "Name"),
+                ]),
+            new Entity(
+                "Orders",
+                [
+                    new Field("Id", "Id"),
+                    new Field("UserId", "UserId"),
+                ]),
+            new Entity(
+                "OrderItems",
+                [
+                    new Field("OrderId", "OrderId"),
+                    new Field("Quantity", "Quantity"),
+                    new Field("UnitPrice", "UnitPrice"),
+                ]));
+
+        const string text = """
+            OrderTotals is OrderItems:
+                OrderId,
+                SUM(Quantity * UnitPrice) OrderTotal
+
+            UserOrderTotals is Orders:
+                UserId,
+                COUNT(Id) OrderCount,
+                SUM(OrderTotals.OrderTotal) CustomerRevenue
+              Left Join OrderTotals
+                On Id = OrderTotals.OrderId
+
+            UserReport is Users:
+                Id,
+                Name,
+                UserOrderTotals.OrderCount OrderCount,
+                UserOrderTotals.CustomerRevenue CustomerRevenue
+              Left Join UserOrderTotals
+                On Id = UserOrderTotals.UserId
+            """;
+
+        var query = QueryDefinitionOQueryParser.Parse(text, "UserReport");
+        var sql = db.Query(query).ToSql().CommandText;
+
+        Assert.That(query.Contexts!.Keys, Is.EqualTo(["OrderTotals", "UserOrderTotals"]));
+        Assert.That(sql, Does.Contain("[OrderTotals]"));
+        Assert.That(sql, Does.Contain("[UserOrderTotals]"));
+    }
+
+    [Test]
     public void OQuerySelfJoinedRootContextGeneratesRecursiveCte()
     {
         using var db = CreateContext(

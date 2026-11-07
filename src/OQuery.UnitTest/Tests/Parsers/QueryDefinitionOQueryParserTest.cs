@@ -142,6 +142,22 @@ internal class QueryDefinitionOQueryParserTest : TestBase
     }
 
     [Test]
+    public void ParseRejectsDefinitionsWithoutEntryPoint()
+    {
+        var oquery = """
+            ContextA is User: Id
+              Join ContextB on Id = ContextB.Id
+            ContextB is User: Id
+              Join ContextA on Id = ContextA.Id
+            """;
+
+        Assert.That(
+            () => QueryDefinitionOQueryParser.Parse(oquery),
+            Throws.TypeOf<FormatException>()
+                .With.Message.EqualTo("need entiry point"));
+    }
+
+    [Test]
     public void ParseSelectedContextIgnoresUnrelatedInvalidBlocks()
     {
         var oquery = """
@@ -204,6 +220,22 @@ internal class QueryDefinitionOQueryParserTest : TestBase
                 Is.EqualTo(["Name ManagerName", "Loop.FirstName MemberName"]));
             Assert.That(recursive.Joins, Is.Null);
         });
+    }
+
+    [Test]
+    public void ParseSelectedRecursiveContext()
+    {
+        var query = QueryDefinitionOQueryParser.Parse("""
+            EmployeeTree is Employees:
+                Name ManagerName,
+                member.Name MemberName
+              INNER JOIN EmployeeTree member on Id = member.ManagerId
+            """, "EmployeeTree");
+
+        Assert.That(query.Contexts, Does.ContainKey("EmployeeTree"));
+        Assert.That(query.Contexts!["EmployeeTree"].Projections!
+            .Select(projection => projection.ToText())
+            .ToArray(), Is.EqualTo(["Name ManagerName", "EmployeeTree.ManagerName MemberName"]));
     }
 
     [Test]

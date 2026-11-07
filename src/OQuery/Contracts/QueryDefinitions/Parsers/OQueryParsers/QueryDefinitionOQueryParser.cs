@@ -14,12 +14,16 @@ public static class QueryDefinitionOQueryParser
             block => block.Name,
             ParseBlock,
             StringComparer.OrdinalIgnoreCase);
-        var referencedContexts = queries.Values
-            .SelectMany(query => query.Joins ?? [])
+        var referencedContexts = queries
+            .SelectMany(pair => (pair.Value.Joins ?? [])
+                .Where(relation => !string.Equals(
+                    pair.Key,
+                    relation.RefContext,
+                    StringComparison.OrdinalIgnoreCase)))
             .Select(relation => relation.RefContext)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var rootBlock = blocks.FirstOrDefault(block => !referencedContexts.Contains(block.Name))
-            ?? blocks[0];
+            ?? throw new FormatException("need entiry point");
         var root = queries[rootBlock.Name];
         var contexts = root.Contexts
             ?? throw new FormatException("The root OQuery definition cannot have null contexts.");
@@ -33,7 +37,6 @@ public static class QueryDefinitionOQueryParser
         }
 
         AddImplicitRecursiveContext(root, rootBlock.Name);
-        ValidateContextReferences(root);
         return root;
     }
 
@@ -51,9 +54,10 @@ public static class QueryDefinitionOQueryParser
 
         var dependencies = new Dictionary<string, QueryDefinitionBase>(
             StringComparer.OrdinalIgnoreCase);
+        var visiting = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         AddDependencies(selectedBlock);
         var selected = ParseBlock(selectedBlock);
-        return new QueryDefinition(selected.Entity)
+        var result = new QueryDefinition(selected.Entity)
         {
             Projections = selected.Projections,
             Filter = selected.Filter,
@@ -63,6 +67,8 @@ public static class QueryDefinitionOQueryParser
             Joins = selected.Joins,
             Contexts = dependencies
         };
+        AddImplicitRecursiveContext(result, selectedBlock.Name);
+        return result;
 
         void AddDependencies(QueryBlock block)
         {
@@ -72,7 +78,11 @@ public static class QueryDefinitionOQueryParser
                 {
                     var relation = ParseJoin(clause.Value);
                     if (blocksByName.TryGetValue(relation.RefContext, out var relationBlock)
-                        && IsNamedContext(relationBlock))
+                        && IsNamedContext(relationBlock)
+                        && !string.Equals(
+                            relationBlock.Name,
+                            block.Name,
+                            StringComparison.OrdinalIgnoreCase))
                         AddDependency(relationBlock);
                 }
             }
@@ -86,9 +96,12 @@ public static class QueryDefinitionOQueryParser
         {
             if (dependencies.ContainsKey(block.Name))
                 return;
+            if (!visiting.Add(block.Name))
+                throw new FormatException("need entiry point");
             var definition = ParseBlock(block);
-            dependencies.Add(block.Name, definition);
             AddDependencies(block);
+            dependencies.Add(block.Name, definition);
+            visiting.Remove(block.Name);
         }
 
         static bool IsNamedContext(QueryBlock block)
@@ -422,13 +435,6 @@ public static class QueryDefinitionOQueryParser
 
     private static string FormatSort(SortDefinition sort)
         => $"{sort.Field.ToText()} {(sort.Direction == QuerySortDirection.Descending ? "DESC" : "ASC")}";
-
-    private static void ValidateContextReferences(QueryDefinition definition)
-    {
-        foreach (var relation in definition.Joins ?? [])
-            if (!(definition.Contexts?.ContainsKey(relation.RefContext) ?? false))
-                throw new FormatException($"Query relation references unknown context [{relation.RefContext}].");
-    }
 
     private sealed class QueryBlock(string name, string entity, string projection)
     {

@@ -69,6 +69,19 @@ public sealed class AggregateProjectionTests : TestBase
     }
 
     [Test]
+    public void CollectionField_Projection_SumsNestedCollectionAggregate()
+    {
+        var query = _db.Query("User")
+            .Select(
+                "Name",
+                "Members.Sum(Members.Sum(Age))");
+
+        var data = query.ToList();
+
+        Assert.That(data, Is.Not.Empty);
+    }
+
+    [Test]
     public void OQuery_CollectionField_Projection_Count()
     {
         var definition = QueryDefinitionOQueryParser.Parse(
