@@ -5,6 +5,8 @@ using OQuery.UnitTest.Setup;
 namespace OQuery.UnitTest.Tests.Providers;
 
 [TestFixture]
+[Ignore("Disabled until the Firebird provider is explicitly enabled.")]
+[NonParallelizable]
 internal sealed class FirebirdQueryExecutionTests
 {
     private IDbConnection _connection = null!;

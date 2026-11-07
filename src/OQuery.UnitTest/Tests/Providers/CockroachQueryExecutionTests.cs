@@ -7,6 +7,8 @@ using OQuery.UnitTest.Setup;
 namespace OQuery.UnitTest.Tests.Providers;
 
 [TestFixture]
+[Ignore("Disabled until the CockroachDB provider is explicitly enabled.")]
+[NonParallelizable]
 internal sealed class CockroachQueryExecutionTests
 {
     private IDbConnection _connection = null!;

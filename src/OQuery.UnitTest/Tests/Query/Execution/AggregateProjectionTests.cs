@@ -95,6 +95,40 @@ public sealed class AggregateProjectionTests : TestBase
     }
 
     [Test]
+    public void CollectionField_Projection_ChainedAggregate_DoesNotCopyHiddenPipelineProjection()
+    {
+        var sql = _db.Query("User")
+            .Select("Name", "Members.Sum(Id).Avg().Max()")
+            .ToSql()
+            .CommandText;
+
+        Assert.That(sql, Does.Contain(
+            "MAX (q0.\"__oq_pipeline_3\") OVER () \"Members.Sum(Id).Avg().Max()\""));
+        Assert.That(sql, Does.Not.Contain(
+            "q0.\"__oq_pipeline_3\" \"__oq_pipeline_3\""));
+        Assert.That(sql, Does.Not.Contain("AS q2"));
+    }
+
+    [Test]
+    public void CollectionField_Projection_ChainedAggregate_FilterDoesNotReferenceRemovedPipelineProjection()
+    {
+        var query = _db.QueryOqr("""
+            User:
+                Name,
+                Members.Sum(Id).Avg().Max() Temp
+            WHERE Temp > <0>
+            """);
+
+        var data = query.ToList();
+        var sql = query.ToSql().CommandText;
+
+        Assert.That(data, Is.Not.Null);
+        Assert.That(sql, Does.Contain("WHERE"));
+        Assert.That(sql, Does.Not.Contain(
+            "q1.\"__oq_pipeline_3\" \"__oq_pipeline_3\""));
+    }
+
+    [Test]
     public void OQueryDefinition_ResolvesFluentAggregateProjectionAliases()
     {
         var query = _db.QueryOqr("""

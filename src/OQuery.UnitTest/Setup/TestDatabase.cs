@@ -28,6 +28,7 @@ public enum DbServerType
 }
 internal sealed class TestDatabase
 {
+    private const string SCRIPTS_VERSION = "v1.0";
     private static readonly object oLock = new();
 
     public static IDbConnection GetDbConnection(DbServerType dbServerType = DbServerType.Sqlite)
@@ -60,7 +61,7 @@ internal sealed class TestDatabase
 
     public static IDbConnection GetNorthStarPostgresConnection()
         => CreatePostgresInstance(
-            $"Host=localhost;Port={GetPostgresHostPort()};Database=dynamicsqltest;Username=postgres;Password=NoPassword123!",
+            $"Host=localhost;Port={GetPostgresHostPort()};Database=DynamicSqlTest;Username=postgres;Password=NoPassword123!",
             "northstar-demo.postgres.sql");
 
     public static IDbConnection GetNorthStarCockroachConnection()
@@ -141,10 +142,15 @@ internal sealed class TestDatabase
 
     private static IDbConnection CreateSqlServerDbConnection()
         => CreateSqlServerInstance(
-            "Server=localhost;Database=DynamicSqlTest;User Id=sa;Password=NoPassword123!;TrustServerCertificate=True;",
+            String.Format("Server=localhost;Database=DynamicSqlTest;User Id=sa;Password={0};Connect Timeout=2;TrustServerCertificate=True;", GetSqlServerPassword()),
             "unit-test.sqlserver.sql",
             "sale-demo.sqlserver.sql",
             "northstar-demo.sqlserver.sql");
+
+
+    private static string GetSqlServerPassword()
+        => Environment.GetEnvironmentVariable("SQLSERVER_PASSWORD")
+            ?? "NoPassword123!";
 
     private static IDbConnection CreatePostgresDbConnection()
         => CreatePostgresInstance(
@@ -177,10 +183,18 @@ internal sealed class TestDatabase
     private static IDbConnection CreateSqlServerInstance(
         string connectionString,
         params string[] scriptNames)
-        => OpenConnection(new SqlServerDbInstance(
-            connectionString,
+    {
+        var sqlServerConnectionString = new SqlConnectionStringBuilder(connectionString)
+        {
+            Password = GetSqlServerPassword(),
+            ConnectTimeout = 2
+        }.ConnectionString;
+
+        return OpenConnection(new SqlServerDbInstance(
+            sqlServerConnectionString,
             GetScriptPaths(scriptNames),
             GetScriptVersion(scriptNames)));
+    }
 
     private static IDbConnection CreatePostgresInstance(
         string connectionString,
@@ -245,16 +259,17 @@ internal sealed class TestDatabase
 
     private static string GetScriptVersion(IEnumerable<string> scriptNames)
     {
-        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-        var root = new DirectoryInfo("../../../../../").FullName;
+        return SCRIPTS_VERSION;  // DON"T REMOVE THIS LINE, IT'S USED FOR TESTING PURPOSES
+        //using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        //var root = new DirectoryInfo("../../../../../").FullName;
 
-        foreach (var scriptName in scriptNames)
-        {
-            var path = Path.Combine(root, "data-storage", "scripts", scriptName);
-            hash.AppendData(Encoding.UTF8.GetBytes(File.ReadAllText(path)));
-        }
+        //foreach (var scriptName in scriptNames)
+        //{
+        //    var path = Path.Combine(root, "data-storage", "scripts", scriptName);
+        //    hash.AppendData(Encoding.UTF8.GetBytes(File.ReadAllText(path)));
+        //}
 
-        return Convert.ToHexString(hash.GetHashAndReset());
+        //return Convert.ToHexString(hash.GetHashAndReset());
     }
 
 

@@ -62,6 +62,12 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         query.EnsureDefaultProjection();
         if (!exists &&
             !recursivePart &&
+            query is AggregateExpression aggregate &&
+            aggregate.FunctionExpression?.Definition.Name.Equals("Count", StringComparison.OrdinalIgnoreCase) == true &&
+            aggregate.SqlWhere.Concat(aggregate.SqlHaving).Any(expression => expression.ContainsProjectionAlias()))
+            return RenderCountWithProjectionLayers(aggregate, includeCtes);
+        if (!exists &&
+            !recursivePart &&
             TryRenderProjectionLayers(query, includeCtes, out var layeredQuery))
             return layeredQuery;
 
@@ -260,27 +266,46 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         for (var level = 1; level <= maxLevel; level++)
         {
             var sourceAlias = $"q{level - 1}";
+            var requiredByLaterLayers = projectionItems
+                .Where(next => levels[next.Alias] > level)
+                .SelectMany(next => next.Item.ProjectionAliases())
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
             var availableItems = projectionItems
-                .Where(item => levels[item.Alias] < level)
+                .Where(item =>
+                    levels[item.Alias] < level &&
+                    (!item.IsHidden || requiredByLaterLayers.Contains(item.Alias)))
                 .ToArray();
             var currentItems = projectionItems
                 .Where(item => levels[item.Alias] == level)
                 .ToArray();
+            var hasCurrentAggregate = currentItems.Any(item => item.Item.ContainsGroupedAggregate());
             var selectItems = availableItems
-                .Select(item => $"{sourceAlias}.{dialect.QuoteIdentifier(item.Alias)} {dialect.QuoteIdentifier(item.Alias)}")
+                .Select(item => hasCurrentAggregate && item.Item.ContainsGroupedAggregate()
+                    ? $"SUM({sourceAlias}.{dialect.QuoteIdentifier(item.Alias)}) {dialect.QuoteIdentifier(item.Alias)}"
+                    : $"{sourceAlias}.{dialect.QuoteIdentifier(item.Alias)} {dialect.QuoteIdentifier(item.Alias)}")
                 .Concat(currentItems.Select(item => RenderLayerProjection(item, sourceAlias)))
                 .ToArray();
 
             inner = $"SELECT {string.Join(",\n", selectItems)}\n" +
                 $"FROM (\n{Indent(inner)}\n) AS {sourceAlias}";
+            var groupByItems = availableItems
+                .Where(item => !item.Item.ContainsGroupedAggregate())
+                .Select(item => $"{sourceAlias}.{dialect.QuoteIdentifier(item.Alias)}")
+                .ToArray();
+            if (groupByItems.Length != 0 && hasCurrentAggregate)
+                inner += "\nGROUP BY " + string.Join(", ", groupByItems);
             previousAlias = sourceAlias;
         }
 
         var finalSourceAlias = previousAlias ?? "q0";
+        var predicateAliases = aliasPredicates
+            .SelectMany(expression => expression.ProjectionAliases())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         if (aliasPredicates.Length != 0)
         {
             var sourceAlias = $"q{maxLevel}";
             var selectItems = projectionItems
+                .Where(item => !item.IsHidden || predicateAliases.Contains(item.Alias))
                 .Select(item => $"{sourceAlias}.{dialect.QuoteIdentifier(item.Alias)} {dialect.QuoteIdentifier(item.Alias)}")
                 .ToArray();
             _projectionSourceAlias = sourceAlias;
@@ -325,9 +350,11 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
                 : query.Take,
             query.Orders.Count != 0);
 
-        var hiddenItems = projectionItems
-            .Where(item => item.IsHidden)
-            .ToArray();
+        var hiddenItems = aliasPredicates.Length == 0
+            ? Array.Empty<ProjectionItem>()
+            : projectionItems
+                .Where(item => item.IsHidden && predicateAliases.Contains(item.Alias))
+                .ToArray();
         if (hiddenItems.Length != 0)
         {
             var outputAlias = $"q{maxLevel + 1}";
@@ -344,6 +371,30 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
             ? RenderCommonTableExpressions(query) + inner
             : inner;
         return true;
+    }
+
+    private string RenderCountWithProjectionLayers(
+        AggregateExpression aggregate,
+        bool includeCtes)
+    {
+        var countArgument = aggregate.FunctionExpression!.Arguments
+            .OfType<FunctionSqlExpressionArgument>()
+            .Select(argument => argument.Expression)
+            .Single();
+        var source = aggregate.Source.CloneForSubquery();
+        source.EnsureDefaultProjection();
+        const string countAlias = "__oquery_count_value";
+        source.ProjectionItems = source.ProjectionItems
+            .Append(new ProjectionItem(countArgument, countAlias))
+            .ToArray();
+
+        var sourceAlias = "count_source";
+        var sourceSql = RenderQuery(source, includeCtes: false);
+        var countSql = $"SELECT COUNT({sourceAlias}.{dialect.QuoteIdentifier(countAlias)})\n" +
+            $"FROM (\n{Indent(sourceSql)}\n) AS {sourceAlias}";
+        return includeCtes
+            ? RenderCommonTableExpressions(aggregate) + countSql
+            : countSql;
     }
 
     private string RenderLayerProjection(ProjectionItem item, string sourceAlias)
@@ -414,9 +465,12 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
             }
         }
 
-        return $"{(table.CommonTableExpressionName is { } cteName
-            ? dialect.RenderCteIdentifier(cteName)
-            : dialect.RenderTable((Entity)table.Entity))} {table.Alias}";
+        var tableName = table is CteTableExpression cte
+            ? dialect.RenderCteIdentifier(cte.Name)
+            : table.CommonTableExpressionName is { } cteName
+                ? dialect.RenderCteIdentifier(cteName)
+                : dialect.RenderTable((Entity)table.Entity);
+        return $"{tableName} {table.Alias}";
     }
 
     private string RenderCommonTableExpressions(TableExpression query)
@@ -463,6 +517,8 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
                     .Select((item, index) => (item, index))
                     .First(pair => string.Equals(pair.item.Alias, order.ProjectionAlias, StringComparison.OrdinalIgnoreCase))
                     .index + 1)
+            : order.Expression is ProjectionAliasExpression alias && _projectionSourceAlias is not null
+                ? dialect.QuoteIdentifier(alias.Alias)
             : order.Expression is AggregateExpression { GroupWithQuery: true } aggregate
                 ? RenderAggregateSelect(aggregate)
                 : RenderExpression(order.Expression);
@@ -557,10 +613,11 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
     private string RenderField(FieldExpression field)
     {
-        var tableAlias = field.TableAlias.Length == 0
-            ? _recursiveSourceAlias
-            : field.TableAlias;
-        if (tableAlias is not null && !_entities.TryGetValue(tableAlias, out var entity))
+        var tableAlias = _projectionSourceAlias ??
+            (field.TableAlias.Length == 0 ? _recursiveSourceAlias : field.TableAlias);
+        if (tableAlias is not null &&
+            !string.Equals(tableAlias, _projectionSourceAlias, StringComparison.OrdinalIgnoreCase) &&
+            !_entities.TryGetValue(tableAlias, out var entity))
             throw new InvalidOperationException(
                 $"The query field alias [{tableAlias}] could not be resolved during SQL generation.");
 

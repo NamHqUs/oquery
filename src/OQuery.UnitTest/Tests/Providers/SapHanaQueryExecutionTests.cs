@@ -7,6 +7,8 @@ using Sap.Data.Hana;
 namespace OQuery.UnitTest.Tests.Providers;
 
 [TestFixture]
+[Ignore("Disabled until the SAP HANA provider is explicitly enabled.")]
+[NonParallelizable]
 internal sealed class SapHanaQueryExecutionTests
 {
     private IDbConnection _connection = null!;

@@ -11,6 +11,7 @@ using OQuery.QueryDefinitions.Parsers;
 namespace OQuery.UnitTest.Tests.Providers;
 
 [TestFixture]
+[NonParallelizable]
 internal sealed class SqlServerQueryExecutionTests
 {
     private static readonly JsonSerializerOptions JsonOptions = new()

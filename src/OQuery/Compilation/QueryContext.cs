@@ -65,11 +65,19 @@ class QueryContext(
 
     public SqlExpression ParseFieldPath(TableExpression tableContext, string fieldPath)
     {
-        if (tableContext.ProjectionItems
-            .FirstOrDefault(e => string.Equals(e.Alias, fieldPath, StringComparison.OrdinalIgnoreCase))
-            is { Alias: var alias, Item: var projection })
+        var projectionItem = tableContext.ProjectionItems
+            .FirstOrDefault(item =>
+                string.Equals(item.Alias, fieldPath, StringComparison.OrdinalIgnoreCase));
+        var isMetadataField = tableContext.AuthorizedFields.Any(field =>
+            string.Equals(field.Name, fieldPath, StringComparison.OrdinalIgnoreCase)) &&
+            (tableContext.CommonTableExpressionName is null ||
+             projectionItem?.Item is FieldExpression);
+        if (!isMetadataField &&
+            projectionItem
+                is { Alias: var alias, Item: var projection })
             return new ProjectionAliasExpression(alias, projection.Type);
-        if (tableContext.PendingProjectionAliases.TryGetValue(fieldPath, out var pendingType))
+        if (!isMetadataField &&
+            tableContext.PendingProjectionAliases.TryGetValue(fieldPath, out var pendingType))
             return new ProjectionAliasExpression(fieldPath, pendingType);
 
         var separator = fieldPath.IndexOf('.');

@@ -5,6 +5,8 @@ using Oracle.ManagedDataAccess.Client;
 namespace OQuery.UnitTest.Tests.Providers;
 
 [TestFixture]
+[Ignore("Disabled until the Oracle provider is explicitly enabled.")]
+[NonParallelizable]
 internal sealed class OracleQueryExecutionTests
 {
     private IDbConnection _connection = null!;

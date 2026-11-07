@@ -8,6 +8,8 @@ namespace OQuery.UnitTest.Setup.DbInstances;
 
 public abstract class DbInstance
 {
+    private const int ConnectionAttempts = 60;
+    private const int ConnectionRetryDelayMilliseconds = 1000;
     private static readonly HashSet<string> InitializedDatabases = [];
     private static readonly object InitializationLock = new();
     private IDbConnection? _connection;
@@ -38,7 +40,7 @@ public abstract class DbInstance
         lock (InitializationLock)
         {
             var databaseKey = $"{connectionString}\0{dbVersion}";
-            if (TestConnection() && !InitializedDatabases.Contains(databaseKey))
+            if (WaitForConnection() && !InitializedDatabases.Contains(databaseKey))
             {
                 EnsureDatabaseExists();
                 InitializedDatabases.Add(databaseKey);
@@ -63,6 +65,20 @@ public abstract class DbInstance
         {
             return false;
         }
+    }
+
+    private bool WaitForConnection()
+    {
+        for (var attempt = 0; attempt < ConnectionAttempts; attempt++)
+        {
+            if (TestConnection())
+                return true;
+
+            if (attempt < ConnectionAttempts - 1)
+                Thread.Sleep(ConnectionRetryDelayMilliseconds);
+        }
+
+        return false;
     }
 
     protected virtual void EnsureDatabaseExists()

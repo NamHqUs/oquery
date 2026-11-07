@@ -3,6 +3,7 @@ namespace OQuery.Compilation.Expressions;
 
 class AggregateExpression : TableExpression
 {
+    public TableExpression Source { get; }
     public override Type Type => typeof(double);
     public bool GroupWithQuery { get; }
     public FunctionSqlExpression? FunctionExpression { get; }
@@ -11,6 +12,7 @@ class AggregateExpression : TableExpression
 
     public AggregateExpression(TableExpression tableContext, string aggregation, bool groupWithQuery = false) : base(tableContext)
     {
+        Source = tableContext;
         GroupWithQuery = groupWithQuery;
         ProjectionItems = [];
         var i = aggregation.IndexOf('$');
@@ -27,6 +29,7 @@ class AggregateExpression : TableExpression
         SqlExpression? groupedJoinValue = null,
         bool groupedJoinCount = false) : base(tableContext)
     {
+        Source = tableContext;
         GroupWithQuery = groupWithQuery;
         FunctionExpression = functionExpression;
         GroupedJoinValue = groupedJoinValue;

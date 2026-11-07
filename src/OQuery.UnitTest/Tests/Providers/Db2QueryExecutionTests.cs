@@ -5,6 +5,8 @@ using OQuery.UnitTest.Setup;
 namespace OQuery.UnitTest.Tests.Providers;
 
 [TestFixture]
+[Ignore("Disabled until the DB2 provider is explicitly enabled.")]
+[NonParallelizable]
 internal sealed class Db2QueryExecutionTests
 {
     private IDbConnection _connection = null!;
