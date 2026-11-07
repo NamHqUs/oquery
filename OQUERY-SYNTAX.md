@@ -398,7 +398,39 @@ AverageRevenue is ProductSales:
 
 Do not use an ordinary aggregate in a detail projection when the desired
 behavior is a scalar value repeated for each row. Use an explicit `*Over`
-function instead.
+function or a fluent aggregate suffix instead.
+
+### Fluent aggregate pipelines
+
+Collection aggregates may be followed by one result-level aggregate using a
+fluent suffix:
+
+```text
+Products:
+    Name,
+    OrderItems.Sum(Quantity * UnitPrice) Revenue,
+    OrderItems.Sum(Quantity * UnitPrice).Avg() AverageRevenue
+```
+
+The collection aggregate is evaluated first, producing one `Revenue` value per
+product. The suffix aggregate then evaluates those result values across the
+current result rows and preserves the product rows. The compiler may render
+this as an aggregate-over window expression, but the fluent syntax does not
+expose that SQL implementation detail.
+
+Supported result-level suffixes are:
+
+```text
+.Count()
+.Sum()
+.Avg()
+.Max()
+.Min()
+```
+
+Only one result-level aggregate may be chained. A second result-level
+aggregate is invalid because it would aggregate a value that is already
+repeated across the current result rows.
 
 ## 8. Aggregate filters and scalar context aggregates
 

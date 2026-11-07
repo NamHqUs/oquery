@@ -10,6 +10,9 @@ internal static class FieldDefinitionParser
         ArgumentException.ThrowIfNullOrWhiteSpace(text);
         text = text.Trim();
 
+        if (TryParseAggregatePipeline(text, out var pipeline))
+            return pipeline;
+
         if (TryGetFunctionCall(text, out var opening))
         {
             var argumentsText = text[(opening + 1)..^1];
@@ -35,6 +38,81 @@ internal static class FieldDefinitionParser
 
         return ParseSequence(text);
     }
+
+    private static bool TryParseAggregatePipeline(
+        string text,
+        out FunctionFieldDefinition pipeline)
+    {
+        pipeline = null!;
+        var parentheses = 0;
+        for (var index = 0; index < text.Length; index++)
+        {
+            switch (text[index])
+            {
+                case '(':
+                    parentheses++;
+                    break;
+                case ')':
+                    parentheses--;
+                    break;
+                case '.' when parentheses == 0 && index < text.Length - 1:
+                {
+                    var suffix = text[(index + 1)..].Trim();
+                    if (!TryGetFunctionCall(suffix, out var opening) ||
+                        !IsAggregatePipelineFunction(suffix[..opening]) ||
+                        !string.IsNullOrWhiteSpace(suffix[(opening + 1)..^1]))
+                        continue;
+
+                    var sourceText = text[..index].Trim();
+                    if (sourceText.Length == 0)
+                        throw new FormatException("An aggregate pipeline requires a source expression.");
+
+                    var source = Parse(sourceText);
+                    if (source is FunctionFieldDefinition { FunctionName: { } functionName } &&
+                        IsAggregateOverFunction(functionName))
+                    {
+                        throw new FormatException(
+                            "An aggregate pipeline cannot apply more than one result aggregate.");
+                    }
+
+                    pipeline = new FunctionFieldDefinition(
+                        GetAggregateOverFunctionName(suffix[..opening]),
+                        [source]);
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsAggregatePipelineFunction(string functionName)
+        => functionName.Equals("Avg", StringComparison.OrdinalIgnoreCase) ||
+            functionName.Equals("Average", StringComparison.OrdinalIgnoreCase) ||
+            functionName.Equals("Count", StringComparison.OrdinalIgnoreCase) ||
+            functionName.Equals("Max", StringComparison.OrdinalIgnoreCase) ||
+            functionName.Equals("Maximum", StringComparison.OrdinalIgnoreCase) ||
+            functionName.Equals("Min", StringComparison.OrdinalIgnoreCase) ||
+            functionName.Equals("Minimum", StringComparison.OrdinalIgnoreCase) ||
+            functionName.Equals("Sum", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsAggregateOverFunction(string functionName)
+        => functionName.Equals("AverageOver", StringComparison.OrdinalIgnoreCase) ||
+            functionName.Equals("CountOver", StringComparison.OrdinalIgnoreCase) ||
+            functionName.Equals("MaxOver", StringComparison.OrdinalIgnoreCase) ||
+            functionName.Equals("MinOver", StringComparison.OrdinalIgnoreCase) ||
+            functionName.Equals("SumOver", StringComparison.OrdinalIgnoreCase);
+
+    private static string GetAggregateOverFunctionName(string functionName)
+        => functionName.ToUpperInvariant() switch
+        {
+            "AVG" or "AVERAGE" => "AverageOver",
+            "COUNT" => "CountOver",
+            "MAX" or "MAXIMUM" => "MaxOver",
+            "MIN" or "MINIMUM" => "MinOver",
+            "SUM" => "SumOver",
+            _ => throw new FormatException($"Unsupported aggregate pipeline function [{functionName}].")
+        };
 
     public static IFieldDefinition[] ParseExpression(string text)
     {

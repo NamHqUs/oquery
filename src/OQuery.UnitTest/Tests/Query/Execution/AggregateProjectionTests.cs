@@ -82,6 +82,29 @@ public sealed class AggregateProjectionTests : TestBase
     }
 
     [Test]
+    public void CollectionField_Projection_ChainsAggregate()
+    {
+        var query = _db.Query("User")
+            .Select(
+                "Name",
+                "Members.Sum(Age).Avg()");
+
+        var data = query.ToList();
+
+        Assert.That(data, Is.Not.Empty);
+    }
+
+    [Test]
+    public void CollectionField_Projection_RejectsMultipleResultAggregates()
+    {
+        Assert.That(
+            () => _db.Query("User")
+                .Select("Name", "Members.Sum(Age).Avg().Sum()")
+                .ToList(),
+            Throws.TypeOf<FormatException>());
+    }
+
+    [Test]
     public void OQuery_CollectionField_Projection_Count()
     {
         var definition = QueryDefinitionOQueryParser.Parse(
