@@ -43,7 +43,7 @@ public sealed class HomeExampleQueryTests : TestBase
             {
                 ProductName = "Product.Name",
                 TotalRevenue = "SUM(Quantity * UnitPrice)",
-                Average = "AverageOver(TotalRevenue)"
+                Average = "TotalRevenue.Avg()"
             })
             .Where(item => item["TotalRevenue"] > item["Average"]);
 

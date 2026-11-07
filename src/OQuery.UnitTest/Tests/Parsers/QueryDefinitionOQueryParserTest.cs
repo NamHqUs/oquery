@@ -255,7 +255,7 @@ internal class QueryDefinitionOQueryParserTest : TestBase
         var query = QueryDefinitionOQueryParser.Parse("""
             ProductSales is OrderItems: ProductId,
                 SUM(Quantity * UnitPrice) TotalRevenue,
-                AverageOver(TotalRevenue) Average
+                TotalRevenue.Avg() Average
             WHERE TotalRevenue > Average
             """);
 

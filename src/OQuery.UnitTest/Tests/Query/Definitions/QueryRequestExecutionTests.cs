@@ -111,9 +111,9 @@ public sealed class QueryRequestExecutionTests : TestBase
         {
             Projections = QueryDefinitionJsonParser.ParseProjection(
                 "ProductId, SUM(Quantity * UnitPrice) | Alias1, " +
-                "AverageOver(Alias1) | Alias2, " +
-                "CountOver(Alias1) | Alias3, " +
-                "SumOver(Alias3) | Alias4")
+                "Alias1.Avg() | Alias2, " +
+                "Alias1.Count() | Alias3, " +
+                "Alias3.Sum() | Alias4")
         };
 
         var sql = _db.Query(definition).ToSql().CommandText;
@@ -136,7 +136,7 @@ public sealed class QueryRequestExecutionTests : TestBase
         {
             Projections = QueryDefinitionJsonParser.ParseProjection(
                 "ProductId, SUM(Quantity * UnitPrice) | Alias1, " +
-                "AverageOver(Alias1) | Alias2"),
+                "Alias1.Avg() | Alias2"),
             Filter = QueryDefinitionJsonParser.ParseFilter("Alias1 > Alias2")
         };
 
@@ -157,7 +157,7 @@ public sealed class QueryRequestExecutionTests : TestBase
         var query = _db.QueryOqr("""
             ProductSales is OrderItems: ProductId, Product.Name,
                 SUM(Quantity * UnitPrice) TotalRevenue,
-                AverageOver(TotalRevenue) Average
+                TotalRevenue.Avg() Average
             WHERE TotalRevenue > Average
             """);
 
@@ -179,7 +179,7 @@ public sealed class QueryRequestExecutionTests : TestBase
     {
         var query = _db.QueryOqr("""
             OrderItems: Product.Name,
-                AverageOver(TotalRevenue) Average,
+                TotalRevenue.Avg() Average,
                 SUM(Quantity * UnitPrice) TotalRevenue
             WHERE TotalRevenue > Average
             """);
