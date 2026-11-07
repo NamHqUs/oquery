@@ -107,9 +107,9 @@ internal sealed class QueryDefinitionTests
 
         Assert.That(definition.Projections.Select(field => field.ToText()),
             Is.EqualTo([
-                "Diagnosis.Name | Diagnosis",
-                "Diagnosis.Category | DiagnosisCategory",
-                "ROUND(<100> * SUM(Amount) / NULLIF(SUM(Total), <0>), <2>) | Percent"
+            "Diagnosis.Name Diagnosis",
+            "Diagnosis.Category DiagnosisCategory",
+            "ROUND(<100> * SUM(Amount) / NULLIF(SUM(Total), <0>), <2>) Percent"
             ]));
         Assert.That(definition.Take, Is.EqualTo(10));
     }
@@ -131,7 +131,7 @@ internal sealed class QueryDefinitionTests
             Is.EqualTo(["VisitCount", "Diagnosis.Name"]));
         Assert.That(definition.Joins!.Single().RefContext, Is.EqualTo("VisitLabs"));
         Assert.That(definition.Contexts!["VisitLabs"].Projections.Select(field => field.ToText()),
-            Is.EqualTo(["VisitId | VisitId", "COUNT(Id) | LabCount"]));
+            Is.EqualTo(["VisitId VisitId", "COUNT(Id) LabCount"]));
     }
 
     [Test]

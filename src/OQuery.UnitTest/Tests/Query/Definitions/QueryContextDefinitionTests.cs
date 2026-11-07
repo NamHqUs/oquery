@@ -417,8 +417,8 @@ public sealed class QueryContextDefinitionTests : TestBase
 
         Assert.That(sql, Does.Contain("[ref1] AS"));
         Assert.That(sql, Does.Contain("[ref2] AS"));
-        Assert.That(sql, Does.Contain("LEFT JOIN [ref1]"));
-        Assert.That(sql, Does.Contain("LEFT JOIN [ref2]"));
+        Assert.That(sql, Does.Contain("LEFT JOIN [dbo].[ref1]"));
+        Assert.That(sql, Does.Contain("LEFT JOIN [dbo].[ref2]"));
     }
 
     [Test]
@@ -478,7 +478,7 @@ public sealed class QueryContextDefinitionTests : TestBase
                     "    FROM [dbo].[User] t2)",
                     "SELECT t0.[Id] [Id], t0.[Name] [User Name], t1.[Alias Name] [Manager Name]",
                     "FROM [dbo].[User] t0",
-                    "\tLEFT JOIN [UserContext] t1 ON (t0.[ManagerId] = t1.[Id])")));
+                    "\tLEFT JOIN [dbo].[UserContext] t1 ON (t0.[ManagerId] = t1.[Id])")));
         Assert.That(sql.Parameters, Is.Empty);
     }
 

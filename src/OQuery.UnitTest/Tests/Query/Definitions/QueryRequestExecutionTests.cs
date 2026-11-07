@@ -476,7 +476,7 @@ public sealed class QueryRequestExecutionTests : TestBase
     [Test]
     public void SortDefinitionParserSplitsTopLevelExpressionsAndSupportsDefaultDirection()
     {
-        var sorts = QueryDefinitionJsonParser.ParseSorts("Sum(Age, 1) DESC, Name");
+        var sorts = QueryDefinitionJsonParser.ParseSorts("Sum(Age, <1>) DESC, Name");
 
         Assert.That(sorts, Has.Count.EqualTo(2));
         Assert.That(sorts[0].Field, Is.TypeOf<FunctionFieldDefinition>());
