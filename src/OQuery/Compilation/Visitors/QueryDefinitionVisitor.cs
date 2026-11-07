@@ -292,13 +292,16 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
             recursive,
             cteFields.Select(field => field.Name).ToArray()));
 
+        var memberAlias = context.Alias ?? "member";
         var member = queryContext.CreateTableContext(
             queryContext.GetEntity(context.Query.Entity),
-            "member");
+            memberAlias);
         var manager = queryContext.CreateTableContext(
             queryContext.GetEntity(context.Query.Entity),
             "manager");
-        result.JoinedTables.Add(member.Alias, member);
+        member.JoinRoot = result.JoinHost;
+        manager.JoinRoot = result.JoinHost;
+        result.JoinedTables.Add(memberAlias, member);
         result.JoinedTables.Add(manager.Alias, manager);
         result.Joins.Add(new JoinExpression(
             member,
@@ -339,12 +342,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         {
             FieldDefinition value when !value.FieldName.Contains('.') =>
                 new FieldDefinition(value.Oper, $"{managerAlias}.{value.FieldName}"),
-            FunctionFieldDefinition function => new FunctionFieldDefinition(
-                function.Oper,
-                function.FunctionName,
-                function.Arguments
-                    .Select(argument => QualifyRecursiveProjection(argument, managerAlias))
-                    .ToArray()),
+            FunctionFieldDefinition function => QualifyRecursiveFunction(function, managerAlias),
             GroupFieldDefintion group => new GroupFieldDefintion(
                 group.Oper,
                 group.Fields
@@ -355,6 +353,23 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
                 QualifyRecursiveCondition(condition.Condition, managerAlias)),
             _ => field
         };
+
+    private static FunctionFieldDefinition QualifyRecursiveFunction(
+        FunctionFieldDefinition function,
+        string managerAlias)
+    {
+        var isRelationAggregate = function.FunctionName.Contains('.');
+        return new FunctionFieldDefinition(
+            function.Oper,
+            isRelationAggregate
+                ? $"{managerAlias}.{function.FunctionName}"
+                : function.FunctionName,
+            isRelationAggregate
+                ? function.Arguments
+                : function.Arguments
+                    .Select(argument => QualifyRecursiveProjection(argument, managerAlias))
+                    .ToArray());
+    }
 
     private static IConditionDefintion QualifyRecursiveCondition(
         IConditionDefintion condition,

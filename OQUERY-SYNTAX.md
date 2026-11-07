@@ -384,8 +384,7 @@ Products: Id,
   Where COUNT(OrderItems.Id) > <5>
 ```
 
-An aggregate over a context-qualified field in a filter is a scalar subquery
-over that context:
+An aggregate over a named context in a filter is a scalar context aggregate:
 
 ```text
 ProductSales is OrderItems: ProductId,
@@ -400,12 +399,16 @@ Products: Id,
 
 The filter represents:
 
-This is the supported way to compare a grouped value with an aggregate over
-the complete context without writing SQL manually.
+This is distinct from a collection relation aggregate. Collection expressions
+such as `Members.Count()` and `Members.Sum(Salary)` use the relation's
+metadata keys and are rendered through a grouped relation source joined to the
+parent. The scalar context form above is used when comparing a named context
+aggregate with another aggregate and remains a scalar context operation.
 
 Do not generate an ordinary `AVG(...)`, `SUM(...)`, or `MAX(...)` in a detail
-projection when a scalar subquery would be required. Use an aggregate-over
-window function as described next.
+projection when a scalar context aggregate is required. Use an aggregate-over
+window function as described next when the value must be calculated over the
+current detail rows.
 
 ## 9. Aggregate-over window functions
 

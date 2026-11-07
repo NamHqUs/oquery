@@ -1,4 +1,5 @@
 using OQuery.UnitTest;
+using OQuery.QueryDefinitions.Parsers;
 
 namespace OQuery.UnitTest.Tests.Query.Execution;
 
@@ -65,6 +66,28 @@ public sealed class AggregateProjectionTests : TestBase
 
         Assert.That(data, Is.Not.Empty);
         Assert.That(data.All(record => record.ContainsKey("Members.Members.Count(Id)")), Is.True);
+    }
+
+    [Test]
+    public void OQuery_CollectionField_Projection_Count()
+    {
+        var definition = QueryDefinitionOQueryParser.Parse(
+            "User: Id, Name, Members.Count(Id) TotalMembers");
+        var data = _db.Query(definition).ToList();
+
+        var actualValues = data.ToDictionary(
+            e => (string)e["Name"]!,
+            e => Convert.ToInt32(e["TotalMembers"]));
+
+        Assert.That(actualValues, Is.EqualTo(new Dictionary<string, int>
+        {
+            ["Alice"] = 2,
+            ["Bob"] = 1,
+            ["Charlie"] = 0,
+            ["David"] = 2,
+            ["Eve"] = 0,
+            ["Frank"] = 0,
+        }));
     }
 
     //[Test]

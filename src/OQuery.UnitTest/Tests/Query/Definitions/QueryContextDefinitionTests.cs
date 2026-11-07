@@ -70,6 +70,40 @@ public sealed class QueryContextDefinitionTests : TestBase
     }
 
     [Test]
+    public void RecursiveProjectionCalculatesCollectionAggregateFromManager()
+    {
+        using var db = CreateContext(
+            new SqlServerDialect(),
+            new Entity(
+                "Employees",
+                [
+                    new Field("Id", "Id"),
+                    new Field("FirstName", "FirstName"),
+                    new Field("ManagerId", "ManagerId"),
+                ],
+                Relations:
+                [
+                    new Relation(
+                        "Members",
+                        "Employees",
+                        RelationType.Collection,
+                        [new RelationItem("Id", "ManagerId")])
+                ]));
+        var query = QueryDefinitionOQueryParser.Parse("""
+            EmployeeTree is Employees:
+                FirstName ManagerName,
+                Members.Count(Id) TotalMembers,
+                aliasMembers.FirstName MemberName
+              INNER JOIN EmployeeTree aliasMembers ON Id = aliasMembers.ManagerId
+            """);
+
+        var sql = db.Query(query).ToSql().CommandText;
+
+        Assert.That(sql, Does.Contain("UNION ALL"), sql);
+        Assert.That(sql, Does.Contain("COUNT ("), sql);
+    }
+
+    [Test]
     public void RecursiveWindowAggregateExecutionMatchesNativeSql()
     {
         using var connection = new SqliteConnection("Data Source=:memory:");

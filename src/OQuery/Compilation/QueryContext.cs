@@ -96,17 +96,8 @@ class QueryContext(
 
         if (TryParseAggregateFunction(fieldName, out var aggregateFunction))
         {
-            if (joinedData is [{ relation: var relation, joinedEntity: var joinedEntity }] &&
-                relation.Type == RelationType.Collection &&
-                tableContext is not CteTableExpression)
-            {
-                var grouped = ApplyGroupedJoinAggregate(
-                    tableContext,
-                    relation,
-                    joinedEntity,
-                    aggregateFunction);
-                return grouped;
-            }
+            if (TryParseRelationAggregate(tableContext, relationPath, aggregateFunction, 0, out var relationAggregate))
+                return relationAggregate;
 
             var lastTable = ApplyJoinAggregate(tableContext, joinedData);
             var function = (FunctionSqlExpression)ParseFunctionExpression(lastTable, aggregateFunction, 0);
@@ -234,6 +225,9 @@ class QueryContext(
 
     private SqlExpression ParseFunctionExpression(TableExpression tableContext, FunctionFieldDefinition expression, int depth)
     {
+        if (TryParseCollectionAggregate(tableContext, expression, depth, out var collectionAggregate))
+            return collectionAggregate;
+
         var definition = functionProvider.GetFunction(expression.FunctionName);
         var suppliedArguments = expression.Arguments
             ?? throw new FormatException("A function's arguments cannot be null.");
@@ -263,6 +257,71 @@ class QueryContext(
             return contextAggregate;
 
         return new FunctionSqlExpression(definition, arguments);
+    }
+
+    private bool TryParseCollectionAggregate(
+        TableExpression tableContext,
+        FunctionFieldDefinition expression,
+        int depth,
+        out AggregateExpression aggregate)
+    {
+        aggregate = null!;
+        var separator = expression.FunctionName.LastIndexOf('.');
+        if (separator <= 0)
+            return false;
+
+        var relationPath = expression.FunctionName[..separator];
+        var functionName = expression.FunctionName[(separator + 1)..];
+        if (!functionProvider.TryGetFunction(functionName, out var definition) ||
+            definition is not { IsAggregate: true })
+            return false;
+
+        var aggregateDefinition = expression with { FunctionName = functionName };
+        return TryParseRelationAggregate(tableContext, relationPath, aggregateDefinition, depth, out aggregate);
+    }
+
+    private bool TryParseRelationAggregate(
+        TableExpression tableContext,
+        string? relationPath,
+        FunctionFieldDefinition aggregateDefinition,
+        int depth,
+        out AggregateExpression aggregate)
+    {
+        aggregate = null!;
+        if (string.IsNullOrWhiteSpace(relationPath))
+            return false;
+
+        var separator = relationPath.IndexOf('.');
+        if (separator > 0 &&
+            tableContext.JoinedTables.TryGetValue(relationPath[..separator], out var joinedTable))
+        {
+            return TryParseRelationAggregate(
+                joinedTable,
+                relationPath[(separator + 1)..],
+                aggregateDefinition,
+                depth,
+                out aggregate);
+        }
+
+        var joinedData = ParseRelationPath(tableContext, relationPath).ToArray();
+        if (joinedData is [{ relation: var relation, joinedEntity: var joinedEntity }] &&
+            relation.Type == RelationType.Collection &&
+            tableContext is not CteTableExpression)
+        {
+            aggregate = ApplyGroupedJoinAggregate(
+                tableContext,
+                relation,
+                joinedEntity,
+                aggregateDefinition);
+            return true;
+        }
+
+        var lastTable = ApplyJoinAggregate(tableContext, joinedData);
+        var function = ParseFunctionExpression(lastTable, aggregateDefinition, depth + 1) as FunctionSqlExpression
+            ?? throw new InvalidOperationException(
+                $"Aggregate function [{aggregateDefinition.FunctionName}] did not produce a SQL function.");
+        aggregate = new AggregateExpression(lastTable, function, !joinedData.Any());
+        return true;
     }
 
     private bool TryParseContextAggregate(
