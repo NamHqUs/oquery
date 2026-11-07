@@ -192,8 +192,8 @@ public static partial class FluentQueryExtensions
         => typeof(FluentQueryExtensions).GetMethods()
             .FirstOrDefault(method => method.Name == name && method.GetParameters().Length == parameterCount);
 
-    private static DbQueryProvider GetTotalRecordsProvider(IOQueryProvider provider)
-        => provider as DbQueryProvider
+    private static OQueryProvider GetTotalRecordsProvider(IOQueryProvider provider)
+        => provider as OQueryProvider
             ?? throw new NotSupportedException(
                 $"The query provider [{provider.GetType().FullName}] does not support total-record queries.");
 }

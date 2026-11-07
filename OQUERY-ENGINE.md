@@ -14,17 +14,65 @@ define their own representation and must refer here for execution meaning.
 
 ## 1. Execution pipeline
 
-The engine processes a query through these stages:
+The engine has three input paths. They have different preparation stages but
+share the same `IOQuery` provider, compiler, SQL generator, and database
+execution stages.
 
-1. `QueryDefinitionOQueryParser` converts OQuery text into a
-   `QueryDefinition`.
-2. The parser identifies the main context and its source entity.
-3. `DbQueryFromQueryDto` chooses the direct query path or the context query
-   path.
-4. Visitors build `TableExpression` and `SqlExpression` objects.
-5. `SqlStatementGenerator` materializes projection dependencies and renders
-   SQL.
-6. `DbQueryProvider` executes the generated statement and returns results.
+```text
+[OQuery text] ------------------------------+
+                                             |
+                                             v
+                              [QueryDefinitionOQueryParser]
+                                             |
+                                             +----------------------+
+                                                                    |
+[QueryDefinition input] -------------------------------------------+
+                                                                    v
+                                                        [OQueryableCreator]
+                                                                    |
+                                                                    | creates IOQuery
+                                                                    | with Select, Where,
+                                                                    | OrderBy, Skip, Take...
+                                                                    v
+[Fluent input] ---------------------- creates empty IOQuery ---> [IOQuery]
+                                                                    |
+                                      +-----------------------------+-----------------------------+
+                                      |                                                           |
+                                      v                                                           v
+                         [Fluent: user adds operations]                 [Definition/OQR: already configured]
+                                      |                                                           |
+                                      +-----------------------------+-----------------------------+
+                                                                    v
+                                                         [configured IOQuery]
+                                                                    |
+                                                                    v
+                                                             [OQueryProvider]
+                                                                    |
+                                                                    v
+                                                            [SqlQueryCompiler]
+                                                                    |
+                                                                    v
+                                                     [QueryVisitor and definition visitors]
+                                                                    |
+                                                                    v
+                                                       [TableExpression / SqlExpression IR]
+                                                                    |
+                                                                    v
+                                                         [SqlStatementGenerator]
+                                                                    |
+                                                                    v
+                                                         [SQL + DbParameters]
+                                                                    |
+                                                                    v
+                                                          [Database / DbReader]
+                                                                    |
+                                                                    v
+                                                                [Results]
+```
+
+The fluent path owns expression construction by user operations. The
+definition and OQuery-text paths own input parsing and automatic query
+construction in `OQueryableCreator`. The provider and SQL stages are shared.
 
 The frontend, API controller, and query service must not reimplement these
 rules. They may validate input and report errors, but query semantics belong
@@ -202,10 +250,10 @@ cover the same semantic path.
 | Responsibility | Primary class |
 |---|---|
 | OQuery header and block parsing | `QueryDefinitionOQueryParser` |
-| DTO/text query construction | `DbQueryFromQueryDto` |
+| Definition/OQuery input construction | `OQueryableCreator` |
 | Direct projection compilation | `SelectVisitor` |
 | Context binding and CTE construction | `QueryDefinitionVisitor` |
 | Field, relation, function, and alias resolution | `QueryContext` |
 | SQL dependency layers and SQL rendering | `SqlStatementGenerator` |
 | Metadata field and entity resolution | `MetadataProvider` and `Entity` |
-| Query execution | `DbQueryProvider` |
+| Query execution | `OQueryProvider` |

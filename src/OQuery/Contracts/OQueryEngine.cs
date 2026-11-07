@@ -34,24 +34,24 @@ public class OQueryEngine(
 
     public IOQuery Query(string entity)
     {
-        var queryProvider = new DbQueryProvider(
+        var queryProvider = new OQueryProvider(
             metaProvider,
             functionProvider,
             dbConnection,
             _sqlDialect,
             entity);
 
-        return new DbQueryable(queryProvider);
+        return new OQueryable(queryProvider);
     }
 
     public IOQuery QueryOqr(string oqr)
-        => DbQueryFromQueryDto.BuildQueryable(this, oqr);
+        => OQueryableCreator.FromOQueryText(this, oqr);
 
     public IOQuery QueryOqr(string oqr, string contextName)
-        => DbQueryFromQueryDto.BuildQueryable(this, oqr, contextName);
+        => OQueryableCreator.FromOQueryText(this, oqr, contextName);
 
     public IOQuery Query(QueryDefinition queryRequest)
-        => DbQueryFromQueryDto.BuildQueryable(this, queryRequest);
+        => OQueryableCreator.FromDefinition(this, queryRequest);
 
 
     public void Dispose()

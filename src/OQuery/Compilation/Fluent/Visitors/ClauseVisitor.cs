@@ -55,7 +55,7 @@ class ClauseVisitor(QueryCompilationResolver queryContext)
              !ReferenceEquals(statements[1], selectStatement!)))
             throw new NotSupportedException(
                 "Recursive queries require Query(entity).Recursive(relation).Select(dictionary).");
-        if (recursiveStatement.Arguments[0] is not ConstantExpression { Value: DbQueryable source } ||
+        if (recursiveStatement.Arguments[0] is not ConstantExpression { Value: OQueryable source } ||
             recursiveStatement.Arguments[1] is not ConstantExpression { Value: string relationName })
             throw new NotSupportedException(
                 "Recursive queries require Query(entity).Recursive(relation).Select(dictionary).");
@@ -225,7 +225,7 @@ class ClauseVisitor(QueryCompilationResolver queryContext)
         if (root is QueryDefinitionExpression queryDefinition)
             return new QueryDefinitionVisitor(QueryContext).Eval(queryDefinition.Definition);
 
-        var dbQuery = (DbQueryable)((ConstantExpression)root).Value!;
+        var dbQuery = (OQueryable)((ConstantExpression)root).Value!;
         return QueryContext.CreateTableContext(dbQuery.Provider.Entity);
     }
 

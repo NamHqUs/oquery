@@ -9,7 +9,7 @@ using DbConnection = System.Data.Common.DbConnection;
 
 namespace OQuery.Execution;
 
-class DbQueryProvider(
+class OQueryProvider(
     IMetadataProvider metaProvider,
     IFunctionProvider functionProvider,
     IDbConnection dbConnection,
@@ -19,7 +19,7 @@ class DbQueryProvider(
     public readonly IEntity Entity = metaProvider.GetEntity(entityName);
 
     public IOQuery CreateQuery(Expression expression)
-        => new DbQueryable(this, expression);
+        => new OQueryable(this, expression);
 
     public SqlTranslationResult GetQuery(Expression expression)
     {

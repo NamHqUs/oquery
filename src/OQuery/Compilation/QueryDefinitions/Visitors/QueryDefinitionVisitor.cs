@@ -713,7 +713,7 @@ internal sealed class QueryDefinitionVisitor(QueryCompilationResolver queryConte
 
         if (definition.Filter is not null)
             table = new WhereVisitor(table, queryContext)
-                .Eval(DbQueryFromQueryDto.CreateFilter(definition.Filter));
+                .Eval(OQueryableCreator.CreateFilter(definition.Filter));
 
         foreach (var sort in definition.Sorts ?? [])
             table.Orders.Add(new OrderExpression(

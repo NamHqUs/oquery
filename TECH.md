@@ -9,13 +9,15 @@ internal implementation details.
 
 ```mermaid
 flowchart LR
-    A[Input] --> A1[C# expression API]
-    A --> A2[JSON QueryDto]
-    A --> A3[Runtime metadata]
-    A1 --> B[IOQuery expression tree]
-    A2 --> B2[DbQueryFromQueryDto]
-    B2 --> B
-    B --> F[SqlQueryCompiler]
+    A1[Fluent input] --> B1[OQueryEngine.Query(entity)]
+    A2[QueryDefinition input] --> B2[OQueryableCreator.FromDefinition]
+    A3[OQuery text] --> B3[QueryDefinitionOQueryParser]
+    B3 --> B2
+    B2 --> B4[OQueryEngine.Query(entity)]
+    B1 --> C[base IOQuery]
+    B4 --> C
+    C --> D[configured IOQuery]
+    D --> F[SqlQueryCompiler]
 
     subgraph Core[Internal query compiler]
         C[QueryContext<br/>metadata, relations, aliases, parameters]
@@ -28,7 +30,7 @@ flowchart LR
 
     H[ISqlDialect<br/>SQL Server / SQLite / PostgreSQL / CockroachDB / Firebird / MySQL-MariaDB / Oracle / SAP HANA / Db2] --> G
     G --> I[SQL command text + DbParameters]
-    I --> J[DbQueryProvider]
+    I -->     J[OQueryProvider]
     J --> K[ADO.NET IDbConnection / DbCommand]
     K --> L[DbReader]
     L --> M[Dictionary<string, object?> results]
@@ -40,14 +42,16 @@ wheel to zoom, drag to pan).
 
 ### Pipeline responsibilities
 
-1. **Input** accepts C# expression trees over `IQueryParameter` and
-   `IOQuery`, JSON `QueryDto` values, and runtime metadata
-   (`Entity`, `Field`, and `Relation`).
-2. **Process the interface input** uses public query extensions to build a
-   normal expression tree. YAML definitions are converted into the same
-   expression surface by `DbQueryFromQueryDto`.
-   Definitions containing named contexts use `QueryDefinitionExpression` and
-   `QueryDefinitionVisitor` to represent CTEs and their joins.
+1. **Input-specific preparation** has three paths:
+   fluent input starts with `OQueryEngine.Query(entity)` and lets the user
+   add operations; `QueryDefinition` input uses `OQueryableCreator.FromDefinition`
+   to create the base query and apply its operations; OQuery text is parsed by
+   `QueryDefinitionOQueryParser` before using the same creator path.
+2. **Shared query object** returns an `IOQuery`. The fluent path returns a base
+   query before user operations, while definition and OQuery-text paths return
+   an already-configured query. Definitions containing named contexts use
+   `QueryDefinitionExpression` and `QueryDefinitionVisitor` to represent CTEs
+   and their joins.
 3. **Visit and build the IR** creates a dialect-independent `SqlExpression`
    tree. `SqlQueryCompiler` runs `QueryVisitor` and its clause visitors;
    `QueryContext` resolves metadata and relations, assigns aliases, applies
@@ -60,7 +64,7 @@ wheel to zoom, drag to pan).
    checked before SQL is emitted. `ISqlDialect` owns quoting, table rendering,
    concatenation, booleans, and paging.
 5. **Read from the database and return to the client** is handled by
-   `DbQueryProvider` and `DbReader`. The provider creates synchronous or
+   `OQueryProvider` and `DbReader`. The provider creates synchronous or
    asynchronous ADO.NET commands, while the reader maps columns and aliases
    into `Dictionary<string, object?>` values.
 6. **Return result data and utilities** exposes records through `ToList`,
@@ -78,9 +82,10 @@ MySQL/MariaDB, Oracle, SAP HANA, IBM Db2, or another dialect.
 the same expression visitors and SQL generator as the C# query API:
 
 ```text
-QueryDto
-    -> DbQueryFromQueryDto.BuildQueryable
-    -> IOQuery expression tree
+QueryDefinition
+    -> OQueryableCreator.FromDefinition
+    -> OQueryEngine.Query(entity)
+    -> configured IOQuery expression tree
     -> SqlQueryCompiler
     -> QueryVisitor and clause visitors
     -> QueryDefinitionVisitor for definitions with named contexts
@@ -89,7 +94,7 @@ QueryDto
     -> SQL command text + DbParameters
 ```
 
-`DbQueryFromQueryDto` maps DTO fields, filters, sorting, and paging onto the
+`OQueryableCreator` maps external query input fields, filters, sorting, and paging onto the
 normal query API. It does not create SQL or bypass the visitors. The compiler
 then translates the resulting expression tree to IR before SQL rendering.
 `QueryDefinition.Contexts` follows a dedicated visitor path that builds
@@ -188,9 +193,9 @@ JSON values are marked as parameterized before expression translation.
 
 ## Query provider flow
 
-### `DbQueryProvider`
+### `OQueryProvider`
 
-`DbQueryProvider` connects the public query object to translation and execution.
+`OQueryProvider` connects the public query object to translation and execution.
 It delegates compilation to the internal `SqlQueryCompiler`, then:
 
 1. Creates ADO.NET parameters from the compiled parameter values.
@@ -342,7 +347,7 @@ for identifiers, booleans, concatenation, and paging.
 `SqlFormatter` formats diagnostic SQL only. It does not participate in normal
 execution.
 
-For SQL Server diagnostics, `DbQueryProvider.GetQuery` prepends typed
+For SQL Server diagnostics, `OQueryProvider.GetQuery` prepends typed
 declarations:
 
 ```sql

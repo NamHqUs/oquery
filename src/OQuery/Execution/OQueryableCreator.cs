@@ -6,18 +6,21 @@ using System.Text.Json;
 
 namespace OQuery.Execution;
 
-internal static class DbQueryFromQueryDto
+internal static class OQueryableCreator
 {
-    public static IOQuery BuildQueryable(OQueryEngine context, string oqr)
-        => BuildQueryable(context, QueryDefinitionOQueryParser.Parse(oqr));
+    public static IOQuery FromOQueryText(OQueryEngine context, string oqr)
+        => FromDefinition(context, QueryDefinitionOQueryParser.Parse(oqr));
 
-    public static IOQuery BuildQueryable(OQueryEngine context, string oqr, string contextName)
+    public static IOQuery FromOQueryText(
+        OQueryEngine context,
+        string oqr,
+        string contextName)
     {
         var definition = QueryDefinitionOQueryParser.Parse(oqr);
         if (definition.Contexts?.TryGetValue(contextName, out var selected) != true)
             throw new KeyNotFoundException($"Query context [{contextName}] was not found.");
 
-        return BuildQueryable(context, new QueryDefinition(selected.Entity)
+        return FromDefinition(context, new QueryDefinition(selected.Entity)
         {
             Projections = selected.Projections,
             Filter = selected.Filter,
@@ -28,7 +31,7 @@ internal static class DbQueryFromQueryDto
             Contexts = definition.Contexts,
         });
     }
-    public static IOQuery BuildQueryable(OQueryEngine context, QueryDefinition definition)
+    public static IOQuery FromDefinition(OQueryEngine context, QueryDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(definition);

@@ -4,9 +4,9 @@ using System.Linq.Expressions;
 
 namespace OQuery.Execution;
 
-class DbQueryable : IOQuery, IEnumerable<Dictionary<string, object?>>, IEnumerable
+class OQueryable : IOQuery, IEnumerable<Dictionary<string, object?>>, IEnumerable
 {
-    public readonly DbQueryProvider Provider;
+    public readonly OQueryProvider Provider;
     private int _toStringDepth;
 
     IOQueryProvider IOQuery.Provider => Provider;
@@ -14,7 +14,7 @@ class DbQueryable : IOQuery, IEnumerable<Dictionary<string, object?>>, IEnumerab
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     public Expression Expression { get; }
 
-    internal DbQueryable(DbQueryProvider provider, Expression? expression = null)
+    internal OQueryable(OQueryProvider provider, Expression? expression = null)
     {
         Provider = provider;
         Expression = expression ?? Expression.Constant(this);
@@ -29,7 +29,7 @@ class DbQueryable : IOQuery, IEnumerable<Dictionary<string, object?>>, IEnumerab
     public override string ToString()
     {
         if (_toStringDepth > 0)
-            return nameof(DbQueryable);
+            return nameof(OQueryable);
 
         try
         {
