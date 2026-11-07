@@ -243,7 +243,7 @@ public sealed class MetadataAuthorizationPathTests
         var query = new QueryDefinition("User")
         {
 
-            Projections = [new("Id"), new("COUNT(Id) | Total")],
+            Projections = QueryDefinitionJsonParser.ParseProjection("Id, COUNT(Id) | Total"),
             Filter = QueryDefinitionJsonParser.ParseFilter("COUNT(Secret) >= <1>")
         };
 
