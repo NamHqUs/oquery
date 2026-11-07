@@ -93,8 +93,8 @@ public sealed class QueryContextDefinitionTests : TestBase
             EmployeeTree is Employees:
                 FirstName ManagerName,
                 Members.Count(Id) TotalMembers,
-                aliasMembers.FirstName MemberName
-              INNER JOIN EmployeeTree aliasMembers ON Id = aliasMembers.ManagerId
+                tree.FirstName MemberName
+              INNER JOIN EmployeeTree tree ON Id = tree.ManagerId
             """);
 
         var sql = db.Query(query).ToSql().CommandText;

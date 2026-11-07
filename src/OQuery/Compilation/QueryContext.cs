@@ -889,4 +889,7 @@ class QueryContext(
         return name;
     }
     public string GetNextAlias() => "t" + _aliasCount++;
+
+    public string GetNextInternalAlias(string name)
+        => $"__oq_{name}_{_aliasCount++}";
 }

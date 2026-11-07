@@ -284,7 +284,7 @@ internal sealed class QueryDefinitionVisitor(QueryContext queryContext)
         var result = new CteTableExpression(
             context.Name,
             cteEntity,
-            "tree",
+            queryContext.GetNextInternalAlias("tree"),
             cteFields);
         result.CommonTableExpressions.Add(new RecursiveCommonTableExpression(
             context.Name,

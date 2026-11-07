@@ -260,6 +260,33 @@ User: Name, Manager1.Name, Manager2.Age
 `User Context`. This supports self-joins and repeated context usage. Do not
 report repeated context aliases as unsupported.
 
+### Recursive context self-joins
+
+A context that joins itself is compiled as a recursive query when the selected
+SQL dialect supports recursive CTEs:
+
+```text
+EmployeeTree is Employees:
+    FirstName ManagerName,
+    Members.Count(Id) TotalMembers,
+    aliasMembers.FirstName MemberName
+  Inner Join EmployeeTree aliasMembers
+    On Id = aliasMembers.ManagerId
+```
+
+The projection can combine metadata relationship expressions with fields from
+the recursive context:
+
+- `Members.Count(Id)` is a collection aggregate over the `Members` metadata
+  relationship of the current employee;
+- `aliasMembers.FirstName` is a field from the recursive context join;
+- `COUNT(aliasMembers.Id)` counts rows from the recursive alias and is
+  different from `Members.Count(Id)`.
+
+Use an explicit join alias when projecting fields from the recursive context.
+The alias identifies the recursive member scope and avoids confusing it with a
+metadata relationship.
+
 ## 7. Collection existence conditions
 
 `HasAny` and `HasNone` are Boolean condition operators. Their source is an
