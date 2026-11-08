@@ -45,7 +45,7 @@ public static class QueryDefinitionOQueryParser
         ArgumentNullException.ThrowIfNull(text);
         ArgumentException.ThrowIfNullOrWhiteSpace(contextName);
 
-        var blocks = ReadBlocks(text);
+        var blocks = ReadBlocks(text, ignoreInvalidHeaders: true);
         var blocksByName = blocks.ToDictionary(
             block => block.Name,
             StringComparer.OrdinalIgnoreCase);
@@ -224,7 +224,7 @@ public static class QueryDefinitionOQueryParser
             JoinType: joinType);
     }
 
-    private static List<QueryBlock> ReadBlocks(string text)
+    private static List<QueryBlock> ReadBlocks(string text, bool ignoreInvalidHeaders = false)
     {
         var blocks = new List<QueryBlock>();
         QueryBlock? current = null;
@@ -240,7 +240,11 @@ public static class QueryDefinitionOQueryParser
             {
                 var separator = line.IndexOf(':');
                 if (separator <= 0)
+                {
+                    if (ignoreInvalidHeaders)
+                        continue;
                     throw new FormatException($"Invalid OQuery header [{line}].");
+                }
                 var header = line[..separator].Trim();
                 var projection = line[(separator + 1)..].Trim();
                 var headerMatch = System.Text.RegularExpressions.Regex.Match(
@@ -249,7 +253,11 @@ public static class QueryDefinitionOQueryParser
                     "(?:\\s+is\\s+(?:\"(?<entityQuoted>[^\"]+)\"|(?<entity>[A-Za-z_][A-Za-z0-9_]*)))?$",
                     System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                 if (!headerMatch.Success)
+                {
+                    if (ignoreInvalidHeaders)
+                        continue;
                     throw new FormatException($"Invalid OQuery header [{header}].");
+                }
                 var name = headerMatch.Groups["nameQuoted"].Success
                     ? headerMatch.Groups["nameQuoted"].Value
                     : headerMatch.Groups["name"].Value;
@@ -264,7 +272,11 @@ public static class QueryDefinitionOQueryParser
             }
 
             if (current is null)
+            {
+                if (ignoreInvalidHeaders)
+                    continue;
                 throw new FormatException($"A clause appears before a query header [{line}].");
+            }
             if (!IsClauseLine(line))
             {
                 if (current.Clauses.Count > 0)

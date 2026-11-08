@@ -176,6 +176,21 @@ internal class QueryDefinitionOQueryParserTest : TestBase
     }
 
     [Test]
+    public void ParseSelectedContextIgnoresUnrelatedInvalidHeaders()
+    {
+        var oquery = """
+            Products:
+            D
+            Departments is Products: Id
+            """;
+
+        var query = QueryDefinitionOQueryParser.Parse(oquery, "Departments");
+
+        Assert.That(query.Entity, Is.EqualTo("Products"));
+        Assert.That(query.Projections!.Select(projection => projection.ToText()), Is.EqualTo(["Id"]));
+    }
+
+    [Test]
     public void ParseSelectedContextIncludesNamedDependencies()
     {
         var oquery = """
