@@ -136,7 +136,7 @@ Supported query clauses include:
 Keywords are case-insensitive. Use the canonical capitalization shown above
 for readable saved queries.
 
-Values must use angle brackets:
+Values may use angle brackets:
 
 ```text
 Where Status = <Completed>
@@ -144,9 +144,20 @@ Where Quantity > <10>
 Where IsActive = <true>
 ```
 
-If a numeric value is written without angle brackets, the parser reports the
-required form, for example: `Numeric constant [2] must be enclosed in angle
-brackets: <2>.`
+Numeric constants may also be written without angle brackets. The parser
+interprets both `2` and `<2>` as the numeric value `2`:
+
+```text
+Where Quantity > 10
+Where Quantity > <10>
+```
+
+Paging clauses accept both forms as well:
+
+```text
+Take 10
+Take <10>
+```
 
 ## 4. Fields and relationships
 
@@ -424,6 +435,11 @@ User:
 ```text
 Members.Count()
 Members.Count(Id)
+Members.CountIf(Name like <Bob>)
+Members.SumIf(Salary, Name like <Bob>)
+Members.AvgIf(Salary, Name like <Bob>)
+Members.MinIf(Salary, Name like <Bob>)
+Members.MaxIf(Salary, Name like <Bob>)
 Members.Sum(Salary)
 ```
 

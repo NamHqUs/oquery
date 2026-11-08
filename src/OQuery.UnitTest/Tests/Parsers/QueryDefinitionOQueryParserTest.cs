@@ -249,6 +249,18 @@ internal class QueryDefinitionOQueryParserTest : TestBase
         Assert.That(query.Skip, Is.EqualTo(10));
     }
 
+    [TestCase("Take 10")]
+    [TestCase("Take <10>")]
+    public void ParseTakeAcceptsBareAndAngleBracketNumericValues(string clause)
+    {
+        var query = QueryDefinitionOQueryParser.Parse($"""
+            User: Id
+              {clause}
+            """);
+
+        Assert.That(query.Take, Is.EqualTo(10));
+    }
+
     [Test]
     public void ParseUnindentedWhereClause()
     {

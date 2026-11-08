@@ -59,6 +59,77 @@ public sealed class AggregateProjectionTests : TestBase
     }
 
     [Test]
+    public void CollectionField_Projection_CountIf()
+    {
+        var query = _db.Query("User")
+            .Select(
+                "Id",
+                "Name",
+                "Members.Name",
+                "Members.CountIf(Name like <Bob>)",
+                "Members.CountIf(Name like <David>)");
+        var data = query.ToList();
+
+        var actualValues = data
+            .GroupBy(record => (string)record["Name"]!)
+            .ToDictionary(
+                group => group.Key,
+                group => (
+                    Bob: Convert.ToInt32(group.First()["Members.CountIf(Name like <Bob>)"]),
+                    David: Convert.ToInt32(group.First()["Members.CountIf(Name like <David>)"])));
+
+        Assert.That(actualValues, Is.EqualTo(new Dictionary<string, (int Bob, int David)>
+        {
+            ["Alice"] = (1, 0),
+            ["Bob"] = (0, 1),
+            ["Charlie"] = (0, 0),
+            ["David"] = (0, 0),
+            ["Eve"] = (0, 0),
+            ["Frank"] = (0, 0),
+        }));
+    }
+
+    [Test]
+    public void CollectionField_Projection_ConditionalAggregates()
+    {
+        var query = _db.Query("User")
+            .Select(
+                "Name",
+                "Members.CountIf(Name like <Bob>)",
+                "Members.SumIf(Age, Name like <Bob>)",
+                "Members.AvgIf(Age, Name like <Bob>)",
+                "Members.MinIf(Age, Name like <Bob>)",
+                "Members.MaxIf(Age, Name like <Bob>)");
+        var data = query.ToList().ToDictionary(
+            record => (string)record["Name"]!,
+            record => new
+            {
+                Count = Convert.ToInt32(record["Members.CountIf(Name like <Bob>)"]),
+                Sum = Convert.ToInt32(record["Members.SumIf(Age, Name like <Bob>)"]),
+                Average = Convert.ToInt32(record["Members.AvgIf(Age, Name like <Bob>)"]),
+                Minimum = Convert.ToInt32(record["Members.MinIf(Age, Name like <Bob>)"]),
+                Maximum = Convert.ToInt32(record["Members.MaxIf(Age, Name like <Bob>)"])
+            });
+
+        Assert.That(data["Alice"], Is.EqualTo(new
+        {
+            Count = 1,
+            Sum = 31,
+            Average = 31,
+            Minimum = 31,
+            Maximum = 31
+        }));
+        Assert.That(data["Bob"], Is.EqualTo(new
+        {
+            Count = 0,
+            Sum = 0,
+            Average = 0,
+            Minimum = 0,
+            Maximum = 0
+        }));
+    }
+
+    [Test]
     public void CollectionField_Projection_Count_Nested()
     {
         var query = _db.Query("User").Select("Name", "Members.Members.Count(Id)");
@@ -115,6 +186,30 @@ public sealed class AggregateProjectionTests : TestBase
         var data = query.ToList();
 
         Assert.That(data, Is.Not.Empty);
+    }
+
+    [Test]
+    public void CollectionField_Projection_AggregateCanUseFluentFunction()
+    {
+        var query = _db.QueryOqr("""
+            User:
+                Name,
+                Members.Sum(Age).Round(<1>) RoundedAge
+            """);
+
+        var data = query.ToList().ToDictionary(
+            record => (string)record["Name"]!,
+            record => Convert.ToDecimal(record["RoundedAge"]));
+
+        Assert.That(data, Is.EqualTo(new Dictionary<string, decimal>
+        {
+            ["Alice"] = 59m,
+            ["Bob"] = 35m,
+            ["Charlie"] = 0m,
+            ["David"] = 49m,
+            ["Eve"] = 0m,
+            ["Frank"] = 0m,
+        }));
     }
 
     [Test]
@@ -175,6 +270,7 @@ public sealed class AggregateProjectionTests : TestBase
             UserRows is User:
                 Id,
                 Name,
+                Age,
                 ManagerId
             User:
                 Id,
@@ -201,6 +297,42 @@ public sealed class AggregateProjectionTests : TestBase
     }
 
     [Test]
+    public void OQuery_ContextCollection_ResolvesMultipleFluentCountIfAggregates()
+    {
+        var query = _db.QueryOqr("""
+            UserRows is User:
+                Id,
+                Name,
+                Age,
+                ManagerId
+            User:
+                Id,
+                Name,
+                r.CountIf(Name like <Bob>) BobMembers,
+                r.SumIf(Age, Name like <Bob>) BobAgeTotal,
+                r.AvgIf(Age, Name like <Bob>) BobAgeAverage,
+                r.MinIf(Age, Name like <Bob>) BobYoungest,
+                r.MaxIf(Age, Name like <Bob>) BobOldest
+              Join UserRows r On Id = r.ManagerId
+            """);
+
+        var data = query.ToList()
+            .GroupBy(record => (string)record["Name"]!)
+            .ToDictionary(
+                group => group.Key,
+                group => (
+                    Count: Convert.ToInt32(group.First()["BobMembers"]),
+                    Sum: Convert.ToInt32(group.First()["BobAgeTotal"]),
+                    Average: Convert.ToInt32(group.First()["BobAgeAverage"]),
+                    Minimum: Convert.ToInt32(group.First()["BobYoungest"]),
+                    Maximum: Convert.ToInt32(group.First()["BobOldest"])));
+
+        Assert.That(data["Alice"], Is.EqualTo((1, 31, 31, 31, 31)));
+        Assert.That(data["Bob"], Is.EqualTo((0, 0, 0, 0, 0)));
+        Assert.That(data["David"], Is.EqualTo((0, 0, 0, 0, 0)));
+    }
+
+    [Test]
     public void OQuery_ContextCollection_UsesContextNameWhenAliasIsOmitted()
     {
         var query = _db.QueryOqr("""
@@ -216,6 +348,24 @@ public sealed class AggregateProjectionTests : TestBase
         var sql = query.ToSql().CommandText;
 
         Assert.That(sql, Does.Contain("SUM"));
+    }
+
+    [Test]
+    public void OQuery_ContextCollection_AggregateCanUseFluentFunction()
+    {
+        var query = _db.QueryOqr("""
+            OrderCategory is OrderItems:
+                Product.Category Category,
+                SUM(Quantity * UnitPrice) NetRevenue
+            Report is OrderCategory:
+                Category,
+                OrderCategory.Sum(NetRevenue).Round(<2>) RoundedRevenue
+              Join OrderCategory
+            """);
+
+        var sql = query.ToSql().CommandText;
+
+        Assert.That(sql, Does.Contain("ROUND"));
     }
 
     [Test]
@@ -248,6 +398,37 @@ public sealed class AggregateProjectionTests : TestBase
                     record["MemberCount"],
                     expected[Convert.ToInt32(record["Id"])])),
             Is.True);
+    }
+
+    [Test]
+    public void OQuery_EntityCollection_ResolvesMultipleFluentCountIfAggregates()
+    {
+        var query = _db.QueryOqr("""
+            User:
+                Id,
+                Name,
+                r.CountIf(Name like <Bob>) BobMembers,
+                r.SumIf(Age, Name like <Bob>) BobAgeTotal,
+                r.AvgIf(Age, Name like <Bob>) BobAgeAverage,
+                r.MinIf(Age, Name like <Bob>) BobYoungest,
+                r.MaxIf(Age, Name like <Bob>) BobOldest
+              Join User r On Id = r.ManagerId
+            """);
+
+        var data = query.ToList()
+            .GroupBy(record => (string)record["Name"]!)
+            .ToDictionary(
+                group => group.Key,
+                group => (
+                    Count: Convert.ToInt32(group.First()["BobMembers"]),
+                    Sum: Convert.ToInt32(group.First()["BobAgeTotal"]),
+                    Average: Convert.ToInt32(group.First()["BobAgeAverage"]),
+                    Minimum: Convert.ToInt32(group.First()["BobYoungest"]),
+                    Maximum: Convert.ToInt32(group.First()["BobOldest"])));
+
+        Assert.That(data["Alice"], Is.EqualTo((1, 31, 31, 31, 31)));
+        Assert.That(data["Bob"], Is.EqualTo((0, 0, 0, 0, 0)));
+        Assert.That(data["David"], Is.EqualTo((0, 0, 0, 0, 0)));
     }
 
     [Test]

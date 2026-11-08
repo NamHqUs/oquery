@@ -33,6 +33,9 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
         CountDistinct(),
         CountIf(),
         AverageIf(),
+        SumIf(),
+        MinimumIf(),
+        MaximumIf(),
         Coalesce(),
         MedicalLossRatio(),
         Concat(),
@@ -157,6 +160,24 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
             [new("expression", DataType.Number), new("predicate", DataType.Boolean)],
             DataType.Number, "Averages related values matching a predicate.",
             "AVG(CASE WHEN {2} THEN {1} END)", isAggregate: true);
+
+    protected virtual SqlFunctionDefintion SumIf() =>
+        Create("SumIf",
+            [new("expression", DataType.Number), new("predicate", DataType.Boolean)],
+            DataType.Number, "Sums related values matching a predicate.",
+            "SUM(CASE WHEN {2} THEN {1} END)", isAggregate: true);
+
+    protected virtual SqlFunctionDefintion MinimumIf() =>
+        Create("MinIf",
+            [new("expression", DataType.Number), new("predicate", DataType.Boolean)],
+            DataType.Number, "Returns the minimum related value matching a predicate.",
+            "MIN(CASE WHEN {2} THEN {1} END)", isAggregate: true);
+
+    protected virtual SqlFunctionDefintion MaximumIf() =>
+        Create("MaxIf",
+            [new("expression", DataType.Number), new("predicate", DataType.Boolean)],
+            DataType.Number, "Returns the maximum related value matching a predicate.",
+            "MAX(CASE WHEN {2} THEN {1} END)", isAggregate: true);
 
     protected virtual SqlFunctionDefintion Coalesce() =>
         Create("Coalesce",

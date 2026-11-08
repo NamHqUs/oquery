@@ -316,14 +316,24 @@ public static class QueryDefinitionOQueryParser
     }
 
     private static int ParsePositiveInt(string value, string name)
-        => int.TryParse(value, out var result) && result > 0
+        => int.TryParse(UnwrapNumericValue(value), out var result) && result > 0
             ? result
             : throw new FormatException($"{name} must be a positive integer.");
 
     private static int ParseNonNegativeInt(string value, string name)
-        => int.TryParse(value, out var result) && result >= 0
+        => int.TryParse(UnwrapNumericValue(value), out var result) && result >= 0
             ? result
             : throw new FormatException($"{name} must be a non-negative integer.");
+
+    private static string UnwrapNumericValue(string value)
+    {
+        var trimmed = value.Trim();
+        return trimmed.Length >= 2 &&
+            trimmed[0] == '<' &&
+            trimmed[^1] == '>'
+            ? trimmed[1..^1].Trim()
+            : trimmed;
+    }
 
     private static void AddImplicitRecursiveContext(QueryDefinition root, string rootName)
     {

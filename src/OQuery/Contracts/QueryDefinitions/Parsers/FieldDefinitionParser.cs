@@ -58,9 +58,7 @@ internal static class FieldDefinitionParser
                 case '.' when parentheses == 0 && index < text.Length - 1:
                 {
                     var suffix = text[(index + 1)..].Trim();
-                    if (!TryGetFunctionCall(suffix, out var opening) ||
-                        !IsAggregatePipelineFunction(suffix[..opening]) ||
-                        !string.IsNullOrWhiteSpace(suffix[(opening + 1)..^1]))
+                    if (!TryGetFunctionCall(suffix, out var opening))
                         continue;
 
                     var sourceText = text[..index].Trim();
@@ -68,10 +66,31 @@ internal static class FieldDefinitionParser
                         throw new FormatException("An aggregate pipeline requires a source expression.");
 
                     var source = Parse(sourceText);
-                    pipeline = new FunctionFieldDefinition(
-                        GetAggregateOverFunctionName(suffix[..opening]),
-                        [source]);
-                    return true;
+                    var functionName = suffix[..opening].Trim();
+                    var argumentsText = suffix[(opening + 1)..^1];
+                    if (IsAggregatePipelineFunction(functionName) &&
+                        string.IsNullOrWhiteSpace(argumentsText))
+                    {
+                        pipeline = new FunctionFieldDefinition(
+                            GetAggregateOverFunctionName(functionName),
+                            [source]);
+                        return true;
+                    }
+
+                    if (source is FunctionFieldDefinition &&
+                        !string.IsNullOrWhiteSpace(functionName))
+                    {
+                        var arguments = SplitTopLevel(argumentsText, ',')
+                            .Where(argument => !string.IsNullOrWhiteSpace(argument))
+                            .Select(ParseArgument)
+                            .ToArray();
+                        pipeline = new FunctionFieldDefinition(
+                            functionName,
+                            [source, .. arguments]);
+                        return true;
+                    }
+
+                    break;
                 }
             }
         }
@@ -320,10 +339,7 @@ internal static class FieldDefinitionParser
         }
 
         if (IsNumericLiteral(text))
-        {
-            throw new FormatException(
-                $"Numeric constant [{text}] must be enclosed in angle brackets: <{text}>.");
-        }
+            return new ConstFieldDefinition(ParseConstant(text));
 
         return new FieldDefinition(text);
     }
