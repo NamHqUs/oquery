@@ -361,18 +361,65 @@ MAX(expression)
 MIN(expression)
 ```
 
-Collection relations also support fluent-style aggregate paths:
+Fluent aggregate paths can aggregate any collection of rows. A collection may
+come from:
+
+1. a metadata collection relation;
+2. a joined entity mapped to a table; or
+3. a named context whose projection returns rows.
+
+The receiver identifies the collection. Its alias is optional: when a join
+does not specify an alias, use the joined entity or context name.
+
+For a metadata collection relation:
 
 ```text
 Employees:
     Id,
     Members.Count() MemberCount,
     Members.Sum(Salary) MemberSalaryTotal,
-    Members.Average(Salary) MemberAverageSalary
+    Members.Avg(Salary) MemberAverageSalary
+```
+
+For a named context:
+
+```text
+Ref is User:
+    Id,
+    Name,
+    ManagerId
+
+User:
+    Id,
+    Name Manager,
+    r.Name Members,
+    r.Count(r.Id) MemberCount
+  Join Ref r On Id = r.ManagerId
+```
+
+For a directly joined entity:
+
+```text
+User:
+    Id,
+    Name Manager,
+    r.Name Members,
+    r.Count(r.Id) MemberCount
+  Join User r On Id = r.ManagerId
+```
+
+The alias may be omitted:
+
+```text
+User:
+    Id,
+    Name,
+    User.Count(User.Id) MemberCount
+  Join User On Id = User.ManagerId
 ```
 
 `Count()` uses the related entity key when no argument is supplied.
-`Sum`, `Average`, `Min`, and `Max` require a numeric related field:
+`Sum`, `Avg`, `Min`, and `Max` require a numeric related field:
 
 ```text
 Members.Count()
@@ -384,8 +431,53 @@ For metadata collection relations, the SQL generator renders these parent
 aggregates through a grouped relation source joined by the relationship key.
 Multiple aggregates over the same collection reuse one grouped source.
 
-Collection aggregates are different from window aggregates. `Members.Count()`
-summarizes related rows for the current parent, while
+The grouped relation source is an aggregation barrier. It is evaluated at the
+parent relation-key grain before ordinary detail joins are applied. Therefore,
+adding a collection detail projection must not change a collection aggregate:
+
+```text
+User:
+    Id,
+    Members.Count(Id) TotalMembers
+```
+
+and:
+
+```text
+User:
+    Id,
+    Members.Name MemberName,
+    Members.Count(Id) TotalMembers
+```
+
+must produce the same `TotalMembers` for each `User.Id`. The second query may
+return multiple rows per user because `Members.Name` is a detail projection,
+but the count remains parent-scoped. SQL generation uses a parent-keyed
+derived table for this barrier rather than calculating the aggregate in the
+outer `GROUP BY`.
+
+The same barrier applies to a joined entity or row-producing context when its
+join has an equality condition:
+
+```text
+UserRows is User: Id, ManagerId
+
+User:
+    Id,
+    r.Name Member,
+    r.Count(Id) MemberCount
+  Join UserRows r On Id = r.ManagerId
+```
+
+`MemberCount` is grouped by the joined source key `ManagerId` and then joined
+back to `User.Id`. A `Member` detail projection therefore cannot change the
+count. A context joined without a condition remains a query-wide aggregate
+because no parent key is declared.
+
+Collection aggregates are different from window aggregates. `Members.Count()`,
+`r.Count(r.Id)`, and `Ref.Count(Id)` summarize rows from their respective
+collections. A fluent suffix such as `.Avg()` then evaluates the result values
+at the next query stage. By contrast,
 `CountOver(Member.Id, ManagerId)` calculates a window over the current result
 rows and preserves their detail grain.
 
@@ -403,13 +495,37 @@ function or a fluent aggregate suffix instead.
 ### Fluent aggregate pipelines
 
 Collection aggregates may be followed by one result-level aggregate using a
-fluent suffix:
+fluent suffix. The source can be a relation aggregate, a joined
+entity/context aggregate, or a projection alias:
 
 ```text
 Products:
     Name,
     OrderItems.Sum(Quantity * UnitPrice) Revenue,
     OrderItems.Sum(Quantity * UnitPrice).Avg() AverageRevenue
+```
+
+For example, a context collection can be aggregated and then chained:
+
+```text
+OrderCategory is OrderItems:
+    OrderId,
+    Product.Category Category,
+    SUM(Quantity * UnitPrice) NetRevenue
+
+Report is OrderCategory:
+    Category,
+    OrderCategory.Sum(NetRevenue).Avg() AverageRevenue
+  Join OrderCategory
+```
+
+The receiver must identify a row-producing collection. A scalar context value
+is not a collection receiver; use the scalar field directly in an ordinary
+aggregate instead:
+
+```text
+AverageRevenue is ProductSales:
+    AVG(TotalRevenue) AverageTotalRevenue
 ```
 
 The collection aggregate is evaluated first, producing one `Revenue` value per

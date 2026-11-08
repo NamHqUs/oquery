@@ -5,20 +5,26 @@ using OQuery.QueryDefinitions.Parsers;
 
 namespace OQuery.Compilation.Visitors;
 
-internal sealed class ContextBinding(string name, QueryDefinitionBase query, JoinDefinition relation)
+internal sealed class ContextBinding(
+    string name,
+    QueryDefinitionBase query,
+    JoinDefinition relation,
+    bool isEntity = false)
 {
     public string Name { get; } = name;
     public QueryDefinitionBase Query { get; } = query;
     public string? Alias => relation.Alias;
     public IConditionDefintion? Condition => relation.Condition;
     public QueryJoinType JoinType => relation.JoinType ?? QueryJoinType.Left;
+    public bool IsEntity { get; } = isEntity;
 }
 
 internal sealed class QueryDefinitionVisitor(QueryCompilationResolver queryContext)
 {
     public TableExpression Eval(QueryDefinition definition)
     {
-        if (definition.Contexts is not { Count: > 0 })
+        if (definition.Contexts is not { Count: > 0 } &&
+            definition.Joins is not { Count: > 0 })
             throw new FormatException("A query-definition expression requires at least one context.");
 
         var definitions = new Dictionary<string, ContextBinding>(StringComparer.OrdinalIgnoreCase);
@@ -33,16 +39,31 @@ internal sealed class QueryDefinitionVisitor(QueryCompilationResolver queryConte
         var contextBindings = (definition.Joins ?? [])
             .Select(relation =>
             {
-                if (!definitions.TryGetValue(relation.RefContext, out var context))
-                    throw new FormatException(
-                        $"Query relation references unknown context [{relation.RefContext}].");
-                return new ContextBinding(context.Name, context.Query, relation);
+                var isDirectEntityJoin =
+                    string.Equals(relation.RefContext, definition.Entity, StringComparison.OrdinalIgnoreCase) &&
+                    definitions.TryGetValue(relation.RefContext, out var sourceContext) &&
+                    string.Equals(
+                        sourceContext.Query.Entity,
+                        relation.RefContext,
+                        StringComparison.OrdinalIgnoreCase);
+                if (!isDirectEntityJoin &&
+                    definitions.TryGetValue(relation.RefContext, out var context))
+                    return new ContextBinding(context.Name, context.Query, relation);
+
+                var entity = queryContext.GetEntity(relation.RefContext);
+                return new ContextBinding(
+                    entity.Name,
+                    new QueryDefinitionBase(entity.Name),
+                    relation,
+                    isEntity: true);
             })
             .ToList();
         if (contextBindings.Count == 0)
             contextBindings.AddRange(definitions.Values);
 
-        List<ContextBinding> cteDefinitions = definitions.Values.ToList();
+        List<ContextBinding> cteDefinitions = definitions.Values
+            .Where(context => !context.IsEntity)
+            .ToList();
         HashSet<string> aliases = new(StringComparer.OrdinalIgnoreCase);
         foreach (var context in contextBindings)
         {
@@ -50,7 +71,7 @@ internal sealed class QueryDefinitionVisitor(QueryCompilationResolver queryConte
                 throw new FormatException("A query context requires a name.");
             if (!aliases.Add(GetContextAlias(context)))
                 throw new FormatException($"Duplicate query context alias [{GetContextAlias(context)}].");
-            if (definitions.TryGetValue(context.Name, out var existing))
+            if (context.IsEntity || definitions.TryGetValue(context.Name, out var existing))
             {
                 continue;
             }
@@ -91,6 +112,16 @@ internal sealed class QueryDefinitionVisitor(QueryCompilationResolver queryConte
         foreach (var context in contextBindings)
         {
             var alias = GetContextAlias(context);
+            if (context.IsEntity)
+            {
+                var entityTable = queryContext.CreateTableContext(
+                    queryContext.GetEntity(context.Name),
+                    alias);
+                cteTables.Add(alias, entityTable);
+                table.JoinedTables.Add(alias, entityTable);
+                continue;
+            }
+
             var cteFields = GetCteFields(
                 definitions[context.Name],
                 definitions,
@@ -144,6 +175,7 @@ internal sealed class QueryDefinitionVisitor(QueryCompilationResolver queryConte
         query = null!;
         var recursiveContexts = contexts
             .Where(context =>
+                !context.IsEntity &&
                 ContainsContextReference(context.Query, context.Name, context.Alias))
             .ToArray();
         if (recursiveContexts.Length == 0)
@@ -901,12 +933,12 @@ internal sealed class JoinConditionVisitor(
         {
             var sourceName = fieldPath[..separator];
             var remainingPath = fieldPath[(separator + 1)..];
-            if (string.Equals(sourceName, leftTable.Entity.Name, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(sourceName, leftTable.Alias, StringComparison.OrdinalIgnoreCase))
-                return queryContext.ParseFieldPath(leftTable, remainingPath);
             if (string.Equals(sourceName, rightTable.Entity.Name, StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(sourceName, rightTable.Alias, StringComparison.OrdinalIgnoreCase))
                 return queryContext.ParseFieldPath(rightTable, remainingPath);
+            if (string.Equals(sourceName, leftTable.Entity.Name, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(sourceName, leftTable.Alias, StringComparison.OrdinalIgnoreCase))
+                return queryContext.ParseFieldPath(leftTable, remainingPath);
             if (contextTables.TryGetValue(sourceName, out var contextTable))
                 return queryContext.ParseFieldPath(contextTable, remainingPath);
         }

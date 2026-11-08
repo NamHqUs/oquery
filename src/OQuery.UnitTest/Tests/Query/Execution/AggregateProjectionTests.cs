@@ -69,6 +69,29 @@ public sealed class AggregateProjectionTests : TestBase
     }
 
     [Test]
+    public void CollectionAggregate_IsIndependentOfCollectionDetailProjection()
+    {
+        var countOnly = _db.Query("User")
+            .Select("Id", "Members.Count(Id)")
+            .ToList()
+            .ToDictionary(
+                record => Convert.ToInt32(record["Id"]),
+                record => record["Members.Count(Id)"]);
+
+        var withMemberName = _db.Query("User")
+            .Select("Id", "Members.Name", "Members.Count(Id)")
+            .ToList();
+
+        Assert.That(withMemberName, Is.Not.Empty);
+        Assert.That(
+            withMemberName.All(record =>
+                Equals(
+                    record["Members.Count(Id)"],
+                    countOnly[Convert.ToInt32(record["Id"])])),
+            Is.True);
+    }
+
+    [Test]
     public void CollectionField_Projection_SumsNestedCollectionAggregate()
     {
         var query = _db.Query("User")
@@ -143,6 +166,104 @@ public sealed class AggregateProjectionTests : TestBase
 
         Assert.That(sql, Does.Contain("Average"));
         Assert.That(sql, Does.Contain("Revenue"));
+    }
+
+    [Test]
+    public void OQuery_ContextCollection_ResolvesFluentAggregateWithAlias()
+    {
+        var query = _db.QueryOqr("""
+            UserRows is User:
+                Id,
+                Name,
+                ManagerId
+            User:
+                Id,
+                Name Manager,
+                r.Name Members,
+                r.Count(Id) MemberCount
+              Join UserRows r On Id = r.ManagerId
+            """);
+
+        var expected = _db.Query("User")
+            .Select("Id", "Members.Count(Id)")
+            .ToList()
+            .ToDictionary(
+                record => Convert.ToInt32(record["Id"]),
+                record => record["Members.Count(Id)"]);
+        var data = query.ToList();
+
+        Assert.That(
+            data.All(record =>
+                Equals(
+                    record["MemberCount"],
+                    expected[Convert.ToInt32(record["Id"])])),
+            Is.True);
+    }
+
+    [Test]
+    public void OQuery_ContextCollection_UsesContextNameWhenAliasIsOmitted()
+    {
+        var query = _db.QueryOqr("""
+            OrderCategory is OrderItems:
+                Product.Category Category,
+                SUM(Quantity * UnitPrice) NetRevenue
+            Report is OrderCategory:
+                Category,
+                OrderCategory.Sum(NetRevenue) TotalRevenue
+              Join OrderCategory
+            """);
+
+        var sql = query.ToSql().CommandText;
+
+        Assert.That(sql, Does.Contain("SUM"));
+    }
+
+    [Test]
+    public void OQuery_EntityCollection_ResolvesFluentAggregateWithAlias()
+    {
+        var query = _db.QueryOqr("""
+            User:
+                Id,
+                Name Manager,
+                r.Name Members,
+                r.Count(Id) MemberCount,
+                r.Sum(r.Id) MemberSum,
+                r.Avg(r.Id) MemberAverage,
+                r.Min(r.Id) MemberMinimum,
+                r.Max(r.Id) MemberMaximum
+              Join User r On Id = r.ManagerId
+            """);
+
+        var expected = _db.Query("User")
+            .Select("Id", "Members.Count(Id)")
+            .ToList()
+            .ToDictionary(
+                record => Convert.ToInt32(record["Id"]),
+                record => record["Members.Count(Id)"]);
+        var data = query.ToList();
+
+        Assert.That(
+            data.All(record =>
+                Equals(
+                    record["MemberCount"],
+                    expected[Convert.ToInt32(record["Id"])])),
+            Is.True);
+    }
+
+    [Test]
+    public void OQuery_EntityCollection_UsesEntityNameWhenAliasIsOmitted()
+    {
+        var query = _db.QueryOqr("""
+            User:
+                Id,
+                Name,
+                User.Count(User.Id) MemberCount
+              Join User On Id = User.ManagerId
+            """);
+
+        var sql = query.ToSql().CommandText;
+
+        Assert.That(sql, Does.Contain("COUNT"));
     }
 
     [Test]

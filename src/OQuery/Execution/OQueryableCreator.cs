@@ -36,7 +36,8 @@ internal static class OQueryableCreator
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(definition);
 
-        if (definition.Contexts is { Count: > 0 })
+        if (definition.Contexts is { Count: > 0 } ||
+            definition.Joins is { Count: > 0 })
         {
             var sourceEntity = GetProviderEntityName(definition, definition.Entity);
             var source = context.Query(sourceEntity);
@@ -103,6 +104,9 @@ internal static class OQueryableCreator
         {
             if (definition.Contexts?.TryGetValue(entityName, out var context) == true)
             {
+                if (string.Equals(context.Entity, entityName, StringComparison.OrdinalIgnoreCase))
+                    return entityName;
+
                 if (!visited.Add(entityName))
                     throw new FormatException($"Query context source cycle detected at [{entityName}].");
                 entityName = context.Entity;

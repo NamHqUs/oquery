@@ -327,6 +327,9 @@ public static class QueryDefinitionOQueryParser
 
     private static void AddImplicitRecursiveContext(QueryDefinition root, string rootName)
     {
+        if (string.Equals(rootName, root.Entity, StringComparison.OrdinalIgnoreCase))
+            return;
+
         var relation = root.Joins?.FirstOrDefault(candidate =>
             string.Equals(candidate.RefContext, rootName, StringComparison.OrdinalIgnoreCase));
         if (relation is null || root.Contexts is null || root.Contexts.ContainsKey(rootName))

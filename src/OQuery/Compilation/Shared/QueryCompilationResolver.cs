@@ -79,6 +79,24 @@ class QueryCompilationResolver(
             tableContext.PendingProjectionAliases.TryGetValue(fieldPath, out var pendingType))
             return new ProjectionAliasExpression(fieldPath, pendingType);
 
+        if (TryParseFunction(fieldPath, out var wrappedFunction))
+            return ParseFunctionExpression(tableContext, wrappedFunction, 0);
+
+        var i = FindLastUnnestedDot(fieldPath);
+        var relationPath = i < 0 ? null : fieldPath[..i];
+        var fieldName = fieldPath[(i + 1)..];
+
+        if (TryParseAggregateFunction(fieldName, out var aggregateFunction))
+        {
+            var aggregateJoinedData = ParseRelationPath(tableContext, relationPath).ToArray();
+            if (TryParseRelationAggregate(tableContext, relationPath, aggregateFunction, 0, out var relationAggregate))
+                return relationAggregate;
+
+            var lastTable = ApplyJoinAggregate(tableContext, aggregateJoinedData);
+            var function = (FunctionSqlExpression)ParseFunctionExpression(lastTable, aggregateFunction, 0);
+            return new AggregateExpression(lastTable, function, !aggregateJoinedData.Any());
+        }
+
         var separator = fieldPath.IndexOf('.');
         if (separator > 0)
         {
@@ -88,29 +106,11 @@ class QueryCompilationResolver(
                     fieldPath[..separator],
                     StringComparison.OrdinalIgnoreCase))
                 .Value;
-                if (joinedTable is not null)
-                    return ParseFieldPath(joinedTable, fieldPath[(separator + 1)..]);
+            if (joinedTable is not null)
+                return ParseFieldPath(joinedTable, fieldPath[(separator + 1)..]);
         }
-
-        if (TryParseFunction(fieldPath, out var wrappedFunction))
-            return ParseFunctionExpression(tableContext, wrappedFunction, 0);
-
-        var i = FindLastUnnestedDot(fieldPath);
-        var relationPath = i < 0 ? null : fieldPath[..i];
-        var fieldName = fieldPath[(i + 1)..];
 
         var joinedData = ParseRelationPath(tableContext, relationPath).ToArray();
-
-        if (TryParseAggregateFunction(fieldName, out var aggregateFunction))
-        {
-            if (TryParseRelationAggregate(tableContext, relationPath, aggregateFunction, 0, out var relationAggregate))
-                return relationAggregate;
-
-            var lastTable = ApplyJoinAggregate(tableContext, joinedData);
-            var function = (FunctionSqlExpression)ParseFunctionExpression(lastTable, aggregateFunction, 0);
-            return new AggregateExpression(lastTable, function, !joinedData.Any());
-        }
-
         var lastEntity = joinedData.LastOrDefault().joinedEntity ?? tableContext.Entity;
         var metaField = metaProvider.GetField(lastEntity, fieldName);
         var lastAlias = ApplyJoin(tableContext, joinedData).Alias;
@@ -346,10 +346,21 @@ class QueryCompilationResolver(
                 out aggregate);
         }
 
+        if (tableContext.JoinedTables.TryGetValue(relationPath, out var joinedContext) &&
+            tableContext.Entity.Relations?.Any(relation =>
+                string.Equals(relation.Name, relationPath, StringComparison.OrdinalIgnoreCase)) != true)
+        {
+            aggregate = ApplyGroupedJoinedAggregate(
+                tableContext,
+                relationPath,
+                joinedContext,
+                aggregateDefinition);
+            return true;
+        }
+
         var joinedData = ParseRelationPath(tableContext, relationPath).ToArray();
         if (joinedData is [{ relation: var relation, joinedEntity: var joinedEntity }] &&
-            relation.Type == RelationType.Collection &&
-            tableContext is not CteTableExpression)
+            relation.Type == RelationType.Collection)
         {
             aggregate = ApplyGroupedJoinAggregate(
                 tableContext,
@@ -366,6 +377,112 @@ class QueryCompilationResolver(
         aggregate = new AggregateExpression(lastTable, function, !joinedData.Any());
         return true;
     }
+
+    private AggregateExpression ApplyGroupedJoinedAggregate(
+        TableExpression tableContext,
+        string joinedAlias,
+        TableExpression joinedTable,
+        FunctionFieldDefinition aggregateDefinition)
+    {
+        var join = tableContext.JoinHost.Joins.FirstOrDefault(candidate =>
+            ReferenceEquals(candidate.Table, joinedTable) ||
+            string.Equals(candidate.Table.Alias, joinedTable.Alias, StringComparison.OrdinalIgnoreCase));
+        if (join is null)
+        {
+            var fallbackDefinition = RemoveTableQualifier(
+                aggregateDefinition,
+                joinedAlias);
+            var fallbackFunction = ParseFunctionExpression(joinedTable, fallbackDefinition, 0)
+                as FunctionSqlExpression
+                ?? throw new InvalidOperationException(
+                    $"Aggregate function [{aggregateDefinition.FunctionName}] did not produce a SQL function.");
+            return new AggregateExpression(joinedTable, fallbackFunction, groupWithQuery: true);
+        }
+
+        if (join.Conditions.Count == 0)
+        {
+            var fallbackDefinition = RemoveTableQualifier(
+                aggregateDefinition,
+                joinedAlias);
+            var fallbackFunction = ParseFunctionExpression(joinedTable, fallbackDefinition, 0)
+                as FunctionSqlExpression
+                ?? throw new InvalidOperationException(
+                    $"Aggregate function [{aggregateDefinition.FunctionName}] did not produce a SQL function.");
+            return new AggregateExpression(joinedTable, fallbackFunction, groupWithQuery: true);
+        }
+
+        var keyPairs = join.Conditions
+            .Select(condition => condition switch
+            {
+                BinarySqlExpression
+                {
+                    Operator: "=",
+                    Left: FieldExpression left,
+                    Right: FieldExpression right
+                } when string.Equals(left.TableAlias, joinedTable.Alias, StringComparison.OrdinalIgnoreCase)
+                    => (JoinedField: left.MetaField, ParentExpression: (SqlExpression)right),
+                BinarySqlExpression
+                {
+                    Operator: "=",
+                    Left: FieldExpression left,
+                    Right: FieldExpression right
+                } when string.Equals(right.TableAlias, joinedTable.Alias, StringComparison.OrdinalIgnoreCase)
+                    => (JoinedField: right.MetaField, ParentExpression: (SqlExpression)left),
+                _ => default
+            })
+            .Where(pair => pair.JoinedField is not null)
+            .ToArray();
+        if (keyPairs.Length == 0)
+            throw new FormatException(
+                $"Collection aggregate receiver [{joinedAlias}] requires an equality join key.");
+
+        var relationKey = $"context:{joinedAlias}";
+        if (!tableContext.GroupedAggregateJoins.TryGetValue(relationKey, out var grouped))
+        {
+            var keyFields = keyPairs
+                .Select(pair => pair.JoinedField)
+                .DistinctBy(field => field.Name, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            grouped = new GroupedAggregateTableExpression(joinedTable, GetNextAlias(), keyFields);
+            tableContext.GroupedAggregateJoins[relationKey] = grouped;
+            var conditions = keyPairs
+                .Select(pair => (SqlExpression)new BinarySqlExpression(
+                    new FieldExpression(grouped.Alias, pair.JoinedField),
+                    "=",
+                    pair.ParentExpression,
+                    typeof(bool)))
+                .ToArray();
+            tableContext.JoinHost.Joins.Add(new JoinExpression(grouped, "LEFT JOIN", conditions));
+        }
+
+        var aggregateFunction = RemoveTableQualifier(
+            aggregateDefinition,
+            joinedAlias);
+        var function = ParseFunctionExpression(grouped.Source, aggregateFunction, 0) as FunctionSqlExpression
+            ?? throw new InvalidOperationException(
+                $"Aggregate function [{aggregateDefinition.FunctionName}] did not produce a SQL function.");
+        var aggregateAlias = grouped.AddAggregate(function);
+        var value = new FieldExpression(grouped.Alias, new Field(aggregateAlias, aggregateAlias));
+        var isCount = string.Equals(aggregateDefinition.FunctionName, "Count", StringComparison.OrdinalIgnoreCase);
+        return new AggregateExpression(grouped, function, groupedJoinValue: value, groupedJoinCount: isCount);
+    }
+
+    private static FunctionFieldDefinition RemoveTableQualifier(
+        FunctionFieldDefinition aggregateDefinition,
+        string tableAlias)
+        => aggregateDefinition with
+        {
+            Arguments = aggregateDefinition.Arguments
+                .Select(argument => argument switch
+                {
+                    FieldDefinition field when field.FieldName.StartsWith(
+                        tableAlias + ".",
+                        StringComparison.OrdinalIgnoreCase)
+                        => field with { FieldName = field.FieldName[(tableAlias.Length + 1)..] },
+                    _ => argument
+                })
+                .ToArray()
+        };
 
     private bool TryParseContextAggregate(
         TableExpression tableContext,
