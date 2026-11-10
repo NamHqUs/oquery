@@ -195,12 +195,14 @@ internal sealed class QueryDefinitionVisitor(QueryCompilationResolver queryConte
             return BuildRecursiveShorthandQuery(definition, context, definitions, out query);
 
         var recursiveJoinFields = GetContextFieldNames(context.Condition, context.Name, context.Alias);
+        var queryProjections = context.Query.Projections
+            ?? throw new FormatException($"Recursive query context [{context.Name}] requires projections.");
         foreach (var fieldName in recursiveJoinFields)
         {
-            if ((context.Query.Projections ?? []).Any(projection =>
+            if (queryProjections.Any(projection =>
                 string.Equals(GetProjectionAlias(projection), fieldName, StringComparison.OrdinalIgnoreCase)))
                 continue;
-            context.Query.Projections.Add(new ProjectionDefinition(new FieldDefinition(fieldName), fieldName));
+            queryProjections.Add(new ProjectionDefinition(new FieldDefinition(fieldName), fieldName));
         }
 
         var anchorDefinition = new QueryDefinition(definition.Entity)
@@ -264,7 +266,7 @@ internal sealed class QueryDefinitionVisitor(QueryCompilationResolver queryConte
             anchor,
             recursive,
             cteFields.Select(field => field.Name).ToArray()));
-        result.ProjectionItems = definition.Projections
+        result.ProjectionItems = (definition.Projections ?? [])
             .Select(projection => GetProjectionAlias(projection))
             .Select(fieldName => new ProjectionItem(
                 new FieldExpression(result.Alias, cteFields.First(field =>
