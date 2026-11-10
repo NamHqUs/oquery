@@ -9,6 +9,7 @@ namespace OQuery;
 public sealed class SapHanaDialect(string schema = "NORTHSTAR") : SqlDialectBase
 {
     public override string Key => "SapHana";
+    public override string? DefaultSchema => schema;
     public override bool SupportsRecursiveCte => false;
     public override string RenderCteIdentifier(string identifier) => QuoteIdentifier(identifier);
 
@@ -26,7 +27,7 @@ public sealed class SapHanaDialect(string schema = "NORTHSTAR") : SqlDialectBase
     public override string RenderTable(Entity entity)
         => entity.IsRawSql
             ? ValidateRawSqlEntity(entity.DbTable)
-            : $"{QuoteIdentifier(schema)}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
+            : $"{QuoteIdentifier(ResolveSchema(entity.DbSchema)!)}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
 
     public override string RenderBoolean(bool value) => value ? "TRUE" : "FALSE";
     public override string RenderStringLiteral(string value) => $"'{value.Replace("'", "''", StringComparison.Ordinal)}'";

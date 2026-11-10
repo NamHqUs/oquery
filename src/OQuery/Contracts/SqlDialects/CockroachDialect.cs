@@ -5,6 +5,7 @@ namespace OQuery;
 public sealed class CockroachDialect(string schema = "public") : SqlDialectBase
 {
     public override string Key => "Cockroach";
+    public override string? DefaultSchema => schema;
     public override bool SupportsRecursiveCte => true;
 
     public override IEnumerable<SqlFunctionDefintion> CreateBuiltinFunctions()
@@ -32,7 +33,7 @@ public sealed class CockroachDialect(string schema = "public") : SqlDialectBase
     public override string RenderTable(Entity entity)
         => entity.IsRawSql
             ? ValidateRawSqlEntity(entity.DbTable)
-            : $"{QuoteIdentifier(entity.DbSchema ?? schema)}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
+            : $"{QuoteIdentifier(ResolveSchema(entity.DbSchema)!)}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
 
     public override string RenderBoolean(bool value) => value ? "1" : "0";
     public override string RenderStringLiteral(string value) => $"'{value.Replace("'", "''", StringComparison.Ordinal)}'";

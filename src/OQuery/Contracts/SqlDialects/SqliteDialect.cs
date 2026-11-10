@@ -5,6 +5,7 @@ namespace OQuery;
 public sealed class SqliteDialect(string? schema = null) : SqlDialectBase
 {
     public override string Key => "Sqlite";
+    public override string? DefaultSchema => schema;
     public override bool SupportsRecursiveCte => true;
     public override IEnumerable<SqlFunctionDefintion> CreateBuiltinFunctions()
         => new SqliteFunctionDefinitionBuiltin().CreateAllFunctions();
@@ -24,9 +25,9 @@ public sealed class SqliteDialect(string? schema = null) : SqlDialectBase
     public override string RenderTable(Entity entity)
         => entity.IsRawSql
             ? ValidateRawSqlEntity(entity.DbTable)
-            : string.IsNullOrEmpty(entity.DbSchema ?? schema)
+            : string.IsNullOrWhiteSpace(ResolveSchema(entity.DbSchema))
                 ? QuoteIdentifier(entity.DbTable ?? entity.Name)
-                : $"{QuoteIdentifier(entity.DbSchema ?? schema!)}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
+                : $"{QuoteIdentifier(ResolveSchema(entity.DbSchema)!)}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
 
     public override string RenderBoolean(bool value) => value ? "1" : "0";
     public override string RenderStringLiteral(string value) => $"'{value.Replace("'", "''")}'";

@@ -8,6 +8,7 @@ namespace OQuery;
 public sealed class FirebirdDialect : SqlDialectBase
 {
     public override string Key => "Firebird";
+    public override string? DefaultSchema => null;
     public override bool SupportsRecursiveCte => true;
     public override IEnumerable<SqlFunctionDefintion> CreateBuiltinFunctions()
         => new FirebirdFunctionDefinitionBuiltin().CreateAllFunctions();
@@ -24,7 +25,9 @@ public sealed class FirebirdDialect : SqlDialectBase
     public override string RenderTable(Entity entity)
         => entity.IsRawSql
             ? ValidateRawSqlEntity(entity.DbTable)
-            : QuoteIdentifier(entity.DbTable ?? entity.Name);
+            : string.IsNullOrWhiteSpace(ResolveSchema(entity.DbSchema))
+                ? QuoteIdentifier(entity.DbTable ?? entity.Name)
+                : $"{QuoteIdentifier(ResolveSchema(entity.DbSchema)!)}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
 
     public override string RenderBoolean(bool value) => value ? "TRUE" : "FALSE";
     public override string RenderStringLiteral(string value) => $"'{value.Replace("'", "''")}'";

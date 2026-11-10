@@ -11,6 +11,7 @@ public abstract class SqlDialectBase : ISqlDialect
     public virtual IEnumerable<SqlFunctionDefintion> CreateBuiltinFunctions() => [];
 
     public abstract string Key { get; }
+    public virtual string? DefaultSchema => null;
     public abstract string QuoteIdentifier(string identifier);
     public virtual string RenderCteIdentifier(string identifier)
         => QuoteIdentifier(identifier);
@@ -45,6 +46,9 @@ public abstract class SqlDialectBase : ISqlDialect
         => context.RenderedExpression;
     public virtual string RenderDateDifferenceInDays(string startDate, string endDate)
         => $"DATEDIFF(day, {startDate}, {endDate})";
+
+    protected string? ResolveSchema(string? schema)
+        => string.IsNullOrWhiteSpace(schema) ? DefaultSchema : schema;
 
     public string FormatParameterValue(object? value)
         => SqlDialect.FormatParameterValue(value);

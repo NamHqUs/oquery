@@ -2,9 +2,10 @@
 namespace OQuery;
 #pragma warning restore IDE0130
 
-public sealed class SqlServerDialect : SqlDialectBase
+public sealed class SqlServerDialect(string schema = "dbo") : SqlDialectBase
 {
     public override string Key => "SqlServer";
+    public override string? DefaultSchema => schema;
     public override bool SupportsRecursiveCte => true;
     public override bool RequiresRecursiveCteKeyword => false;
     public override string RenderRecursiveProjection(RecursiveProjectionContext context)
@@ -30,7 +31,7 @@ public sealed class SqlServerDialect : SqlDialectBase
     public override string RenderTable(Entity entity)
         => entity.IsRawSql
             ? ValidateRawSqlEntity(entity.DbTable)
-            : $"{QuoteIdentifier(entity.DbSchema ?? "dbo")}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
+            : $"{QuoteIdentifier(ResolveSchema(entity.DbSchema)!)}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
 
     public override string RenderBoolean(bool value) => value ? "1" : "0";
     public override string RenderStringLiteral(string value) => $"N'{value.Replace("'", "''")}'";

@@ -8,6 +8,7 @@ namespace OQuery;
 public sealed class OracleDialect : SqlDialectBase
 {
     public override string Key => "Oracle";
+    public override string? DefaultSchema => null;
     public override bool SupportsRecursiveCte => true;
     public override bool RequiresRecursiveCteKeyword => false;
     public override IEnumerable<SqlFunctionDefintion> CreateBuiltinFunctions()
@@ -25,7 +26,9 @@ public sealed class OracleDialect : SqlDialectBase
     public override string RenderTable(Entity entity)
         => entity.IsRawSql
             ? ValidateRawSqlEntity(entity.DbTable)
-            : QuoteIdentifier(entity.DbTable ?? entity.Name);
+            : string.IsNullOrWhiteSpace(ResolveSchema(entity.DbSchema))
+                ? QuoteIdentifier(entity.DbTable ?? entity.Name)
+                : $"{QuoteIdentifier(ResolveSchema(entity.DbSchema)!)}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
 
     public override string RenderBoolean(bool value) => value ? "1" : "0";
     public override string RenderStringLiteral(string value) => $"'{value.Replace("'", "''")}'";

@@ -7,6 +7,7 @@ namespace OQuery;
 public sealed class Db2Dialect(string schema = "MAIN") : SqlDialectBase
 {
     public override string Key => "Db2";
+    public override string? DefaultSchema => schema;
     public override bool SupportsRecursiveCte => true;
     public override bool RequiresRecursiveCteKeyword => false;
     public override RecursiveJoinRendering RenderRecursiveJoins(
@@ -31,7 +32,7 @@ public sealed class Db2Dialect(string schema = "MAIN") : SqlDialectBase
     public override string RenderTable(Entity entity)
         => entity.IsRawSql
             ? ValidateRawSqlEntity(entity.DbTable)
-            : $"{QuoteIdentifier(entity.DbSchema ?? schema)}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
+            : $"{QuoteIdentifier(ResolveSchema(entity.DbSchema)!)}.{QuoteIdentifier(entity.DbTable ?? entity.Name)}";
 
     public override string RenderBoolean(bool value) => value ? "1" : "0";
     public override string RenderStringLiteral(string value) => $"'{value.Replace("'", "''", StringComparison.Ordinal)}'";

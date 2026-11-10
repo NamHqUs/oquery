@@ -242,6 +242,40 @@ public sealed class SqlDialectTests
     }
 
     [Test]
+    public void DialectsUseDefaultSchemaWhenEntitySchemaIsEmpty()
+    {
+        var entity = new Entity("Student", string.Empty, "students", []);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(new SqlServerDialect().DefaultSchema, Is.EqualTo("dbo"));
+            Assert.That(new SqlServerDialect().RenderTable(entity), Is.EqualTo("[dbo].[students]"));
+            Assert.That(new PostgresDialect().DefaultSchema, Is.EqualTo("public"));
+            Assert.That(new PostgresDialect().RenderTable(entity), Is.EqualTo("\"public\".\"students\""));
+            Assert.That(new CockroachDialect().DefaultSchema, Is.EqualTo("public"));
+            Assert.That(new Db2Dialect().DefaultSchema, Is.EqualTo("MAIN"));
+            Assert.That(new SapHanaDialect().DefaultSchema, Is.EqualTo("NORTHSTAR"));
+            Assert.That(new SqliteDialect().DefaultSchema, Is.Null);
+            Assert.That(new SqliteDialect().RenderTable(entity), Is.EqualTo("\"students\""));
+            Assert.That(new MariaDialect().DefaultSchema, Is.Null);
+            Assert.That(new MariaDialect().RenderTable(entity), Is.EqualTo("`students`"));
+            Assert.That(new OracleDialect().DefaultSchema, Is.Null);
+            Assert.That(new FirebirdDialect().DefaultSchema, Is.Null);
+        });
+    }
+
+    [Test]
+    public void DialectDefaultSchemaCanBeConfigured()
+    {
+        var entity = new Entity("Student", " ", "students", []);
+
+        Assert.That(new SqlServerDialect("school").DefaultSchema, Is.EqualTo("school"));
+        Assert.That(new SqlServerDialect("school").RenderTable(entity), Is.EqualTo("[school].[students]"));
+        Assert.That(new SqliteDialect("attached").RenderTable(entity), Is.EqualTo("\"attached\".\"students\""));
+        Assert.That(new MariaDialect("catalog").RenderTable(entity), Is.EqualTo("`catalog`.`students`"));
+    }
+
+    [Test]
     public void SqliteDialectUsesLimitOffsetAndQuotedIdentifiers()
     {
         using var connection = new SqliteConnection();
