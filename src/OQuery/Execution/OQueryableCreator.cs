@@ -17,7 +17,8 @@ internal static class OQueryableCreator
         string contextName)
     {
         var definition = QueryDefinitionOQueryParser.Parse(oqr);
-        if (definition.Contexts?.TryGetValue(contextName, out var selected) != true)
+        if (definition.Contexts?.TryGetValue(contextName, out var selected) != true ||
+            selected is null)
             throw new KeyNotFoundException($"Query context [{contextName}] was not found.");
 
         return FromDefinition(context, new QueryDefinition(selected.Entity)

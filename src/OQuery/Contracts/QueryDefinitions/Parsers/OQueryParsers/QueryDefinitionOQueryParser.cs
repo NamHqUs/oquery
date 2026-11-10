@@ -358,7 +358,7 @@ public static class QueryDefinitionOQueryParser
             return;
 
         var alias = string.IsNullOrWhiteSpace(relation.Alias) ? rootName : relation.Alias;
-        var contextFieldAliases = root.Projections
+        var contextFieldAliases = (root.Projections ?? [])
             .Select(projection => (Field: projection.Field, projection.Alias))
             .Where(item => item.Field is FieldDefinition field
                 && !field.FieldName.Contains('.')
@@ -367,7 +367,7 @@ public static class QueryDefinitionOQueryParser
                 item => ((FieldDefinition)item.Field).FieldName,
                 item => item.Alias!,
                 StringComparer.OrdinalIgnoreCase);
-        var projectionText = root.Projections
+        var projectionText = (root.Projections ?? [])
             .Select(projection => projection.ToText())
             .Select(text => System.Text.RegularExpressions.Regex.Replace(
                 text,
@@ -395,7 +395,7 @@ public static class QueryDefinitionOQueryParser
         var header = string.Equals(name, entity, StringComparison.OrdinalIgnoreCase)
             ? FormatIdentifier(name)
             : $"{FormatIdentifier(name)} is {FormatIdentifier(entity)}";
-        var projections = definition.Projections.Select(field => field.ToText()).ToArray();
+        var projections = (definition.Projections ?? []).Select(field => field.ToText()).ToArray();
         var projectionText = string.Join(", ", projections);
         if (projectionText.Length <= 120 || projections.Length < 2)
         {

@@ -28,7 +28,7 @@ internal sealed class QueryDefinitionVisitor(QueryCompilationResolver queryConte
             throw new FormatException("A query-definition expression requires at least one context.");
 
         var definitions = new Dictionary<string, ContextBinding>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (name, query) in definition.Contexts)
+        foreach (var (name, query) in definition.Contexts ?? [])
         {
             var relation = definition.Joins?.FirstOrDefault(candidate =>
                 string.Equals(candidate.RefContext, name, StringComparison.OrdinalIgnoreCase))
@@ -187,7 +187,7 @@ internal sealed class QueryDefinitionVisitor(QueryCompilationResolver queryConte
 
         var context = recursiveContexts[0];
         if (context.Alias is not null &&
-            definition.Projections.Any(projection =>
+            (definition.Projections ?? []).Any(projection =>
                 ContainsContextReference(
                     projection.Field,
                     context.Name,
@@ -197,7 +197,7 @@ internal sealed class QueryDefinitionVisitor(QueryCompilationResolver queryConte
         var recursiveJoinFields = GetContextFieldNames(context.Condition, context.Name, context.Alias);
         foreach (var fieldName in recursiveJoinFields)
         {
-            if (context.Query.Projections.Any(projection =>
+            if ((context.Query.Projections ?? []).Any(projection =>
                 string.Equals(GetProjectionAlias(projection), fieldName, StringComparison.OrdinalIgnoreCase)))
                 continue;
             context.Query.Projections.Add(new ProjectionDefinition(new FieldDefinition(fieldName), fieldName));
@@ -205,12 +205,12 @@ internal sealed class QueryDefinitionVisitor(QueryCompilationResolver queryConte
 
         var anchorDefinition = new QueryDefinition(definition.Entity)
         {
-            Projections = definition.Projections
+            Projections = (definition.Projections ?? [])
                 .Select(projection => ContainsContextReference(projection, context.Name, context.Alias)
                     ? new ProjectionDefinition(new ConstFieldDefinition(0), projection.Alias)
                     : projection)
                 .Concat(recursiveJoinFields
-                    .Where(fieldName => !definition.Projections.Any(projection =>
+                    .Where(fieldName => !(definition.Projections ?? []).Any(projection =>
                         string.Equals(GetProjectionAlias(projection), fieldName, StringComparison.OrdinalIgnoreCase)))
                     .Select(fieldName => new ProjectionDefinition(new FieldDefinition(fieldName), fieldName)))
                 .ToList(),
@@ -292,8 +292,10 @@ internal sealed class QueryDefinitionVisitor(QueryCompilationResolver queryConte
         if (cteFields.Count == 0)
             throw new FormatException($"Recursive query context [{context.Name}] requires key fields.");
 
-        context.Query.Projections.Clear();
-        context.Query.Projections.AddRange(
+        var queryProjections = context.Query.Projections
+            ?? throw new FormatException($"Recursive query context [{context.Name}] requires projections.");
+        queryProjections.Clear();
+        queryProjections.AddRange(
             cteFields.Select(field =>
                 new ProjectionDefinition(new FieldDefinition(field.Name), field.Name)));
         var cteEntity = new Entity(context.Name, cteFields, DbTable: context.Name);
@@ -367,7 +369,7 @@ internal sealed class QueryDefinitionVisitor(QueryCompilationResolver queryConte
                     string.Equals(field.Name, "ManagerId", StringComparison.OrdinalIgnoreCase))),
                 typeof(bool))]));
 
-        result.ProjectionItems = definition.Projections
+        result.ProjectionItems = (definition.Projections ?? [])
             .Select(projection => new ProjectionItem(
                 queryContext.ParseQueryExpression(
                     result,
@@ -459,7 +461,7 @@ internal sealed class QueryDefinitionVisitor(QueryCompilationResolver queryConte
 
     private static bool ContainsContextReference(QueryDefinitionBase definition, string contextName, string? contextAlias = null)
     {
-        return definition.Projections.Any(projection =>
+        return (definition.Projections ?? []).Any(projection =>
                 ContainsContextReference(projection.Field, contextName, contextAlias)) ||
             (definition.Filter is not null && ContainsContextReference(definition.Filter, contextName, contextAlias)) ||
             (definition.Sorts?.Any(sort => ContainsContextReference(sort.Field, contextName, contextAlias)) ?? false);
@@ -645,7 +647,7 @@ internal sealed class QueryDefinitionVisitor(QueryCompilationResolver queryConte
     {
         if (!visited.Add(context.Name))
             throw new FormatException($"Query context dependency cycle detected at [{context.Name}].");
-        var projections = context.Query.Projections.ToArray();
+        var projections = (context.Query.Projections ?? []).ToArray();
         if (projections.Length > 0)
             return projections.Select(projection =>
             {
@@ -715,7 +717,7 @@ internal sealed class QueryDefinitionVisitor(QueryCompilationResolver queryConte
         TableExpression table,
         IReadOnlyDictionary<string, ContextBinding> definitions)
     {
-        var projections = definition.Projections.ToArray();
+        var projections = (definition.Projections ?? []).ToArray();
         if (projections.Length > 0)
         {
             table.PendingProjectionAliases = projections
