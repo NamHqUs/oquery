@@ -1,4 +1,5 @@
 {
+  "DomainId": "HR_Domain",
   "Name": "HR 2. Manager span and team profile",
   "Entity": "Employees",
   "Projections": [

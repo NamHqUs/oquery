@@ -1,4 +1,5 @@
 {
+  "DomainId": "HR_Domain",
   "Name": "HR 3. Workforce composition by location",
   "Entity": "Locations",
   "Projections": [

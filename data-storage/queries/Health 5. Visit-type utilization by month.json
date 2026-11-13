@@ -1,4 +1,5 @@
 {
+  "DomainId": "HEALTHCARE_DOMAIN",
   "Name": "Health 5. Visit-type utilization by month",
   "Entity": "Visits",
   "Projections": [

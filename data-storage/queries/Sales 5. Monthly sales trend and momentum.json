@@ -1,4 +1,5 @@
 {
+  "DomainId": "SALES_DOMAIN",
   "Name": "Sales 5. Monthly sales trend and momentum",
   "Entity": "MonthlySales",
   "Projections": [

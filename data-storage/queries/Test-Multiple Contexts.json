@@ -1,4 +1,5 @@
 {
+  "DomainId": "UNITTEST_DOMAIN",
   "Name": "Test - Multiple Contexts",
   "Entity": "User",
   "Projections": [

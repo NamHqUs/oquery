@@ -1,4 +1,5 @@
 {
+  "DomainId": "INSURANCE_DOMAIN",
   "Name": "Sample-Correlated revenue since policy start",
   "Entity": "Policies",
   "Projections": [

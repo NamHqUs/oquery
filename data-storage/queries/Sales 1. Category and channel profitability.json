@@ -1,4 +1,5 @@
 {
+  "DomainId": "SALES_DOMAIN",
   "Name": "Sales 1. Category and channel profitability",
   "Entity": "OrderCategory",
   "Projections": [

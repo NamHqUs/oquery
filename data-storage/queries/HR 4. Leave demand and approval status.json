@@ -1,4 +1,5 @@
 {
+  "DomainId": "HR_Domain",
   "Name": "HR 4. Leave demand and approval status",
   "Entity": "LeaveRequests",
   "Projections": [

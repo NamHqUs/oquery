@@ -1,4 +1,5 @@
 {
+  "DomainId": "UNITTEST_DOMAIN",
   "Name": "Shared Context",
   "Entity": "User",
   "Projections": [

@@ -50,6 +50,8 @@ the complete text can be copied directly into a query window.
 
 ## Start here
 
+- New to OQuery? Begin with the [getting started guide](./docs/01-introduction.md).
+  Its table of contents is in [docs/agenda.yml](./docs/agenda.yml).
 - Read the [user manual](./MANUAL.md) for installation, metadata, queries,
   providers, async APIs, and troubleshooting.
 - Read the [technical guide](./TECH.md) for the compiler pipeline and important

@@ -1,4 +1,5 @@
 {
+  "DomainId": "INSURANCE_DOMAIN",
   "Name": "Insurance 5. Member utilization versus premium",
   "Entity": "Policies",
   "Projections": [

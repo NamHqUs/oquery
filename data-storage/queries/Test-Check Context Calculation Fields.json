@@ -1,4 +1,5 @@
 {
+  "DomainId": "UNITTEST_DOMAIN",
   "Name": "Test - Check Context Calculation Fields",
   "Entity": "User Context",
   "Projections": [

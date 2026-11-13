@@ -1,4 +1,5 @@
 {
+  "DomainId": "HEALTHCARE_DOMAIN",
   "Name": "Health 3. High-risk patient care profile",
   "Entity": "Users",
   "Projections": [

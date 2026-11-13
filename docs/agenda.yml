@@ -1,0 +1,99 @@
+# OQuery documentation agenda.
+# Order of items is the reading order. Each item with status "ready" renders
+# its file into _layout.md. Items with status "planned" are not written yet.
+# Phases: simple (write first), detail, advanced.
+product: OQuery
+layout: _layout.md
+phases:
+  - id: simple
+    title: Get started
+    items:
+      - id: introduction
+        title: Introduction
+        file: 01-introduction.md
+        status: ready
+      - id: quickstart
+        title: Quickstart
+        file: 02-quickstart.md
+        status: ready
+      - id: define-metadata
+        title: Define metadata
+        file: 03-define-metadata.md
+        status: ready
+      - id: query-with-csharp
+        title: Query with C#
+        file: 04-query-with-csharp.md
+        status: ready
+      - id: query-with-oquery-text
+        title: Query with OQuery text
+        file: 05-query-with-oquery-text.md
+        status: ready
+      - id: relationships
+        title: Relationships
+        file: 06-relationships.md
+        status: ready
+      - id: aggregates-basics
+        title: Aggregates basics
+        file: 07-aggregates-basics.md
+        status: ready
+      - id: results-and-async
+        title: Results and async
+        file: 08-results-and-async.md
+        status: ready
+      - id: inspect-sql
+        title: Inspect SQL
+        file: 09-inspect-sql.md
+        status: ready
+      - id: providers
+        title: Database providers
+        file: 10-providers.md
+        status: ready
+      - id: security-basics
+        title: Security basics
+        file: 11-security-basics.md
+        status: ready
+  - id: detail
+    title: Build real queries
+    items:
+      - id: projection-aliases
+        title: Projection aliases and dependencies
+        status: planned
+      - id: fluent-aggregates
+        title: Fluent aggregates and collection aggregates
+        status: planned
+      - id: existence-conditions
+        title: HasAny and HasNone conditions
+        status: planned
+      - id: calculated-fields
+        title: Calculated and raw SQL fields
+        status: planned
+      - id: built-in-functions
+        title: Built-in functions
+        status: planned
+      - id: query-definition-json
+        title: Query definition JSON
+        status: planned
+      - id: paging-and-totals
+        title: Paging and totals
+        status: planned
+  - id: advanced
+    title: Advanced composition
+    items:
+      - id: contexts
+        title: Reusable contexts and joins
+        status: planned
+      - id: recursive-contexts
+        title: Recursive contexts
+        status: planned
+      - id: window-functions
+        title: Aggregate-over window functions
+        status: planned
+      - id: custom-functions
+        title: Custom function definitions
+        status: planned
+      - id: custom-dialects
+        title: Custom database dialects
+        status: planned
+      - id: engine-rules
+        title: Engine rules and source of truth
+        status: planned

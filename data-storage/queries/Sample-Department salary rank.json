@@ -1,4 +1,5 @@
 {
+  "DomainId": "HR_Domain",
   "Name": "Sample-Department salary rank",
   "Entity": "Employees",
   "Projections": [
