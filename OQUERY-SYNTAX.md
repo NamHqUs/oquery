@@ -732,6 +732,14 @@ NULLIF(value, otherValue)
 COALESCE(value, fallback)
 ```
 
+Functions may also be called with fluent syntax. The expression before the dot
+is passed as the first function argument:
+
+```text
+OrderItems: ROUND(SUM(Amount), <2>) RoundedAmount,
+    SUM(Amount).ROUND(<2>) FluentRoundedAmount
+```
+
 Use function names from metadata. Do not embed raw SQL function text or schema
 qualification in a field name.
 

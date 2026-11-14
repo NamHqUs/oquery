@@ -66,7 +66,7 @@ internal sealed class SqlServerQueryExecutionTests
     {
         var requestRoot = Path.Combine(
             GetRepositoryRoot(),
-            "data-storage", "queries");
+            "data-storage", "queries1");
         var jsonQuery = QueryDefinitionLoader.Load(
             Path.Combine(requestRoot, "Health 1. Diagnosis burden by clinic.json"));
         var oqueryPath = Path.Combine(requestRoot, "Health 1. Diagnosis burden by clinic.oqr");
@@ -83,7 +83,7 @@ internal sealed class SqlServerQueryExecutionTests
     {
         var requestRoot = Path.Combine(
             GetRepositoryRoot(),
-            "data-storage", "queries");
+            "data-storage", "queries1");
 
         foreach (var oqueryPath in Directory.EnumerateFiles(requestRoot, "*.oqr").Order().Take(5))
         {
@@ -102,7 +102,7 @@ internal sealed class SqlServerQueryExecutionTests
     {
         var requestRoot = Path.Combine(
             GetRepositoryRoot(),
-            "data-storage", "queries");
+            "data-storage", "queries1");
         var jsonPath = Path.Combine(requestRoot, "Sample-Recursive employee hierarchy.json");
         var oqueryPath = Path.ChangeExtension(jsonPath, ".oqr");
 
@@ -120,7 +120,7 @@ internal sealed class SqlServerQueryExecutionTests
     {
         var requestRoot = Path.Combine(
             GetRepositoryRoot(),
-            "data-storage", "queries");
+            "data-storage", "queries1");
         var jsonPath = Path.Combine(requestRoot, fileName);
         var oqueryPath = Path.ChangeExtension(jsonPath, ".oqr");
 
@@ -138,7 +138,7 @@ internal sealed class SqlServerQueryExecutionTests
     {
         var requestPath = Path.Combine(
             GetRepositoryRoot(),
-            "data-storage", "queries",
+            "data-storage", "queries1",
             "Sample-Recursive employee hierarchy.json");
         var query = QueryDefinitionLoader.Load(requestPath);
 

@@ -23,7 +23,7 @@ internal static class SavedQueryTestCases
 
     public static IEnumerable<string> GetRequestPaths()
     {
-        var root = Path.Combine(GetRepositoryRoot(), "data-storage", "queries");
+        var root = Path.Combine(GetRepositoryRoot(), "data-storage", "queries1");
         var requests = Directory
             .EnumerateFiles(root, "*.json")
             .Where(path => !UnsupportedRequests.Contains(
@@ -40,7 +40,7 @@ internal static class SavedQueryTestCases
     }
 
     public static string GetRequestPath(string fileName)
-        => Path.Combine(GetRepositoryRoot(), "data-storage", "queries", fileName);
+        => Path.Combine(GetRepositoryRoot(), "data-storage", "queries1", fileName);
 
     private static string GetRepositoryRoot()
         => new DirectoryInfo(Path.Combine(AppContext.BaseDirectory, "../../../../../")).FullName;

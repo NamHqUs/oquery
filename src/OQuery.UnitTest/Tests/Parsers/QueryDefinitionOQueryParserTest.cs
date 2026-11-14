@@ -84,6 +84,38 @@ internal class QueryDefinitionOQueryParserTest : TestBase
     }
 
     [Test]
+    public void ParseProjectionAllowsClauseKeywordAsTheOnlyAlias()
+    {
+        var query = QueryDefinitionOQueryParser.Parse("User: Count(Id) Order");
+        var projection = query.Projections!.Single();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(projection.Field.ToText(), Is.EqualTo("Count(Id)"));
+            Assert.That(projection.Alias, Is.EqualTo("Order"));
+        });
+    }
+
+    [Test]
+    public void ParseProjectionRejectsClauseKeywordAfterExistingAlias()
+    {
+        Assert.That(
+            () => QueryDefinitionOQueryParser.Parse("User: Count(Id) TotalMembers Order"),
+            Throws.TypeOf<FormatException>()
+                .With.Message.EqualTo(
+                    "Projection [Count(Id) TotalMembers Order] has unexpected trailing text [Order]. " +
+                    "Clauses such as Order must start on their own line."));
+    }
+
+    [Test]
+    public void ParseProjectionDoesNotTreatAngleBracketValueAsClauseKeyword()
+    {
+        var query = QueryDefinitionOQueryParser.Parse("User: <Order>");
+
+        Assert.That(query.Projections!.Single().Field.ToText(), Is.EqualTo("<Order>"));
+    }
+
+    [Test]
     public void ParseConcatenatedProjectionWithAsAlias()
     {
         var query = QueryDefinitionOQueryParser.Parse(
