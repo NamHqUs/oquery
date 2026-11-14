@@ -764,6 +764,18 @@ Employees: Id,
 the dot. Using a function whose first argument type differs, such as
 `Name.DateSub(...)` on a `String` field, is rejected during query translation.
 
+A parenthesized expression can also be the receiver. The whole group becomes the
+first argument, so arithmetic over aggregates can be rounded or formatted with
+fluent syntax:
+
+```text
+Employees: Department.Name Department,
+    (CountIf(Rating >= 4) * 100.0 / Count(Id)).Round(<2>) HighRatingPercent
+```
+
+`(expr).Round(<2>)` is `Round((expr), <2>)`. The group is evaluated like any other
+projection expression, so aggregates inside it use the root context.
+
 Use function names from metadata. Do not embed raw SQL function text or schema
 qualification in a field name.
 

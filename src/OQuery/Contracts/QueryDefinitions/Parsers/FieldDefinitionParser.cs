@@ -68,7 +68,8 @@ internal static class FieldDefinitionParser
                     var source = Parse(sourceText);
                     var functionName = suffix[..opening].Trim();
                     var argumentsText = suffix[(opening + 1)..^1];
-                    if (IsAggregatePipelineFunction(functionName) &&
+                    if (source is not GroupFieldDefintion &&
+                        IsAggregatePipelineFunction(functionName) &&
                         string.IsNullOrWhiteSpace(argumentsText))
                     {
                         pipeline = new FunctionFieldDefinition(
@@ -77,7 +78,8 @@ internal static class FieldDefinitionParser
                         return true;
                     }
 
-                    if (source is FunctionFieldDefinition &&
+                    // A function receiver is either a prior pipeline stage or a parenthesized group, e.g. (a * b).Round(2).
+                    if ((source is FunctionFieldDefinition || source is GroupFieldDefintion) &&
                         !string.IsNullOrWhiteSpace(functionName))
                     {
                         var arguments = SplitTopLevel(argumentsText, ',')

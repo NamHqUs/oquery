@@ -483,6 +483,21 @@ public sealed class AggregateProjectionTests : TestBase
         }));
     }
 
+    [Test]
+    public void OQuery_GroupedAggregateExpression_WithFunctionReceiver_Rounds()
+    {
+        var definition = QueryDefinitionOQueryParser.Parse(
+            "User: Name, (CountIf(Age >= 30) * 100.0 / Count(Id)).Round(2) OldPercent");
+        var data = _db.Query(definition).ToList();
+
+        var actualValues = data.ToDictionary(
+            e => (string)e["Name"]!,
+            e => Convert.ToDecimal(e["OldPercent"]));
+
+        Assert.That(actualValues["Alice"], Is.EqualTo(100m));
+        Assert.That(actualValues["Charlie"], Is.EqualTo(0m));
+    }
+
     //[Test]
     //public void Count()
     //{
