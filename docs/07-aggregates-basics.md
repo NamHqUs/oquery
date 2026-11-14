@@ -36,10 +36,11 @@ var totals = db.Query("User")
     .ToList();
 ```
 
-Use `Count()` with no argument to count related rows by their key.
+Use `Count()` with no argument to count related rows. It renders `COUNT(1)`, so no
+column is read.
 `Sum`, `Avg`, `Min`, and `Max` need a numeric field.
 
-`COUNT(*)` is not supported. Name a field, such as `COUNT(Id)`.
+`COUNT(*)` is not supported when written explicitly. Name a field, such as `COUNT(Id)`.
 
 ## Filter on an aggregate
 

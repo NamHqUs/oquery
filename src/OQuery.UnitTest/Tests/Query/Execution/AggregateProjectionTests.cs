@@ -90,6 +90,20 @@ public sealed class AggregateProjectionTests : TestBase
     }
 
     [Test]
+    public void CollectionField_Projection_CountIf_WithExpressionMatchesOneArgumentForm()
+    {
+        var data = _db.Query("User")
+            .Select("Name", "Members.CountIf(Name like <Bob>)", "Members.CountIf(Id, Name like <Bob>)")
+            .ToList();
+
+        Assert.That(data.Select(record => (
+            Name: (string)record["Name"]!,
+            OneArgument: Convert.ToInt32(record["Members.CountIf(Name like <Bob>)"]),
+            TwoArguments: Convert.ToInt32(record["Members.CountIf(Id, Name like <Bob>)"])))
+            .All(row => row.OneArgument == row.TwoArguments), Is.True);
+    }
+
+    [Test]
     public void CollectionField_Projection_ConditionalAggregates()
     {
         var query = _db.Query("User")

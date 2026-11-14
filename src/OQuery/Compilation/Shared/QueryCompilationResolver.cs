@@ -271,6 +271,9 @@ class QueryCompilationResolver(
         if (TryParseCollectionAggregate(tableContext, expression, depth, out var collectionAggregate))
             return collectionAggregate;
 
+        if (expression.FunctionName.Contains('.'))
+            return ParseFieldReceiverFunction(tableContext, expression, depth);
+
         var definition = functionProvider.GetFunction(expression.FunctionName);
         var suppliedArguments = expression.Arguments
             ?? throw new FormatException("A function's arguments cannot be null.");
@@ -279,12 +282,17 @@ class QueryCompilationResolver(
             suppliedArguments.Length > definition.Arguments.Count)
             throw new FormatException($"Unsupported function or argument count [{expression.FunctionName}].");
 
+        // Trailing-bound functions fill the leading optional slots with their defaults first.
+        var leadingDefaults = definition.BindArgumentsFromEnd
+            ? definition.Arguments.Count - suppliedArguments.Length
+            : 0;
         var arguments = new FunctionSqlArgument?[definition.Arguments.Count];
         for (var index = 0; index < definition.Arguments.Count; index++)
         {
             var argumentDefinition = definition.Arguments[index];
-            arguments[index] = index < suppliedArguments.Length
-                ? ParseFunctionArgument(tableContext, argumentDefinition, suppliedArguments[index], depth + 1)
+            var suppliedIndex = index - leadingDefaults;
+            arguments[index] = suppliedIndex >= 0 && suppliedIndex < suppliedArguments.Length
+                ? ParseFunctionArgument(tableContext, argumentDefinition, suppliedArguments[suppliedIndex], depth + 1)
                 : ParseDefaultFunctionArgument(tableContext, argumentDefinition, depth + 1);
         }
 
@@ -300,6 +308,35 @@ class QueryCompilationResolver(
             return contextAggregate;
 
         return new FunctionSqlExpression(definition, arguments);
+    }
+
+    private SqlExpression ParseFieldReceiverFunction(TableExpression tableContext, FunctionFieldDefinition expression, int depth)
+    {
+        var separator = expression.FunctionName.LastIndexOf('.');
+        var receiverPath = expression.FunctionName[..separator];
+        var functionName = expression.FunctionName[(separator + 1)..];
+        var definition = functionProvider.GetFunction(functionName);
+        if (definition.IsAggregate)
+            throw new FormatException($"Aggregate function [{functionName}] requires a collection receiver, not a scalar field [{receiverPath}].");
+        if (definition.Arguments.Count == 0)
+            throw new FormatException($"Function [{functionName}] cannot be called on a field receiver.");
+
+        var receiver = ParseFieldPath(tableContext, receiverPath);
+        if (receiver is not FieldExpression { MetaField: var receiverField })
+            throw new FormatException($"Function receiver [{receiverPath}] must be a scalar field.");
+        if (definition.Arguments[0].DataType != receiverField.DataType)
+            throw new FormatException(
+                $"Function [{functionName}] cannot be applied to [{receiverPath}] of type [{receiverField.DataType}]; its first argument is [{definition.Arguments[0].DataType}].");
+
+        var suppliedArguments = expression.Arguments
+            ?? throw new FormatException("A function's arguments cannot be null.");
+        var arguments = new IFieldDefinition[suppliedArguments.Length + 1];
+        arguments[0] = new FieldDefinition(expression.Oper, receiverPath);
+        suppliedArguments.CopyTo(arguments, 1);
+        return ParseFunctionExpression(
+            tableContext,
+            expression with { FunctionName = functionName, Arguments = arguments },
+            depth + 1);
     }
 
     private bool TryParseCollectionAggregate(

@@ -28,7 +28,7 @@ public sealed class SqlDiagnosticsTests
     }
 
     [Test]
-    public void CountWithoutAFieldIsRejected()
+    public void CountWithoutAFieldCountsRows()
     {
         var metadata = new MetadataProvider(
         [
@@ -38,10 +38,10 @@ public sealed class SqlDiagnosticsTests
         using var connection = new SqlConnection();
         using var db = new OQueryEngine(connection, metadata, new SqlServerDialect());
 
-        Assert.That(
-            () => db.Query("User").Select("COUNT()").ToSql(),
-            Throws.TypeOf<UnauthorizedAccessException>()
-                .With.Message.Contain("COUNT(*)"));
+        var sql = db.Query("User").Select("COUNT()").ToSql();
+
+        Assert.That(sql.CommandText, Does.Contain("COUNT (@p0)"));
+        Assert.That(sql.Parameters[0].Value, Is.EqualTo(1m));
     }
 
     [Test]

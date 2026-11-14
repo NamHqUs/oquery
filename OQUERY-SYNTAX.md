@@ -429,13 +429,14 @@ User:
   Join User On Id = User.ManagerId
 ```
 
-`Count()` uses the related entity key when no argument is supplied.
+`Count()` with no argument counts the related rows as `COUNT(1)`; no column is read.
 `Sum`, `Avg`, `Min`, and `Max` require a numeric related field:
 
 ```text
 Members.Count()
 Members.Count(Id)
 Members.CountIf(Name like <Bob>)
+Members.CountIf(Id, Name like <Bob>)
 Members.SumIf(Salary, Name like <Bob>)
 Members.AvgIf(Salary, Name like <Bob>)
 Members.MinIf(Salary, Name like <Bob>)
@@ -722,6 +723,7 @@ Common functions include:
 COUNT(expression)
 COUNT(DISTINCT expression)
 COUNTIF(condition)
+COUNTIF(expression, condition)
 AVG(expression)
 AVGIF(expression, condition)
 SUM(expression)
@@ -732,6 +734,13 @@ NULLIF(value, otherValue)
 COALESCE(value, fallback)
 ```
 
+`COUNTIF` follows the same rules as `COUNT`:
+
+- `CountIf(condition)` counts the rows that match the condition. It is rendered
+  as `COUNT(CASE WHEN condition THEN 1 END)`.
+- `CountIf(expression, condition)` counts the non-null `expression` values on
+  the rows that match the condition, like `SumIf` and `AvgIf`.
+
 Functions may also be called with fluent syntax. The expression before the dot
 is passed as the first function argument:
 
@@ -739,6 +748,21 @@ is passed as the first function argument:
 OrderItems: ROUND(SUM(Amount), <2>) RoundedAmount,
     SUM(Amount).ROUND(<2>) FluentRoundedAmount
 ```
+
+A scalar field can also be the receiver. The field becomes the first argument,
+and the field's data type must match the function's first argument type:
+
+```text
+Employees: Id,
+    HireDate.DateSub(<2025-10-31>) TenureDays,
+    HireDate.DateAdd(<30>) ReviewDate
+```
+
+`HireDate.DateSub(<2025-10-31>)` is `DateSub(HireDate, <2025-10-31>)`. Because
+`HireDate` is `Datetime`, only functions whose first argument is `Datetime`
+(for example `DateSub`, `DateAdd`, `MonthSub`, `YearAdd`, `Day`) are valid after
+the dot. Using a function whose first argument type differs, such as
+`Name.DateSub(...)` on a `String` field, is rejected during query translation.
 
 Use function names from metadata. Do not embed raw SQL function text or schema
 qualification in a field name.

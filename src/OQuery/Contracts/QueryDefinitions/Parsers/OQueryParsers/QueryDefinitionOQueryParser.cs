@@ -1,3 +1,5 @@
+using OQuery.QueryBuilderDto.Parsers;
+
 namespace OQuery.QueryDefinitions.Parsers;
 
 public static class QueryDefinitionOQueryParser
@@ -169,7 +171,7 @@ public static class QueryDefinitionOQueryParser
 
         var definition = new QueryDefinition(block.Entity)
         {
-            Projections = QueryDefinitionJsonParser.ParseProjection(block.Projection),
+            Projections = ParseProjection(block.Projection),
             Filter = filter,
             Sorts = sorts,
             Take = pageSize,
@@ -177,6 +179,29 @@ public static class QueryDefinitionOQueryParser
             Joins = relations
         };
         return definition;
+    }
+
+    private static List<ProjectionDefinition> ParseProjection(string text)
+    {
+        foreach (var projection in FieldDefinitionParser.SplitTopLevel(text, ',', '\n'))
+        {
+            var clauseAfterAlias = System.Text.RegularExpressions.Regex.Match(
+                projection.Trim(),
+                "^(?<field>.+?)\\s*\\|\\s*(?<alias>[A-Za-z_][A-Za-z0-9_]*)\\s+" +
+                "(?<clause>where|order|orderby|skip|take|join)\\s*$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (!clauseAfterAlias.Success)
+                continue;
+
+            var field = clauseAfterAlias.Groups["field"].Value.Trim();
+            var alias = clauseAfterAlias.Groups["alias"].Value;
+            var clause = clauseAfterAlias.Groups["clause"].Value;
+            throw new FormatException(
+                $"Projection [{field} {alias} {clause}] has unexpected trailing text [{clause}]. " +
+                $"Clauses such as {clause} must start on their own line.");
+        }
+
+        return QueryDefinitionJsonParser.ParseProjection(text);
     }
 
     private static JoinDefinition ParseJoin(string value)

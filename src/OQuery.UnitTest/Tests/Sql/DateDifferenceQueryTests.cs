@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using OQuery.QueryDefinitions.Parsers;
 
 namespace OQuery.UnitTest.Tests.Sql;
 
@@ -119,4 +120,87 @@ internal sealed class DateDifferenceQueryTests
         Assert.That(postgresSql, Does.Match(@"CAST\s*\(.* AS DATE\)\s*-\s*CAST\s*\("));
         Assert.That(postgresSql, Does.Contain("CURRENT_TIMESTAMP"));
     }
+
+    [Test]
+    public void FieldReceiverFunctionUsesFieldAsFirstArgument()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        using var context = CreateTypedContext(connection);
+
+        var receiverSql = context.Query(CreateReceiverQuery(
+            new FunctionFieldDefinition("InvoiceDate.DateSub", [new FieldDefinition("DueDate")]))).ToSql().CommandText;
+        var explicitSql = context.Query(CreateReceiverQuery(
+            new FunctionFieldDefinition("DateSub", [new FieldDefinition("InvoiceDate"), new FieldDefinition("DueDate")]))).ToSql().CommandText;
+
+        Assert.That(receiverSql, Is.EqualTo(explicitSql));
+    }
+
+    [Test]
+    public void FieldReceiverFunctionRejectsFirstArgumentTypeMismatch()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        using var context = CreateTypedContext(connection);
+        var query = CreateReceiverQuery(
+            new FunctionFieldDefinition("InvoiceNumber.DateSub", [new FieldDefinition("DueDate")]));
+
+        Assert.That(() => context.Query(query).ToSql(),
+            Throws.InstanceOf<FormatException>().With.Message.Contains("InvoiceNumber"));
+    }
+
+    [Test]
+    public void FieldReceiverFunctionInsideCollectionAggregateCompiles()
+    {
+        var collectionMetadata = new Entity[]
+        {
+            new(
+                Name: "Departments",
+                Fields: [new Field("Id", "Id")],
+                Relations:
+                [
+                    new(
+                        Name: "Employees",
+                        RefEntity: "Employees",
+                        Type: RelationType.Collection,
+                        RefKeys: [new("Id", "DepartmentId")])
+                ]),
+            new(
+                Name: "Employees",
+                Fields:
+                [
+                    new Field("Id", "Id"),
+                    new Field("DepartmentId", "DepartmentId"),
+                    new Field("HireDate", "HireDate", DataType.Datetime)
+                ])
+        };
+        var definition = QueryDefinitionOQueryParser.Parse(
+            "Departments: Id, Employees.Avg(HireDate.DateSub(<2025-10-31>) / 365.25) AverageTenureYears");
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        using var context = new OQueryEngine(connection, new MetadataProvider(collectionMetadata),
+            new FunctionProvider(new SqliteDialect()), new SqliteDialect());
+
+        var sql = context.Query(definition).ToSql().CommandText;
+
+        Assert.That(sql, Does.Match(@"AVG\s*\(.*julianday"));
+    }
+
+    private static OQueryEngine CreateTypedContext(SqliteConnection connection)
+    {
+        var typedMetadata = new Entity[]
+        {
+            new(
+                Name: "Invoices",
+                Fields:
+                [
+                    new Field("Id", "Id"),
+                    new Field("InvoiceNumber", "InvoiceNumber"),
+                    new Field("InvoiceDate", "InvoiceDate", DataType.Datetime),
+                    new Field("DueDate", "DueDate", DataType.Datetime)
+                ])
+        };
+        return new OQueryEngine(connection, new MetadataProvider(typedMetadata),
+            new FunctionProvider(new SqliteDialect()), new SqliteDialect());
+    }
+
+    private static QueryDefinition CreateReceiverQuery(FunctionFieldDefinition function)
+        => new("Invoices") { Projections = [new(function, "Days")] };
 }

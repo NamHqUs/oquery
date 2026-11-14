@@ -50,8 +50,8 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
     ];
 
     protected virtual SqlFunctionDefintion Count() =>
-        Create("Count", [new("value", DataType.Number, "*")], DataType.Number,
-            "Counts rows or non-null values.", "COUNT({1})", isAggregate: true);
+        Create("Count", [new("value", DataType.Number, 1)], DataType.Number,
+            "Counts rows or non-null values. With no argument, counts rows.", "COUNT({1})", isAggregate: true);
 
     protected virtual SqlFunctionDefintion CountOver() =>
         Create("CountOver",
@@ -151,9 +151,11 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
             "COUNT(DISTINCT {1})", isAggregate: true);
 
     protected virtual SqlFunctionDefintion CountIf() =>
-        Create("CountIf", [new("predicate", DataType.Boolean)], DataType.Number,
-            "Counts related rows matching a predicate.",
-            "COUNT(CASE WHEN {1} THEN 1 END)", isAggregate: true);
+        Create("CountIf",
+            [new("expression", DataType.Number, 1), new("predicate", DataType.Boolean)],
+            DataType.Number,
+            "Counts related rows matching a predicate, or non-null expression values on matching rows.",
+            "COUNT(CASE WHEN {2} THEN {1} END)", isAggregate: true, bindArgumentsFromEnd: true);
 
     protected virtual SqlFunctionDefintion AverageIf() =>
         Create("AvgIf",
@@ -249,13 +251,15 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
         DataType resultType,
         string description,
         string sqlTemplate,
-        bool isAggregate = false)
+        bool isAggregate = false,
+        bool bindArgumentsFromEnd = false)
         => new(name, arguments, resultType, description,
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 [Dialect] = sqlTemplate
             },
-            isAggregate);
+            isAggregate,
+            bindArgumentsFromEnd);
 
     private SqlFunctionDefintion CreateDateDifference(
         string name,

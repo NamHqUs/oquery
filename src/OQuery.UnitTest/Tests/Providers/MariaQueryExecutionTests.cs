@@ -50,7 +50,12 @@ internal sealed class MariaQueryExecutionTests
         var requestRoot = Path.Combine(
             root,
             "data-storage", "queries");
-        var statements = LoadMariaStatements(Path.Combine(root, "data-storage", "scripts", "northstar-demo-queries.md"));
+        var statements = LoadMariaStatements(Path.Combine(
+            root,
+            "data-storage",
+            "scripts",
+            "northstar-samples-docs",
+            "northstar-demo-queries.mariadb.md"));
         var requests = Directory
             .EnumerateFiles(requestRoot, "*.json")
             .Where(path =>

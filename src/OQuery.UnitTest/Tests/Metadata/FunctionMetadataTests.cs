@@ -111,21 +111,17 @@ public sealed class FunctionMetadataTests
     }
 
     [Test]
-    public void CountRejectsOmittedAndWildcardArguments()
+    public void CountWithoutArgumentCountsRowsWithoutReadingAColumn()
     {
-        Assert.Multiple(() =>
-        {
-            Assert.That(
-                () => GenerateSql(
-                    new FunctionFieldDefinition("COUNT", []),
-                    dialect: new SqliteDialect()),
-                Throws.TypeOf<UnauthorizedAccessException>());
-            Assert.That(
-                () => GenerateSql(
-                    new FunctionFieldDefinition("COUNT", [new FieldDefinition("*")]),
-                    dialect: new SqliteDialect()),
-                Throws.TypeOf<UnauthorizedAccessException>());
-        });
+        var sql = GenerateSql(new FunctionFieldDefinition("COUNT", []), dialect: new SqliteDialect());
+
+        Assert.That(sql.CommandText, Does.Contain("COUNT (@p0)"));
+        Assert.That(sql.Parameters.Single().Value, Is.EqualTo(1m));
+        Assert.That(
+            () => GenerateSql(
+                new FunctionFieldDefinition("COUNT", [new FieldDefinition("*")]),
+                dialect: new SqliteDialect()),
+            Throws.TypeOf<UnauthorizedAccessException>());
     }
 
     [Test]
@@ -156,8 +152,8 @@ public sealed class FunctionMetadataTests
             dialect: new SqliteDialect());
 
         Assert.That(sql.CommandText, Does.Match(
-            @"COUNT\s*\(\s*CASE\s+WHEN\s+\(\s*t0\.""IsAbnormal""\s*=\s*@p0\s*\)\s+THEN\s+1\s+END\s*\)"));
-        Assert.That(sql.Parameters.Single().Value, Is.EqualTo(true));
+            @"COUNT\s*\(\s*CASE\s+WHEN\s+\(\s*t0\.""IsAbnormal""\s*=\s*@p1\s*\)\s+THEN\s+@p0\s+END\s*\)"));
+        Assert.That(sql.Parameters.Select(parameter => parameter.Value), Does.Contain(true));
     }
 
     [Test]
@@ -314,7 +310,7 @@ public sealed class FunctionMetadataTests
             dialect: new SqlServerDialect());
 
         Assert.That(sqlServerSql.CommandText,
-            Does.Match(@"COUNT\s*\(\s*CASE\s+WHEN\s+.*\[Amount\].*>.*THEN\s+1\s+END\s*\)"));
+            Does.Match(@"COUNT\s*\(\s*CASE\s+WHEN\s+.*\[Amount\].*>.*THEN\s+@p\d+\s+END\s*\)"));
     }
 
     [Test]

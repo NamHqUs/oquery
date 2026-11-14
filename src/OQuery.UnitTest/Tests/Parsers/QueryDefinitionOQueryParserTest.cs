@@ -100,7 +100,7 @@ internal class QueryDefinitionOQueryParserTest : TestBase
     public void ParseProjectionRejectsClauseKeywordAfterExistingAlias()
     {
         Assert.That(
-            () => QueryDefinitionOQueryParser.Parse("User: Count(Id) TotalMembers Order"),
+            () => QueryDefinitionOQueryParser.Parse("User: Count(Id) | TotalMembers Order"),
             Throws.TypeOf<FormatException>()
                 .With.Message.EqualTo(
                     "Projection [Count(Id) TotalMembers Order] has unexpected trailing text [Order]. " +

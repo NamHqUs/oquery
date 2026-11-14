@@ -14,7 +14,8 @@ public sealed class SqlFunctionDefintion
         DataType resultType,
         string description,
         IReadOnlyDictionary<string, string>? sqlTemplates = null,
-        bool isAggregate = false)
+        bool isAggregate = false,
+        bool bindArgumentsFromEnd = false)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("A function name is required.", nameof(name));
@@ -30,18 +31,27 @@ public sealed class SqlFunctionDefintion
         if (arguments.Select(argument => argument.Name).Distinct(StringComparer.OrdinalIgnoreCase).Count() != arguments.Count)
             throw new ArgumentException("Function argument names must be unique.", nameof(arguments));
 
+        // Default: optional arguments must trail. Binding from the end: optional arguments must lead,
+        // so a call with fewer arguments fills the trailing required slots.
         var optionalArgumentSeen = false;
+        var requiredArgumentSeen = false;
         foreach (var argument in arguments)
         {
             optionalArgumentSeen |= argument.Optional;
-            if (!argument.Optional && optionalArgumentSeen)
-                throw new ArgumentException("Required arguments cannot follow optional arguments.", nameof(arguments));
+            requiredArgumentSeen |= !argument.Optional;
+            if (bindArgumentsFromEnd
+                    ? argument.Optional && requiredArgumentSeen
+                    : !argument.Optional && optionalArgumentSeen)
+                throw new ArgumentException(bindArgumentsFromEnd
+                    ? "Optional arguments must precede required arguments when binding from the end."
+                    : "Required arguments cannot follow optional arguments.", nameof(arguments));
         }
 
         Name = name;
         Arguments = Array.AsReadOnly(arguments.ToArray());
         ResultType = resultType;
         IsAggregate = isAggregate;
+        BindArgumentsFromEnd = bindArgumentsFromEnd;
         Description = description;
 
         var templates = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -62,6 +72,7 @@ public sealed class SqlFunctionDefintion
     public IReadOnlyList<SqlFunctionArgumentDefinition> Arguments { get; }
     public DataType ResultType { get; }
     public bool IsAggregate { get; }
+    public bool BindArgumentsFromEnd { get; }
     public string Description { get; }
     public IReadOnlyDictionary<string, string> SqlTemplates => _sqlTemplates;
 
