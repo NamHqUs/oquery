@@ -123,14 +123,53 @@ Dialect caveats:
   as unit names, not `day`, `month`, and `year`.
 - `DateFormat` exists only for `Sqlite` (see [MANUAL.md](./MANUAL.md)).
 
-## 6. Not function definitions
+## 6. Existence operators
+
+`HasAny` and `HasNone` are Boolean condition operators. They are not entries
+in the function provider. The parser reads them as existence condition nodes,
+and SQL generation emits an `EXISTS` or `NOT EXISTS` subquery.
+
+- The source is an unquoted context reference. It can be a collection relation
+  on the current entity, a metadata entity, or a named query context.
+- The condition is optional. When present, it is evaluated in the source scope.
+- An explicit source alias may precede the operator. Use it when the condition
+  also references the outer context.
+- `CurrentContext` refers to the outer query context.
+- Combine an existence condition with other Boolean expressions using
+  parentheses.
+
+```text
+User: Name
+  Where Members HasAny Name = <Bob>
+```
+
+```text
+User: Name
+  Where Members HasNone Name = <David>
+```
+
+```text
+User: Id
+  Where Members Member HasAny Member.Name = <Bob>
+```
+
+```text
+Products: Id, Name
+  Where (Users HasAny Status = <Active>)
+    AND State = <CA>
+```
+
+```text
+Products: Id, Name
+  Where Users Customer HasNone Customer.Status = <Inactive>
+```
+
+## 7. Not function definitions
 
 These are engine features, not entries in the function provider. They are
 not listed above:
 - Collection aggregates such as `Members.Sum(Salary)` and `Items.SumIf(...)`
   are resolved through metadata relations.
-- Existence conditions such as `Users HasAny Status = <Active>` and
-  `HasNone`.
 - Fluent suffix aggregates such as `.Avg()` and `.Sum()` on collection results.
 - Arithmetic operators `+ - * / %`.
 - Parentheses and fluent calls on expressions, such as `(expr).Round(<2>)`.

@@ -354,51 +354,15 @@ metadata relationship.
 
 ## 7. Collection existence conditions
 
-`HasAny` and `HasNone` are Boolean condition operators. Their source is an
-unquoted context reference that may resolve to a collection relation on the
-current entity, a metadata entity, or a named query context:
-
-```text
-Products: Id, Name
-  Where Users HasAny
-```
-
-The relationship is resolved from metadata when `Users` is a collection
-relation. An optional condition is scoped to the source context:
-
-```text
-Products: Id, Name
-  Where Users Customer HasAny Customer.Status = <Active>
-```
-
-The alias is optional:
-
-```text
-Products: Id, Name
-  Where Users HasAny Status = <Active>
-```
-
-Use parentheses when a collection existence condition is combined with an
-outer Boolean expression:
+`HasAny` and `HasNone` test whether a collection has matching rows. Their
+rules and examples are in
+[FUNCTION-DEFINITIONS.md](./FUNCTION-DEFINITIONS.md#6-existence-operators).
 
 ```text
 Products: Id, Name
   Where (Users HasAny Status = <Active>)
     AND State = <CA>
 ```
-
-`CurrentContext` refers to the outer query context. `HasNone` uses the same
-source and condition rules:
-
-```text
-Products: Id, Name
-  Where Users HasNone Customer.Status = <Inactive>
-```
-
-Existence conditions are represented in the query model as condition nodes.
-The context token is stored as a constant value and resolved semantically;
-it is not a SQL string parameter or a raw SQL field. SQL generation emits the
-dialect-specific `EXISTS` or `NOT EXISTS` subquery.
 
 ## 8. Aggregation and grouping
 
@@ -654,6 +618,10 @@ HighRiskPatientCare is Patients:
   Order AbnormalResults DESC, ChronicVisits DESC, TotalCharges DESC
   Take 10
 ```
+
+Nested aggregates are where grain mistakes happen. Before writing one, follow
+the checklist in [OQUERY-GENERATION-NOTES.md](./OQUERY-GENERATION-NOTES.md)
+section 0 and state the business entity and the result row.
 
 A root on `Visits` would give one row per visit. Aggregating patient totals
 from that root would then need a second grain, so the query is harder to read

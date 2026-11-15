@@ -306,7 +306,7 @@ operations.
            ROUND(AVG(CASE WHEN Status = 'Completed' THEN DurationMinutes END), 1) AS AverageMinutes,
            ROUND(SUM(Charge), 2) AS Charges
     FROM Visits
-    GROUP BY VisitMonth, VisitType
+    GROUP BY CONVERT(char(7), VisitDate, 126), VisitType
     ORDER BY ScheduledVisits DESC;
     ```
 

@@ -205,6 +205,9 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         var projectionByAlias = projectionItems.ToDictionary(
             item => item.Alias,
             StringComparer.OrdinalIgnoreCase);
+        var declaredPosition = projectionItems
+            .Select((item, position) => (item.Alias, position))
+            .ToDictionary(entry => entry.Alias, entry => entry.position, StringComparer.OrdinalIgnoreCase);
         var levels = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         var visiting = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -279,11 +282,18 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
                 .Where(item => levels[item.Alias] == level)
                 .ToArray();
             var hasCurrentAggregate = currentItems.Any(item => item.Item.ContainsGroupedAggregate());
+            // Keep each layer's columns in declared projection order so the final column order matches the result mapping.
             var selectItems = availableItems
-                .Select(item => hasCurrentAggregate && item.Item.ContainsGroupedAggregate()
-                    ? $"SUM({sourceAlias}.{dialect.QuoteIdentifier(item.Alias)}) {dialect.QuoteIdentifier(item.Alias)}"
-                    : $"{sourceAlias}.{dialect.QuoteIdentifier(item.Alias)} {dialect.QuoteIdentifier(item.Alias)}")
-                .Concat(currentItems.Select(item => RenderLayerProjection(item, sourceAlias)))
+                .Select(item => (
+                    Position: declaredPosition[item.Alias],
+                    Sql: hasCurrentAggregate && item.Item.ContainsGroupedAggregate()
+                        ? $"SUM({sourceAlias}.{dialect.QuoteIdentifier(item.Alias)}) {dialect.QuoteIdentifier(item.Alias)}"
+                        : $"{sourceAlias}.{dialect.QuoteIdentifier(item.Alias)} {dialect.QuoteIdentifier(item.Alias)}"))
+                .Concat(currentItems.Select(item => (
+                    Position: declaredPosition[item.Alias],
+                    Sql: RenderLayerProjection(item, sourceAlias))))
+                .OrderBy(entry => entry.Position)
+                .Select(entry => entry.Sql)
                 .ToArray();
 
             inner = $"SELECT {string.Join(",\n", selectItems)}\n" +

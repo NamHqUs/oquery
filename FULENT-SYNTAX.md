@@ -121,26 +121,9 @@ var results = db.Query("User")
     .ToList();
 ```
 
-The equivalent OQuery text uses the join-like existence operators:
-
-```text
-User: Name
-  Where Members HasAny Name = <Bob>
-```
-
-```text
-User: Name
-  Where Members HasNone Name = <David>
-```
-
-`HasAny` and `HasNone` accept a relation, entity, or named context. The
-condition is evaluated in that source scope, and an explicit source alias can
-be used when the condition also references the outer context:
-
-```text
-User: Id
-  Where Members Member HasAny Member.Name = <Bob>
-```
+The equivalent OQuery uses the existence operators `HasAny` and `HasNone`. Their
+syntax and examples are in
+[FUNCTION-DEFINITIONS.md](./FUNCTION-DEFINITIONS.md#6-existence-operators).
 
 `QueryValue` supports equality and comparison operators plus `Like`,
 `Between`, `In`, `IsNull`, and their corresponding negative forms. Values are
