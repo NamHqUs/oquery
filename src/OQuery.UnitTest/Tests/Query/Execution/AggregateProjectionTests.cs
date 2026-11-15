@@ -59,6 +59,27 @@ public sealed class AggregateProjectionTests : TestBase
     }
 
     [Test]
+    public void CollectionField_Projection_CountWithoutAnArgument()
+    {
+        var query = _db.Query("User").Select("Name", "Members.Count()");
+        var data = query.ToList();
+
+        var actualValues = data.ToDictionary(
+            e => (string)e["Name"]!,
+            e => Convert.ToInt32(e["Members.Count()"]));
+
+        Assert.That(actualValues, Is.EqualTo(new Dictionary<string, int>
+        {
+            ["Alice"] = 2,
+            ["Bob"] = 1,
+            ["Charlie"] = 0,
+            ["David"] = 2,
+            ["Eve"] = 0,
+            ["Frank"] = 0,
+        }));
+    }
+
+    [Test]
     public void CollectionField_Projection_CountIf()
     {
         var query = _db.Query("User")

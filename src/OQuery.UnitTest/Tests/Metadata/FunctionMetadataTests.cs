@@ -115,8 +115,8 @@ public sealed class FunctionMetadataTests
     {
         var sql = GenerateSql(new FunctionFieldDefinition("COUNT", []), dialect: new SqliteDialect());
 
-        Assert.That(sql.CommandText, Does.Contain("COUNT (@p0)"));
-        Assert.That(sql.Parameters.Single().Value, Is.EqualTo(1m));
+        Assert.That(sql.CommandText, Does.Contain("COUNT (1)"));
+        Assert.That(sql.Parameters, Is.Empty);
         Assert.That(
             () => GenerateSql(
                 new FunctionFieldDefinition("COUNT", [new FieldDefinition("*")]),

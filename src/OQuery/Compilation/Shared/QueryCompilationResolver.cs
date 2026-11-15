@@ -271,6 +271,9 @@ class QueryCompilationResolver(
         if (TryParseCollectionAggregate(tableContext, expression, depth, out var collectionAggregate))
             return collectionAggregate;
 
+        if (TryRewriteWindowOverCollection(tableContext, expression, out var collectionCall))
+            return ParseFunctionExpression(tableContext, collectionCall, depth + 1);
+
         if (expression.FunctionName.Contains('.'))
             return ParseFieldReceiverFunction(tableContext, expression, depth);
 
@@ -293,7 +296,11 @@ class QueryCompilationResolver(
             var suppliedIndex = index - leadingDefaults;
             arguments[index] = suppliedIndex >= 0 && suppliedIndex < suppliedArguments.Length
                 ? ParseFunctionArgument(tableContext, argumentDefinition, suppliedArguments[suppliedIndex], depth + 1)
-                : ParseDefaultFunctionArgument(tableContext, argumentDefinition, depth + 1);
+                : ParseDefaultFunctionArgument(
+                    tableContext,
+                    argumentDefinition,
+                    depth + 1,
+                    renderAsLiteral: string.Equals(definition.Name, "Count", StringComparison.OrdinalIgnoreCase));
         }
 
         if (string.Equals(definition.Name, "Count", StringComparison.OrdinalIgnoreCase) &&
@@ -358,6 +365,36 @@ class QueryCompilationResolver(
 
         var aggregateDefinition = expression with { FunctionName = functionName };
         return TryParseRelationAggregate(tableContext, relationPath, aggregateDefinition, depth, out aggregate);
+    }
+
+    private static readonly Dictionary<string, string> CollectionWindowAggregates = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["CountOver"] = "Count",
+        ["SumOver"] = "Sum",
+        ["AverageOver"] = "Avg",
+        ["MaxOver"] = "Max",
+        ["MinOver"] = "Min",
+    };
+
+    // Lowering "Relation.Count()" yields CountOver(Relation). When the single argument names a collection relation
+    // rather than a field, the call is the collection aggregate over that relation.
+    private bool TryRewriteWindowOverCollection(
+        TableExpression tableContext,
+        FunctionFieldDefinition expression,
+        out FunctionFieldDefinition rewritten)
+    {
+        rewritten = null!;
+        if (!CollectionWindowAggregates.TryGetValue(expression.FunctionName, out var aggregateName) ||
+            expression.Arguments is not [FieldDefinition { FieldName: var receiver }] ||
+            receiver.Contains('.') ||
+            tableContext.AuthorizedFields.Any(field => string.Equals(field.Name, receiver, StringComparison.OrdinalIgnoreCase)) ||
+            tableContext.Entity.Relations?.Any(relation =>
+                relation.Type == RelationType.Collection &&
+                string.Equals(relation.Name, receiver, StringComparison.OrdinalIgnoreCase)) != true)
+            return false;
+
+        rewritten = new FunctionFieldDefinition($"{receiver}.{aggregateName}", []);
+        return true;
     }
 
     private bool TryParseRelationAggregate(
@@ -871,15 +908,19 @@ class QueryCompilationResolver(
     private FunctionSqlArgument? ParseDefaultFunctionArgument(
         TableExpression tableContext,
         SqlFunctionArgumentDefinition definition,
-        int depth)
+        int depth,
+        bool renderAsLiteral)
     {
         if (definition.DefaultValue is not { } defaultValue)
             return null;
 
-        return defaultValue is "*"
-            ? new FunctionSqlTokenArgument("*")
-            : new FunctionSqlExpressionArgument(
-                ParseQueryExpression(tableContext, new ConstFieldDefinition(defaultValue), depth));
+        if (defaultValue is "*")
+            return new FunctionSqlTokenArgument("*");
+        // Count's default row marker is emitted as a SQL literal so Count() renders as COUNT(1).
+        if (renderAsLiteral && defaultValue is byte or sbyte or short or ushort or int or uint or long or ulong or float or double or decimal)
+            return new FunctionSqlExpressionArgument(new ValueExpression(defaultValue, typeof(decimal)));
+        return new FunctionSqlExpressionArgument(
+            ParseQueryExpression(tableContext, new ConstFieldDefinition(defaultValue), depth));
     }
 
     private static decimal ToDecimal(object value)

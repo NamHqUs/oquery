@@ -40,8 +40,8 @@ public sealed class SqlDiagnosticsTests
 
         var sql = db.Query("User").Select("COUNT()").ToSql();
 
-        Assert.That(sql.CommandText, Does.Contain("COUNT (@p0)"));
-        Assert.That(sql.Parameters[0].Value, Is.EqualTo(1m));
+        Assert.That(sql.CommandText, Does.Match(@"(?i)\bCOUNT\s*\(\s*1\s*\)"));
+        Assert.That(sql.Parameters, Is.Empty);
     }
 
     [Test]
