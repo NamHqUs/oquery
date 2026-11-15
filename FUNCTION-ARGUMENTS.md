@@ -85,6 +85,7 @@ signature, so the editor cannot suggest aggregates by receiver type.
 
 **Open points to settle in the implementation:**
 
+- `CountDistinctIf` follows the same binding as `CountIf`: `CountDistinctIf(predicate)` and `CountDistinctIf(expression, predicate)`.
 - `CountIf` has an optional leading argument and binds from the end. Adding a
   required collection receiver changes its signature, so the binding rule must
   be re-stated for the receiver form.

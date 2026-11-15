@@ -6,7 +6,7 @@ Employees: Id DoctorId,
     DoctorVisits.PatientCount PatientCount,
     ROUND(DoctorVisits.AverageVisitMinutes, <1>) AverageVisitMinutes,
     ROUND(DoctorVisits.Charges, <2>) Charges,
-    ROUND(<100.0> * SUM(Coalesce(DoctorLabs.AbnormalCount, <0>)) / NULLIF(SUM(Coalesce(DoctorLabs.LabCount, <0>)), <0>), <2>) AbnormalLabPercent
+    ROUND(<100.0> * SUM(IfNull(DoctorLabs.AbnormalCount, <0>)) / NULLIF(SUM(IfNull(DoctorLabs.LabCount, <0>)), <0>), <2>) AbnormalLabPercent
   Where Department.Name = <Primary Care> OR Department.Name = <Specialty Care> OR Department.Name = <Emergency Medicine>
   Order VisitCount DESC, Charges DESC
   Take 10

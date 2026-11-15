@@ -32,11 +32,12 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
         YearAdd(),
         CountDistinct(),
         CountIf(),
+        CountDistinctIf(),
         AverageIf(),
         SumIf(),
         MinimumIf(),
         MaximumIf(),
-        Coalesce(),
+        IfNull(),
         MedicalLossRatio(),
         Concat(),
         MonthKey(),
@@ -157,6 +158,13 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
             "Counts related rows matching a predicate, or non-null expression values on matching rows.",
             "COUNT(CASE WHEN {2} THEN {1} END)", isAggregate: true, bindArgumentsFromEnd: true);
 
+    protected virtual SqlFunctionDefintion CountDistinctIf() =>
+        Create("CountDistinctIf",
+            [new("expression", DataType.Number, 1), new("predicate", DataType.Boolean)],
+            DataType.Number,
+            "Counts distinct non-null expression values on related rows matching a predicate.",
+            "COUNT(DISTINCT CASE WHEN {2} THEN {1} END)", isAggregate: true, bindArgumentsFromEnd: true);
+
     protected virtual SqlFunctionDefintion AverageIf() =>
         Create("AvgIf",
             [new("expression", DataType.Number), new("predicate", DataType.Boolean)],
@@ -181,8 +189,8 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
             DataType.Number, "Returns the maximum related value matching a predicate.",
             "MAX(CASE WHEN {2} THEN {1} END)", isAggregate: true);
 
-    protected virtual SqlFunctionDefintion Coalesce() =>
-        Create("Coalesce",
+    protected virtual SqlFunctionDefintion IfNull() =>
+        Create("IfNull",
             [new("value", DataType.Number), new("fallback", DataType.Number)],
             DataType.Number, "Returns the first non-null numeric value.",
             "COALESCE({1}, {2})");

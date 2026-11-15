@@ -177,16 +177,98 @@ public sealed class AggregateProjectionTests : TestBase
     }
 
     [Test]
-    public void CollectionField_Projection_SumsNestedCollectionAggregate()
+    public void CollectionField_Projection_SumOfNestedCountIf_MatchesIndependentCount()
     {
-        var query = _db.Query("User")
-            .Select(
-                "Name",
-                "Members.Sum(Members.Sum(Age))");
+        var users = _db.Query("User").Select("Id", "Name", "ManagerId", "Age").ToList();
+        var expected = users.ToDictionary(
+            manager => (string)manager["Name"]!,
+            manager => users
+                .Where(member => IsManagedBy(member, manager))
+                .Sum(member => users.Count(report =>
+                    IsManagedBy(report, member) && Convert.ToInt32(report["Age"]) > 30)));
 
-        var data = query.ToList();
+        var actual = _db.Query("User")
+            .Select("Name", "Members.Sum(Members.CountIf(Age > <30>))")
+            .ToList()
+            .ToDictionary(
+                e => (string)e["Name"]!,
+                e => Convert.ToInt32(e["Members.Sum(Members.CountIf(Age > <30>))"] ?? 0));
 
-        Assert.That(data, Is.Not.Empty);
+        Assert.That(actual, Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void CollectionField_Projection_SumOfNestedCountIf_RendersGroupedJoinWithoutCte()
+    {
+        var sql = _db.Query("User")
+            .Select("Name", "Members.Sum(Members.CountIf(Age > <30>))")
+            .ToSql()
+            .CommandText;
+
+        Assert.That(sql, Does.Contain("COUNT (CASE WHEN"));
+        Assert.That(sql, Does.Contain("GROUP BY"));
+        Assert.That(sql, Does.Not.Contain("WITH"));
+    }
+
+    private static bool IsManagedBy(IDictionary<string, object?> member, IDictionary<string, object?> manager)
+        => member["ManagerId"] is not null &&
+            Convert.ToInt32(member["ManagerId"]) == Convert.ToInt32(manager["Id"]);
+
+    [Test]
+    public void CollectionField_Projection_SumOfNestedSum_ReturnsTotalsOfMemberTotals()
+    {
+        var data = _db.Query("User")
+            .Select("Name", "Members.Sum(Members.Sum(Age))")
+            .ToList();
+
+        var actualValues = data.ToDictionary(
+            e => (string)e["Name"]!,
+            e => Convert.ToInt32(e["Members.Sum(Members.Sum(Age))"] ?? 0));
+
+        Assert.That(actualValues, Is.EqualTo(new Dictionary<string, int>
+        {
+            ["Alice"] = 35,
+            ["Bob"] = 49,
+            ["Charlie"] = 0,
+            ["David"] = 0,
+            ["Eve"] = 0,
+            ["Frank"] = 0,
+        }));
+    }
+
+    [Test]
+    public void CollectionField_Projection_SumOfNestedCount_ReturnsTotalsOfMemberCounts()
+    {
+        var data = _db.Query("User")
+            .Select("Name", "Members.Sum(Members.Count(Id))")
+            .ToList();
+
+        var actualValues = data.ToDictionary(
+            e => (string)e["Name"]!,
+            e => Convert.ToInt32(e["Members.Sum(Members.Count(Id))"] ?? 0));
+
+        Assert.That(actualValues, Is.EqualTo(new Dictionary<string, int>
+        {
+            ["Alice"] = 1,
+            ["Bob"] = 2,
+            ["Charlie"] = 0,
+            ["David"] = 0,
+            ["Eve"] = 0,
+            ["Frank"] = 0,
+        }));
+    }
+
+    [Test]
+    public void CollectionField_Projection_SumOfNestedCount_RendersGroupedJoinsWithoutCte()
+    {
+        var sql = _db.Query("User")
+            .Select("Name", "Members.Sum(Members.Count(Id))")
+            .ToSql()
+            .CommandText;
+
+        Assert.That(sql, Does.Contain("SUM (COALESCE (t4.\"a0\", 0))"));
+        Assert.That(sql, Does.Contain("COUNT (t3.\"Id\")"));
+        Assert.That(sql, Does.Not.Contain("WITH"));
     }
 
     [Test]
@@ -287,11 +369,11 @@ public sealed class AggregateProjectionTests : TestBase
                 Age,
                 ManagerId
             User:
-                Id,
+              Join UserRows r On Id = r.ManagerId
+              Select Id,
                 Name Manager,
                 r.Name Members,
                 r.Count(Id) MemberCount
-              Join UserRows r On Id = r.ManagerId
             """);
 
         var expected = _db.Query("User")
@@ -320,14 +402,14 @@ public sealed class AggregateProjectionTests : TestBase
                 Age,
                 ManagerId
             User:
-                Id,
+              Join UserRows r On Id = r.ManagerId
+              Select Id,
                 Name,
                 r.CountIf(Name like <Bob>) BobMembers,
                 r.SumIf(Age, Name like <Bob>) BobAgeTotal,
                 r.AvgIf(Age, Name like <Bob>) BobAgeAverage,
                 r.MinIf(Age, Name like <Bob>) BobYoungest,
                 r.MaxIf(Age, Name like <Bob>) BobOldest
-              Join UserRows r On Id = r.ManagerId
             """);
 
         var data = query.ToList()
@@ -354,9 +436,9 @@ public sealed class AggregateProjectionTests : TestBase
                 Product.Category Category,
                 SUM(Quantity * UnitPrice) NetRevenue
             Report is OrderCategory:
-                Category,
-                OrderCategory.Sum(NetRevenue) TotalRevenue
               Join OrderCategory
+              Select Category,
+                OrderCategory.Sum(NetRevenue) TotalRevenue
             """);
 
         var sql = query.ToSql().CommandText;
@@ -372,9 +454,9 @@ public sealed class AggregateProjectionTests : TestBase
                 Product.Category Category,
                 SUM(Quantity * UnitPrice) NetRevenue
             Report is OrderCategory:
-                Category,
-                OrderCategory.Sum(NetRevenue).Round(<2>) RoundedRevenue
               Join OrderCategory
+              Select Category,
+                OrderCategory.Sum(NetRevenue).Round(<2>) RoundedRevenue
             """);
 
         var sql = query.ToSql().CommandText;
@@ -387,7 +469,8 @@ public sealed class AggregateProjectionTests : TestBase
     {
         var query = _db.QueryOqr("""
             User:
-                Id,
+              Join User r On Id = r.ManagerId
+              Select Id,
                 Name Manager,
                 r.Name Members,
                 r.Count(Id) MemberCount,
@@ -395,7 +478,6 @@ public sealed class AggregateProjectionTests : TestBase
                 r.Avg(r.Id) MemberAverage,
                 r.Min(r.Id) MemberMinimum,
                 r.Max(r.Id) MemberMaximum
-              Join User r On Id = r.ManagerId
             """);
 
         var expected = _db.Query("User")
@@ -419,14 +501,14 @@ public sealed class AggregateProjectionTests : TestBase
     {
         var query = _db.QueryOqr("""
             User:
-                Id,
+              Join User r On Id = r.ManagerId
+              Select Id,
                 Name,
                 r.CountIf(Name like <Bob>) BobMembers,
                 r.SumIf(Age, Name like <Bob>) BobAgeTotal,
                 r.AvgIf(Age, Name like <Bob>) BobAgeAverage,
                 r.MinIf(Age, Name like <Bob>) BobYoungest,
                 r.MaxIf(Age, Name like <Bob>) BobOldest
-              Join User r On Id = r.ManagerId
             """);
 
         var data = query.ToList()
@@ -450,10 +532,10 @@ public sealed class AggregateProjectionTests : TestBase
     {
         var query = _db.QueryOqr("""
             User:
-                Id,
+              Join User On Id = User.ManagerId
+              Select Id,
                 Name,
                 User.Count(User.Id) MemberCount
-              Join User On Id = User.ManagerId
             """);
 
         var sql = query.ToSql().CommandText;

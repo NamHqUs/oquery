@@ -45,8 +45,8 @@ internal sealed class FirebirdFunctionDefinitionBuiltin : SqlFunctionDefinitionB
         "({1} + ({2} * INTERVAL '1 year'))",
         "Adds the specified number of years to a date or date-time.");
 
-    protected override SqlFunctionDefintion Coalesce() =>
-        Create("Coalesce", [new("value", DataType.Number), new("fallback", DataType.Number)],
+    protected override SqlFunctionDefintion IfNull() =>
+        Create("IfNull", [new("value", DataType.Number), new("fallback", DataType.Number)],
             DataType.Number, "Returns the first non-null numeric value.", "COALESCE({1}, 0)");
 
     protected override SqlFunctionDefintion MedicalLossRatio() =>

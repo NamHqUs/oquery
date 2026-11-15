@@ -54,8 +54,8 @@ internal sealed class SapHanaFunctionDefinitionBuiltin : SqlFunctionDefinitionBu
         Create("MonthKey", [new("value", DataType.Datetime)], DataType.String,
             "Formats a date as a year-month key.", "TO_VARCHAR({1}, 'YYYY-MM')");
 
-    protected override SqlFunctionDefintion Coalesce() =>
-        Create("Coalesce",
+    protected override SqlFunctionDefintion IfNull() =>
+        Create("IfNull",
             [new("value", DataType.Number), new("fallback", DataType.Number)],
             DataType.Number, "Returns the first non-null numeric value.",
             "COALESCE(CAST({1} AS DECIMAL(34, 10)), 0)");

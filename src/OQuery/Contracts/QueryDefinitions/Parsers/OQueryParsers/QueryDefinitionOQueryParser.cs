@@ -134,6 +134,10 @@ public static class QueryDefinitionOQueryParser
 
     private static QueryDefinition ParseBlock(QueryBlock block)
     {
+        if (!block.HasSelect && block.Clauses.Any(clause => clause.Name == "join"))
+            throw new FormatException(
+                $"[{block.Name}] has Join clauses, so its projection must start with an explicit Select clause.");
+
         ConditionDefinition? filter = null;
         var sorts = new List<SortDefinition>();
         int? pageSize = null;
@@ -146,6 +150,10 @@ public static class QueryDefinitionOQueryParser
             switch (clause.Name)
             {
                 case "where":
+                    if (filter is not null)
+                        throw new FormatException(
+                            $"Multiple Where clauses are not allowed in [{block.Name}]. " +
+                            "Combine the conditions with AND or OR in one Where.");
                     filter = QueryDefinitionJsonParser.ParseFilter(value);
                     break;
                 case "sort":
@@ -304,32 +312,152 @@ public static class QueryDefinitionOQueryParser
             }
             if (!IsClauseLine(line))
             {
-                if (current.Clauses.Count > 0)
-                    current.Clauses[^1].Value = $"{current.Clauses[^1].Value} {line}".Trim();
-                else
-                    current.Projection = $"{current.Projection}\n{line}".Trim();
+                AddContinuationLine(current, line);
                 continue;
             }
+            current.InProjection = false;
+            if (current.JoinMultiLine)
+                throw new FormatException(
+                    $"A multi-line join must end with a comma before [{line}].");
+            current.JoinOpen = false;
+            current.JoinMultiLine = false;
             var typedJoin = System.Text.RegularExpressions.Regex.Match(
                 line,
                 "^(left|inner|right|full)\\s+join\\s+(.+)$",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             if (typedJoin.Success)
             {
-                current.Clauses.Add(new(
+                AddClause(current, new(
                     "join",
                     $"{typedJoin.Groups[1].Value} join {typedJoin.Groups[2].Value}"));
                 continue;
             }
             var clauseSeparator = line.IndexOf(' ');
+            var keyword = clauseSeparator < 0 ? line : line[..clauseSeparator];
+            var value = clauseSeparator < 0 ? string.Empty : line[(clauseSeparator + 1)..].Trim();
+            if (string.Equals(keyword, "select", StringComparison.OrdinalIgnoreCase))
+            {
+                if (current.HasSelect || !string.IsNullOrEmpty(current.Projection))
+                    throw new FormatException(
+                        $"[{current.Name}] has more than one projection. Use a single Select clause.");
+                current.HasSelect = true;
+                current.Projection = value;
+                current.InProjection = true;
+                continue;
+            }
             if (clauseSeparator <= 0)
                 throw new FormatException($"Invalid OQuery clause [{line}].");
-            current.Clauses.Add(new(
-                line[..clauseSeparator].ToLowerInvariant(),
-                line[(clauseSeparator + 1)..].Trim()));
+            AddClause(current, new(keyword.ToLowerInvariant(), value));
         }
 
         return blocks;
+    }
+
+    // A join is one line by default. A join that continues onto another line (an On line or an
+    // open condition) must end with a top-level comma before the projection.
+    private static void AddClause(QueryBlock block, QueryClause clause)
+    {
+        block.Clauses.Add(clause);
+        if (clause.Name == "join")
+            UpdateJoinState(block, clause);
+    }
+
+    private static void AddContinuationLine(QueryBlock block, string line)
+    {
+        var last = block.Clauses.Count > 0 ? block.Clauses[^1] : null;
+        if (block.InProjection)
+        {
+            block.Projection = $"{block.Projection}\n{line}".Trim();
+            return;
+        }
+        if (last is { Name: "join" } && (block.JoinOpen || IsJoinConditionLine(line)))
+        {
+            last.Value = $"{last.Value} {line}".Trim();
+            block.JoinMultiLine = true;
+            UpdateJoinState(block, last);
+            return;
+        }
+        if (last is null || last.Name == "join")
+        {
+            if (block.JoinMultiLine)
+                throw new FormatException(
+                    $"Unexpected line [{line}] after a join. A multi-line join must end with a comma " +
+                    "before the Select clause.");
+            if (last is { Name: "join" })
+                throw new FormatException(
+                    $"Unexpected line [{line}] after a join. Start the projection with Select, " +
+                    "or keep its condition on the join line or on a line starting with On.");
+            block.InProjection = true;
+            block.Projection = line;
+            return;
+        }
+        last.Value = $"{last.Value} {line}".Trim();
+    }
+
+    private static void UpdateJoinState(QueryBlock block, QueryClause join)
+    {
+        if (TryEndJoinWithComma(join))
+        {
+            block.JoinOpen = false;
+            block.JoinMultiLine = false;
+            return;
+        }
+        block.JoinOpen = !IsCompleteJoin(join.Value);
+    }
+
+    private static bool IsJoinConditionLine(string line)
+        => System.Text.RegularExpressions.Regex.IsMatch(
+            line,
+            "^on\\s",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+    private static bool IsCompleteJoin(string value)
+    {
+        if (System.Text.RegularExpressions.Regex.IsMatch(
+            value,
+            "(?:\\b(?:and|or|not|is|in|like|between|on)|[=+\\-*/(,<!])\\s*$",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+            return false;
+        try
+        {
+            ParseJoin(value);
+            return true;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
+
+    private static bool TryEndJoinWithComma(QueryClause join)
+    {
+        var trimmed = join.Value.TrimEnd();
+        if (!trimmed.EndsWith(',') || !IsTopLevelFinalComma(trimmed))
+            return false;
+        join.Value = trimmed[..^1].TrimEnd();
+        return true;
+    }
+
+    private static bool IsTopLevelFinalComma(string text)
+    {
+        var depth = 0;
+        var quote = '\0';
+        for (var index = 0; index < text.Length - 1; index++)
+        {
+            var character = text[index];
+            if (quote != '\0')
+            {
+                if (character == quote)
+                    quote = '\0';
+            }
+            else if (character is '\'' or '"')
+                quote = character;
+            else if (character is '(' or '[')
+                depth++;
+            else if (character is ')' or ']')
+                depth--;
+        }
+        return depth == 0 && quote == '\0';
     }
 
     private static string StripComment(string line)
@@ -422,7 +550,21 @@ public static class QueryDefinitionOQueryParser
             : $"{FormatIdentifier(name)} is {FormatIdentifier(entity)}";
         var projections = (definition.Projections ?? []).Select(field => field.ToText()).ToArray();
         var projectionText = string.Join(", ", projections);
-        if (projectionText.Length <= 120 || projections.Length < 2)
+        var joins = definition.Joins ?? [];
+        if (joins.Count > 0)
+        {
+            lines.Add($"{indent}{header}:");
+            foreach (var relation in joins)
+                lines.Add($"{indent}  {FormatJoin(relation)}");
+            for (var index = 0; index < projections.Length; index++)
+            {
+                var suffix = index == projections.Length - 1 ? string.Empty : ",";
+                lines.Add(index == 0
+                    ? $"{indent}  Select {projections[index]}{suffix}"
+                    : $"{indent}    {projections[index]}{suffix}");
+            }
+        }
+        else if (projectionText.Length <= 120 || projections.Length < 2)
         {
             lines.Add($"{indent}{header}: {projectionText}");
         }
@@ -444,16 +586,17 @@ public static class QueryDefinitionOQueryParser
             lines.Add($"{indent}  Skip {skip}");
         if (definition.Take is not null)
             lines.Add($"{indent}  Take {definition.Take}");
-        foreach (var relation in definition.Joins ?? [])
-        {
-            var joinType = relation.JoinType?.ToString() ?? nameof(QueryJoinType.Left);
-            var join = $"{joinType} Join {FormatIdentifier(relation.RefContext)}";
-            if (!string.IsNullOrWhiteSpace(relation.Alias))
-                join += $" {relation.Alias}";
-            if (relation.Condition is not null)
-                join += $" On {relation.Condition.ToText()}";
-            lines.Add($"{indent}  {join}");
-        }
+    }
+
+    private static string FormatJoin(JoinDefinition relation)
+    {
+        var joinType = relation.JoinType?.ToString() ?? nameof(QueryJoinType.Left);
+        var join = $"{joinType} Join {FormatIdentifier(relation.RefContext)}";
+        if (!string.IsNullOrWhiteSpace(relation.Alias))
+            join += $" {relation.Alias}";
+        if (relation.Condition is not null)
+            join += $" On {relation.Condition.ToText()}";
+        return join;
     }
 
     private static string GetSourceEntity(QueryDefinitionBase definition, string name)
@@ -462,7 +605,7 @@ public static class QueryDefinitionOQueryParser
     private static bool IsClauseLine(string line)
         => System.Text.RegularExpressions.Regex.IsMatch(
             line,
-            "^(where|order|orderby|skip|take|join)(?:\\s|$)|" +
+            "^(where|select|order|orderby|skip|take|join)(?:\\s|$)|" +
             "^(left|inner|right|full)\\s+join\\b",
             System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
@@ -493,6 +636,10 @@ public static class QueryDefinitionOQueryParser
         public string Name { get; } = name;
         public string Entity { get; } = entity;
         public string Projection { get; set; } = projection;
+        public bool InProjection { get; set; } = projection.Length > 0;
+        public bool HasSelect { get; set; }
+        public bool JoinOpen { get; set; }
+        public bool JoinMultiLine { get; set; }
         public List<QueryClause> Clauses { get; } = [];
     }
 

@@ -112,7 +112,7 @@
                 "arguments": [
                   {
                     "kind": "function",
-                    "function": "Coalesce",
+                    "function": "IfNull",
                     "arguments": [
                       {
                         "kind": "field",
@@ -137,7 +137,7 @@
                     "arguments": [
                       {
                         "kind": "function",
-                        "function": "Coalesce",
+                        "function": "IfNull",
                         "arguments": [
                           {
                             "kind": "field",

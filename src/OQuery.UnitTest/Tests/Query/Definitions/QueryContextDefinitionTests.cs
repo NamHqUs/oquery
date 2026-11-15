@@ -39,19 +39,19 @@ public sealed class QueryContextDefinitionTests : TestBase
                 SUM(Quantity * UnitPrice) OrderTotal
 
             UserOrderTotals is Orders:
-                UserId,
+              Left Join OrderTotals
+                On Id = OrderTotals.OrderId,
+              Select UserId,
                 COUNT(Id) OrderCount,
                 SUM(OrderTotals.OrderTotal) CustomerRevenue
-              Left Join OrderTotals
-                On Id = OrderTotals.OrderId
 
             UserReport is Users:
-                Id,
+              Left Join UserOrderTotals
+                On Id = UserOrderTotals.UserId,
+              Select Id,
                 Name,
                 UserOrderTotals.OrderCount OrderCount,
                 UserOrderTotals.CustomerRevenue CustomerRevenue
-              Left Join UserOrderTotals
-                On Id = UserOrderTotals.UserId
             """);
 
         var sql = db.Query(query).ToSql().CommandText;
@@ -92,19 +92,19 @@ public sealed class QueryContextDefinitionTests : TestBase
                 SUM(Quantity * UnitPrice) OrderTotal
 
             UserOrderTotals is Orders:
-                UserId,
+              Left Join OrderTotals
+                On Id = OrderTotals.OrderId,
+              Select UserId,
                 COUNT(Id) OrderCount,
                 SUM(OrderTotals.OrderTotal) CustomerRevenue
-              Left Join OrderTotals
-                On Id = OrderTotals.OrderId
 
             UserReport is Users:
-                Id,
+              Left Join UserOrderTotals
+                On Id = UserOrderTotals.UserId,
+              Select Id,
                 Name,
                 UserOrderTotals.OrderCount OrderCount,
                 UserOrderTotals.CustomerRevenue CustomerRevenue
-              Left Join UserOrderTotals
-                On Id = UserOrderTotals.UserId
             """;
 
         var query = QueryDefinitionOQueryParser.Parse(text, "UserReport");
@@ -128,9 +128,10 @@ public sealed class QueryContextDefinitionTests : TestBase
                     new Field("ManagerId", "ManagerId"),
                 ]));
         var query = QueryDefinitionOQueryParser.Parse("""
-            EmployeeTree is Employees: FirstName | ManagerName,
-                member.FirstName | MemberName
+            EmployeeTree is Employees:
               INNER JOIN EmployeeTree member on Id = member.ManagerId
+              Select FirstName | ManagerName,
+                member.FirstName | MemberName
             """);
 
         var sql = db.Query(query).ToSql().CommandText;
@@ -160,10 +161,11 @@ public sealed class QueryContextDefinitionTests : TestBase
                     new Field("ManagerId", "ManagerId"),
                 ]));
         var query = QueryDefinitionOQueryParser.Parse("""
-            EmployeeTree is Employees: FirstName ManagerName,
+            EmployeeTree is Employees:
+              INNER JOIN EmployeeTree member On Id = member.ManagerId
+              Select FirstName ManagerName,
                 member.FirstName MemberName,
                 Count(member.Id) MemberCount
-              INNER JOIN EmployeeTree member On Id = member.ManagerId
             """);
 
         var sql = db.Query(query).ToSql().CommandText;
@@ -198,10 +200,10 @@ public sealed class QueryContextDefinitionTests : TestBase
                 ]));
         var query = QueryDefinitionOQueryParser.Parse("""
             EmployeeTree is Employees:
-                FirstName ManagerName,
+              INNER JOIN EmployeeTree tree ON Id = tree.ManagerId
+              Select FirstName ManagerName,
                 Members.Count(Id) TotalMembers,
                 tree.FirstName MemberName
-              INNER JOIN EmployeeTree tree ON Id = tree.ManagerId
             """);
 
         var sql = db.Query(query).ToSql().CommandText;
@@ -247,10 +249,10 @@ public sealed class QueryContextDefinitionTests : TestBase
         using var db = new OQueryEngine(connection, metadata, new SqliteDialect());
         var query = QueryDefinitionOQueryParser.Parse("""
             EmployeeTree is Employees:
-                FirstName ManagerName,
+              Inner Join EmployeeTree member On Id = member.ManagerId
+              Select FirstName ManagerName,
                 member.FirstName MemberName,
                 CountOver(member.Id, manager.Id) TotalMembers
-              Inner Join EmployeeTree member On Id = member.ManagerId
             """);
 
         var oqueryRows = db.Query(query)
@@ -321,9 +323,10 @@ public sealed class QueryContextDefinitionTests : TestBase
                     new Field("ManagerId", "ManagerId"),
                 ]));
         var query = QueryDefinitionOQueryParser.Parse("""
-            EmployeeTree is Employees: FirstName ManagerName,
-                member.Id + <1> NextMemberId
+            EmployeeTree is Employees:
               INNER JOIN EmployeeTree member On Id = member.ManagerId
+              Select FirstName ManagerName,
+                member.Id + <1> NextMemberId
             """);
 
         var sql = db.Query(query).ToSql().CommandText;

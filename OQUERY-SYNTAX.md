@@ -81,7 +81,9 @@ Use aliases when an expression should have a stable result-column name:
 Products: SUM(OrderItems.Quantity) UnitsSold
 ```
 
-Projection is the paragraph after an entity header. It continues across lines
+Projection is the paragraph after an entity header when the query has no joins.
+When it has joins, the projection starts with an explicit `Select` line after the
+joins (see [Join placement](#join-placement)). It continues across lines
 until a query clause or a new context declaration begins:
 
 ```text
@@ -136,12 +138,60 @@ Supported query clauses include:
 Keywords are case-insensitive. Use the canonical capitalization shown above
 for readable saved queries.
 
-Values may use angle brackets:
+### Join placement
+
+When a query has joins, write them directly under the header, followed by an
+explicit `Select` line that starts the projection. `Where`, `Order`, `Skip`, and `Take` follow the projection, so
+`Where` can filter on projection aliases.
 
 ```text
-Where Status = <Completed>
-Where Quantity > <10>
-Where IsActive = <true>
+DiagnosisBurden is Visits:
+  Left Join VisitLabs On Id = VisitLabs.VisitId
+  Select Diagnose.Name Diagnosis,
+    CountDistinct(Id) VisitCount,
+    (<100> * Sum(IfNull(VisitLabs.AbnormalCount, <0>))
+        / NullIf(Sum(IfNull(VisitLabs.LabCount, <0>)), <0>)).Round(<2>) AbnormalLabPercent
+  Where Status = <Completed>
+  Order VisitCount DESC, AbnormalLabPercent DESC
+  Take 10
+```
+
+A join is one line by default. A join that is complete at the end of its line
+ends there, and the next line starts the projection with `Select`:
+
+```text
+Visits:
+  Left Join VisitLabs On Id = VisitLabs.VisitId
+  Select Id
+```
+
+A join that continues onto more lines must end with a top-level comma. The
+comma ends the join and is not part of its condition. After any join, the
+projection must start with an explicit `Select` line.
+
+- A line that starts with `On` continues the join above it.
+- An incomplete condition, such as one ending with `AND`, continues onto the next line.
+- A multi-line join without the trailing comma is rejected before the projection.
+
+```text
+Visits:
+  Left Join VisitLabs
+    On Id = VisitLabs.VisitId AND
+      VisitLabs.IsActive = <true>,
+  Select Id
+```
+
+A query without joins keeps the header projection form, such as
+`Employees: Id, Name`. A query with joins must have an explicit `Select` line. A join placed after a
+header projection without `Select` is rejected.
+
+
+Only one `Where` clause is allowed per query. Combine several conditions
+explicitly with `AND` or `OR` inside that single clause; a second `Where`
+line is a parse error:
+
+```text
+Where Status = <Completed> AND Quantity > <10> OR IsActive = <true>
 ```
 
 Numeric constants may also be written without angle brackets. The parser
@@ -228,26 +278,29 @@ Declare dependent contexts in dependency order.
 Join a context from the query that consumes it:
 
 ```text
-Products: Id,
+Products:
+  Inner Join ProductSales On Id = ProductSales.ProductId
+  Select Id,
     Name,
     ProductSales.TotalRevenue TotalRevenue
-  Inner Join ProductSales On Id = ProductSales.ProductId
 ```
 
 `Join` without a type is an inner join:
 
 ```text
-Products: Id
+Products:
   Join ProductSales On Id = ProductSales.ProductId
+  Select Id
 ```
 
 Use an explicit condition when the context has one row per parent key:
 
 ```text
-Customers: Id,
+Customers:
+  Left Join CustomerOrders On Id = CustomerOrders.CustomerId
+  Select Id,
     Name,
     CustomerOrders.OrderCount OrderCount
-  Left Join CustomerOrders On Id = CustomerOrders.CustomerId
 ```
 
 A context relation without a condition declares the context as available to the
@@ -260,9 +313,10 @@ The same context may be joined multiple times. Give each relation instance a
 different alias and use that alias in the projection and join condition:
 
 ```text
-User: Name, Manager1.Name, Manager2.Age
+User:
   Left Join "User Context" Manager1 On ManagerId = Id
   Left Join "User Context" Manager2 On ManagerId = Id
+  Select Name, Manager1.Name, Manager2.Age
 
 "User Context" is User: Id, Name, Age
 ```
@@ -278,11 +332,11 @@ SQL dialect supports recursive CTEs:
 
 ```text
 EmployeeTree is Employees:
-    FirstName ManagerName,
-    Members.Count(Id) TotalMembers,
-    aliasMembers.FirstName MemberName
   Inner Join EmployeeTree aliasMembers
     On Id = aliasMembers.ManagerId
+  Select FirstName ManagerName,
+    Members.Count(Id) TotalMembers,
+    aliasMembers.FirstName MemberName
 ```
 
 The projection can combine metadata relationship expressions with fields from
@@ -346,7 +400,7 @@ The context token is stored as a constant value and resolved semantically;
 it is not a SQL string parameter or a raw SQL field. SQL generation emits the
 dialect-specific `EXISTS` or `NOT EXISTS` subquery.
 
-## 7. Aggregation and grouping
+## 8. Aggregation and grouping
 
 An aggregate function is grouped when the same projection contains both:
 
@@ -401,32 +455,32 @@ Ref is User:
     ManagerId
 
 User:
-    Id,
+  Join Ref r On Id = r.ManagerId
+  Select Id,
     Name Manager,
     r.Name Members,
     r.Count(r.Id) MemberCount
-  Join Ref r On Id = r.ManagerId
 ```
 
 For a directly joined entity:
 
 ```text
 User:
-    Id,
+  Join User r On Id = r.ManagerId
+  Select Id,
     Name Manager,
     r.Name Members,
     r.Count(r.Id) MemberCount
-  Join User r On Id = r.ManagerId
 ```
 
 The alias may be omitted:
 
 ```text
 User:
-    Id,
+  Join User On Id = User.ManagerId
+  Select Id,
     Name,
     User.Count(User.Id) MemberCount
-  Join User On Id = User.ManagerId
 ```
 
 `Count()` with no argument counts the related rows as `COUNT(1)`; no column is read.
@@ -480,10 +534,10 @@ join has an equality condition:
 UserRows is User: Id, ManagerId
 
 User:
-    Id,
+  Join UserRows r On Id = r.ManagerId
+  Select Id,
     r.Name Member,
     r.Count(Id) MemberCount
-  Join UserRows r On Id = r.ManagerId
 ```
 
 `MemberCount` is grouped by the joined source key `ManagerId` and then joined
@@ -531,9 +585,9 @@ OrderCategory is OrderItems:
     SUM(Quantity * UnitPrice) NetRevenue
 
 Report is OrderCategory:
-    Category,
-    OrderCategory.Sum(NetRevenue).Avg() AverageRevenue
   Join OrderCategory
+  Select Category,
+    OrderCategory.Sum(NetRevenue).Avg() AverageRevenue
 ```
 
 The receiver must identify a row-producing collection. A scalar context value
@@ -566,7 +620,47 @@ in a new query stage, so a pipeline such as
 `OrderItems.Sum(Quantity * UnitPrice).Avg().Sum()` remains valid without
 nested window functions in the generated SQL.
 
-## 8. Aggregate filters and scalar context aggregates
+A collection aggregate may also take an aggregate over a nested collection as
+its argument. The inner aggregate is evaluated for each row of the outer
+collection, and the outer aggregate then combines those values per root row:
+
+```text
+Users:
+    Name,
+    Members.Sum(Members.Count(Id)) MemberReportTotal
+```
+
+For each user, `Members.Count(Id)` counts the reports of each member, and
+`Members.Sum(...)` adds those counts. A user with no members returns `0` for
+`Count` and `NULL` for `Sum`, as with the single-level `Sum`. The engine chooses
+the join and grouping steps; the query is still one expression.
+
+Choose the root entity at the grain you want to report. A nested collection
+aggregate reaches through relations from each root row, so the root decides
+what one result row means. To report one row per patient, with totals over
+their visits and each visit's lab results, use `Patients` as the root:
+
+```text
+HighRiskPatientCare is Patients:
+    Id PatientId,
+    FirstName,
+    LastName,
+    BirthDate.AgeOn(<2025-10-31>) Age,
+    Visits.SumIf(Charge, Status = <Completed>).Round(<2>) TotalCharges,
+    Visits.CountIf(Status = <Completed>) CompletedVisits,
+    Visits.CountIf(Diagnose.IsChronic = <True>) ChronicVisits,
+    Visits.Sum(LabResults.CountIf(IsAbnormal = <True>)) AbnormalResults
+  Where AbnormalResults > <0>
+  Order AbnormalResults DESC, ChronicVisits DESC, TotalCharges DESC
+  Take 10
+```
+
+A root on `Visits` would give one row per visit. Aggregating patient totals
+from that root would then need a second grain, so the query is harder to read
+and easier to get wrong. The root grain also controls null handling: a patient
+with no visits gets `NULL` for `Sum` and `0` for `Count`, as above.
+
+## 9. Aggregate filters and scalar context aggregates
 
 Aggregate predicates on the current query are routed to `HAVING`:
 
@@ -583,10 +677,11 @@ An aggregate over a named context in a filter is a scalar context aggregate:
 ProductSales is OrderItems: ProductId,
     SUM(Quantity * UnitPrice) TotalRevenue
 
-Products: Id,
+Products:
+  Inner Join ProductSales On Id = ProductSales.ProductId
+  Select Id,
     Name,
     ProductSales.TotalRevenue TotalRevenue
-  Inner Join ProductSales On Id = ProductSales.ProductId
   Where ProductSales.TotalRevenue > AVG(ProductSales.TotalRevenue)
 ```
 
@@ -603,7 +698,7 @@ projection when a scalar context aggregate is required. Use an aggregate-over
 window function as described next when the value must be calculated over the
 current detail rows.
 
-## 9. Aggregate-over window functions
+## 10. Aggregate-over window functions
 
 Aggregate-over functions return scalar values as columns while preserving the
 current result rows. They do not collapse rows and do not create a `GROUP BY`.
@@ -645,7 +740,9 @@ COUNT(Member.Id) OVER (PARTITION BY Manager.Id)
 Examples:
 
 ```text
-Products: Id,
+Products:
+  Inner Join ProductSales On Id = ProductSales.ProductId
+  Select Id,
     Name,
     ProductSales.TotalRevenue TotalRevenue,
     AverageOver(ProductSales.TotalRevenue) OverallAverageRevenue,
@@ -653,7 +750,6 @@ Products: Id,
     CountOver(ProductSales.ProductId) ProductCount,
     MaxOver(ProductSales.TotalRevenue) MaximumRevenue,
     MinOver(ProductSales.TotalRevenue) MinimumRevenue
-  Inner Join ProductSales On Id = ProductSales.ProductId
 ```
 
 Partitioned examples:
@@ -669,7 +765,7 @@ Employees: Id,
 `*Over` is explicit syntax for a window scalar. It must not be classified as
 a grouping aggregate and must not move a row predicate to `HAVING`.
 
-## 10. Projection alias dependencies
+## 11. Projection alias dependencies
 
 All projection aliases declared in the same context are available to every
 projection expression and predicate in that context, regardless of their
@@ -700,7 +796,7 @@ Orders:
 Aliases can also be used in `Where` and `Order` expressions in the same
 context.
 
-## 11. Expressions and functions
+## 12. Expressions and functions
 
 Arithmetic expressions can be used in projections and function arguments:
 
@@ -717,13 +813,15 @@ Orders: Id,
     ROUND(<100> * PaidAmount / NULLIF(TotalAmount, <0>), <2>) PaidPercent
 ```
 
-Common functions include:
+The full built-in function list, with arguments and per-dialect templates, is in
+[FUNCTION-DEFINITIONS.md](./FUNCTION-DEFINITIONS.md). Common functions include:
 
 ```text
 COUNT(expression)
-COUNT(DISTINCT expression)
+CountDistinct(expression)
 COUNTIF(condition)
 COUNTIF(expression, condition)
+COUNTDISTINCTIF(expression, condition)
 AVG(expression)
 AVGIF(expression, condition)
 SUM(expression)
@@ -731,7 +829,8 @@ MAX(expression)
 MIN(expression)
 ROUND(expression, digits)
 NULLIF(value, otherValue)
-COALESCE(value, fallback)
+IfNull(value, fallback)
+Concat(first, separator, last)
 ```
 
 `COUNTIF` follows the same rules as `COUNT`:
@@ -779,7 +878,7 @@ projection expression, so aggregates inside it use the root context.
 Use function names from metadata. Do not embed raw SQL function text or schema
 qualification in a field name.
 
-## 12. Readability rules
+## 13. Readability rules
 
 Prefer one semantic operation per context:
 
@@ -796,18 +895,10 @@ AverageOver(ProductSales.TotalRevenue) AverageProductRevenue
 
 Keep clauses indented and put long projections on continuation lines.
 
-When converting SQL to OQuery:
+For SQL-to-OQuery conversion steps, see
+[OQUERY-GENERATION-NOTES.md](./OQUERY-GENERATION-NOTES.md).
 
-1. remove physical schema prefixes;
-2. identify each derived table or CTE;
-3. create a named context for each reusable derived result;
-4. preserve each aggregation grain with the correct non-aggregate keys;
-5. use explicit context joins and conditions;
-6. use context-qualified aggregate filters for scalar comparisons;
-7. use `*Over` functions when a scalar aggregate must appear as a column;
-8. add deterministic ordering when result order matters.
-
-## 13. SQL schema and generated output
+## 14. SQL schema and generated output
 
 OQuery uses logical names:
 

@@ -3,9 +3,9 @@ Employees: Id AgentId,
     Location.City OfficeCity,
     CountDistinct(AgentPolicies.Id) PoliciesSold,
     CountIf(AgentPolicies.Status = <Active>) ActivePolicies,
-    ROUND(Coalesce(PaidPayments.PaidPremiums, <0>), <2>) PaidPremiums,
-    Coalesce(LatePayments.LatePayments, <0>) LatePayments,
-    Coalesce(MissedPayments.MissedPayments, <0>) MissedPayments
+    ROUND(IfNull(PaidPayments.PaidPremiums, <0>), <2>) PaidPremiums,
+    IfNull(LatePayments.LatePayments, <0>) LatePayments,
+    IfNull(MissedPayments.MissedPayments, <0>) MissedPayments
   Where Department.Name = <Insurance Agency>
   Order PaidPremiums DESC
   Take 10

@@ -118,11 +118,12 @@ internal sealed class QueryDefinitionTests
     public void OQueryParsesMultilineOrderAndContextProjection()
     {
         var definition = QueryDefinitionOQueryParser.Parse("""
-            Visits: Diagnosis.Name | Diagnosis,
+            Visits:
+              left join VisitLabs on Id = VisitLabs.VisitId
+              Select Diagnosis.Name | Diagnosis,
                 Diagnosis.Category | DiagnosisCategory
               order VisitCount ASC,
                 Diagnosis.Name ASC
-              left join VisitLabs on Id = VisitLabs.VisitId
             VisitLabs is LabResults: VisitId | VisitId,
                 COUNT(Id) | LabCount
             """);
@@ -139,8 +140,9 @@ internal sealed class QueryDefinitionTests
     {
         var definition = QueryDefinitionOQueryParser.Parse("""
             UserContext1 is User: Id, Name
-            UserContext2 is User: Id, Name, ManagerId
+            UserContext2 is User:
               Left Join UserContext1 on ManagerId = UserContext1.Id
+              Select Id, Name, ManagerId
             """);
 
         Assert.That(definition.Entity, Is.EqualTo("User"));
@@ -154,12 +156,14 @@ internal sealed class QueryDefinitionTests
     public void OQueryKeepsRootWhenSelectionIncludesAllRelatedContexts()
     {
         var definition = QueryDefinitionOQueryParser.Parse("""
-            User: Id, Name
+            User:
               Left Join UserContext1 on ManagerId = UserContext1.Id
               Left Join UserContext2 on ManagerId = UserContext2.Id
+              Select Id, Name
             UserContext1 is User: Id, Name
-            UserContext2 is User: Id, Name, ManagerId
+            UserContext2 is User:
               Left Join UserContext1 on ManagerId = UserContext1.Id
+              Select Id, Name, ManagerId
             """);
 
         Assert.That(definition.Entity, Is.EqualTo("User"));
@@ -173,9 +177,10 @@ internal sealed class QueryDefinitionTests
     public void OQueryAllowsOneContextToBeJoinedMultipleTimesWithAliases()
     {
         var definition = QueryDefinitionOQueryParser.Parse("""
-            User: Id, Name, ManagerId, ref1.Name | Manager1, newRef1.Name | Manager2
+            User:
               Left Join ref1 On ManagerId = ref1.Id
               Left Join ref1 newRef1 On ManagerId = newRef1.Id
+              Select Id, Name, ManagerId, ref1.Name | Manager1, newRef1.Name | Manager2
             ref1 is User: Id, Name
             """);
 

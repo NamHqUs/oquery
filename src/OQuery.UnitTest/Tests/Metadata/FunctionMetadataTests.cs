@@ -270,7 +270,7 @@ public sealed class FunctionMetadataTests
         Assert.That(functions.Keys, Does.Not.Contain("DATEDIFF").And.Not.Contain("STRFTIME"));
         Assert.That(functions.Keys, Does.Contain("Count").And.Contain("Sum").And.Contain("Avg")
             .And.Not.Contain("Average").And.Not.Contain("COUNT_DISTINCT"));
-        Assert.That(functions.Keys, Does.Contain("CountDistinct").And.Contain("Coalesce").And.Contain("Concat")
+        Assert.That(functions.Keys, Does.Contain("CountDistinct").And.Contain("IfNull").And.Contain("Concat")
             .And.Contain("CountIf").And.Contain("Lag").And.Contain("WindowSum")
             .And.Contain("CountOver").And.Contain("SumOver").And.Contain("AverageOver")
             .And.Contain("MaxOver").And.Contain("MinOver"));
@@ -311,6 +311,19 @@ public sealed class FunctionMetadataTests
 
         Assert.That(sqlServerSql.CommandText,
             Does.Match(@"COUNT\s*\(\s*CASE\s+WHEN\s+.*\[Amount\].*>.*THEN\s+@p\d+\s+END\s*\)"));
+    }
+
+    [Test]
+    public void CountDistinctIfCountsDistinctValuesOnlyForMatchingRows()
+    {
+        var sql = GenerateSql(
+            new FunctionFieldDefinition(
+                "CountDistinctIf",
+                [new FieldDefinition("Amount"), new FieldDefinition("Amount > 0")]),
+            dialect: new SqliteDialect());
+
+        Assert.That(sql.CommandText, Does.Match(
+            @"COUNT\s*\(\s*DISTINCT\s+CASE\s+WHEN\s+.*THEN\s+.*END\s*\)"));
     }
 
     [Test]
