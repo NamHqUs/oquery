@@ -42,4 +42,24 @@ internal sealed class FilterParserTests : TestBase
             filter!.ToText(),
             Is.EqualTo("Members HasAny Name = <Bob> AND Members HasNone Name = <David>"));
     }
+
+    [Test]
+    public void Filter_FromOQueryText_SupportsIsNotNull()
+    {
+        var query = QueryDefinitionOQueryParser.Parse("""
+            User: Name
+              Where ManagerId Is Not Null
+            """);
+
+        var filter = query.Filter!.Filters.Single();
+        var statement = (ConditionStatementDefinition)filter;
+        var sql = _db.Query(query).ToSql();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(statement.Operator, Is.EqualTo(BinaryOperator.IsNotNull));
+            Assert.That(statement.Right, Is.Null);
+            Assert.That(sql.CommandText, Does.Contain("IS NOT NULL"));
+        });
+    }
 }
