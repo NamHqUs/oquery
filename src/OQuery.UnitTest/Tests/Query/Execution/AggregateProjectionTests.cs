@@ -67,6 +67,23 @@ public sealed class AggregateProjectionTests : TestBase
     }
 
     [Test]
+    public void CollectionField_Projection_NestedAverage_EqualsSumOverCount()
+    {
+        var data = _db.Query("User")
+            .Select("Name", "Members.Members.Avg(Age)", "Members.Members.Sum(Age)", "Members.Members.Count(Id)")
+            .ToList()
+            .Where(record => record["Members.Members.Count(Id)"] is not null && Convert.ToDecimal(record["Members.Members.Count(Id)"]) > 0)
+            .ToList();
+
+        Assert.That(data, Is.Not.Empty);
+        Assert.That(
+            data.All(record => Math.Abs(
+                Convert.ToDecimal(record["Members.Members.Avg(Age)"]) -
+                Convert.ToDecimal(record["Members.Members.Sum(Age)"]) / Convert.ToDecimal(record["Members.Members.Count(Id)"])) < 0.000001m),
+            Is.True);
+    }
+
+    [Test]
     public void CollectionField_Projection_ArgumentPath_DoesNotMultiplyPlainAggregate()
     {
         var plain = _db.Query("User").Select("Name", "Members.Count(Id)").ToList()

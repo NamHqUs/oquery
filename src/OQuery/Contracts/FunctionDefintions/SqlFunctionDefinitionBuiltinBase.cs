@@ -52,7 +52,7 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
 
     protected virtual SqlFunctionDefintion Count() =>
         Create("Count", [new("value", DataType.Number, 1)], DataType.Number,
-            "Counts rows or non-null values. With no argument, counts rows.", "COUNT({1})", isAggregate: true);
+            "Counts rows or non-null values. With no argument, counts rows.", "COUNT({1})");
 
     protected virtual SqlFunctionDefintion CountOver() =>
         Create("CountOver",
@@ -63,7 +63,7 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
 
     protected virtual SqlFunctionDefintion Sum() =>
         Create("Sum", [new("expression", DataType.Number)], DataType.Number,
-            "Returns the sum of numeric values.", "SUM({1})", isAggregate: true);
+            "Returns the sum of numeric values.", "SUM({1})");
 
     protected virtual SqlFunctionDefintion SumOver() =>
         Create("SumOver",
@@ -74,7 +74,7 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
 
     protected virtual SqlFunctionDefintion Average() =>
         Create("Avg", [new("expression", DataType.Number)], DataType.Number,
-            "Returns the average of numeric values.", "AVG({1})", isAggregate: true);
+            "Returns the average of numeric values.", "AVG({1})");
 
     protected virtual SqlFunctionDefintion AverageOver() =>
         Create("AverageOver",
@@ -85,7 +85,7 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
 
     protected virtual SqlFunctionDefintion Maximum() =>
         Create("Max", [new("expression", DataType.Number)], DataType.Number,
-            "Returns the maximum value.", "MAX({1})", isAggregate: true);
+            "Returns the maximum value.", "MAX({1})");
 
     protected virtual SqlFunctionDefintion MaximumOver() =>
         Create("MaxOver",
@@ -96,7 +96,7 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
 
     protected virtual SqlFunctionDefintion Minimum() =>
         Create("Min", [new("expression", DataType.Number)], DataType.Number,
-            "Returns the minimum value.", "MIN({1})", isAggregate: true);
+            "Returns the minimum value.", "MIN({1})");
 
     protected virtual SqlFunctionDefintion MinimumOver() =>
         Create("MinOver",
@@ -151,31 +151,31 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
             [new("expression", DataType.Number, 1), new("predicate", DataType.Boolean)],
             DataType.Number,
             "Counts related rows matching a predicate, or non-null expression values on matching rows.",
-            "COUNT(CASE WHEN {2} THEN {1} END)", isAggregate: true, bindArgumentsFromEnd: true);
+            "COUNT(CASE WHEN {2} THEN {1} END)", bindArgumentsFromEnd: true);
 
     protected virtual SqlFunctionDefintion AverageIf() =>
         Create("AvgIf",
             [new("expression", DataType.Number), new("predicate", DataType.Boolean)],
             DataType.Number, "Averages related values matching a predicate.",
-            "AVG(CASE WHEN {2} THEN {1} END)", isAggregate: true);
+            "AVG(CASE WHEN {2} THEN {1} END)");
 
     protected virtual SqlFunctionDefintion SumIf() =>
         Create("SumIf",
             [new("expression", DataType.Number), new("predicate", DataType.Boolean)],
             DataType.Number, "Sums related values matching a predicate.",
-            "SUM(CASE WHEN {2} THEN {1} END)", isAggregate: true);
+            "SUM(CASE WHEN {2} THEN {1} END)");
 
     protected virtual SqlFunctionDefintion MinimumIf() =>
         Create("MinIf",
             [new("expression", DataType.Number), new("predicate", DataType.Boolean)],
             DataType.Number, "Returns the minimum related value matching a predicate.",
-            "MIN(CASE WHEN {2} THEN {1} END)", isAggregate: true);
+            "MIN(CASE WHEN {2} THEN {1} END)");
 
     protected virtual SqlFunctionDefintion MaximumIf() =>
         Create("MaxIf",
             [new("expression", DataType.Number), new("predicate", DataType.Boolean)],
             DataType.Number, "Returns the maximum related value matching a predicate.",
-            "MAX(CASE WHEN {2} THEN {1} END)", isAggregate: true);
+            "MAX(CASE WHEN {2} THEN {1} END)");
 
     protected virtual SqlFunctionDefintion IfNull() =>
         Create("IfNull",
@@ -187,8 +187,7 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
         Create("MedicalLossRatio",
             [new("claimsPaid", DataType.Number), new("premiumRevenue", DataType.Number)],
             DataType.Number, "Calculates paid claims as a percentage of premium revenue.",
-            "ROUND(100.0 * COALESCE(MAX({1}), 0) / NULLIF(MAX({2}), 0), 2)",
-            isAggregate: true);
+            "ROUND(100.0 * COALESCE(MAX({1}), 0) / NULLIF(MAX({2}), 0), 2)");
 
     protected virtual SqlFunctionDefintion Concat() =>
         Create("Concat",
@@ -233,13 +232,13 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
         Create("Rank",
             [new("partitionBy", DataType.Number), new("orderBy", DataType.Number)],
             DataType.Number, "Ranks rows within each partition in descending order.",
-            "RANK() OVER (PARTITION BY {1} ORDER BY {2} DESC)", isAggregate: true);
+            "RANK() OVER (PARTITION BY {1} ORDER BY {2} DESC)");
 
     protected virtual SqlFunctionDefintion RowNumber() =>
         Create("RowNumber",
             [new("partitionBy", DataType.Number), new("orderBy", DataType.Datetime)],
             DataType.Number, "Numbers rows independently within each partition in descending order.",
-            "ROW_NUMBER() OVER (PARTITION BY {1} ORDER BY {2} DESC)", isAggregate: true);
+            "ROW_NUMBER() OVER (PARTITION BY {1} ORDER BY {2} DESC)");
 
     protected virtual SqlFunctionDefintion Any() =>
         CreateCollectionPredicate("Any", "EXISTS",
@@ -255,7 +254,6 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
         DataType resultType,
         string description,
         string sqlTemplate,
-        bool isAggregate = false,
         bool bindArgumentsFromEnd = false,
         FunctionApplyFor? functionApplyFor = null)
         => new(name, arguments, resultType, description,
@@ -263,16 +261,14 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
             {
                 [Dialect] = sqlTemplate
             },
-            isAggregate,
             bindArgumentsFromEnd,
-            functionApplyFor ?? InferApplyFor(name, arguments, isAggregate));
+            functionApplyFor ?? InferApplyFor(name, arguments));
 
     private static FunctionApplyFor InferApplyFor(
         string name,
-        IReadOnlyList<SqlFunctionDefintion.SqlFunctionArgumentDefinition> arguments,
-        bool isAggregate)
+        IReadOnlyList<SqlFunctionDefintion.SqlFunctionArgumentDefinition> arguments)
     {
-        if (isAggregate)
+        if (BuiltInAggregateFunctions.Contains(name))
             return FunctionApplyFor.DataSet;
         if (arguments.Count == 0)
             return FunctionApplyFor.DataSet;

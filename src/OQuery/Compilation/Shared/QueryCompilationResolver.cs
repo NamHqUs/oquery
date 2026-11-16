@@ -1007,14 +1007,35 @@ class QueryCompilationResolver(
     }
 
 
-    private static string[] ArgumentRelationPaths(IEnumerable<IFieldDefinition> arguments)
+    // Relation paths that a grouped source must join to read its raw (non-aggregate) arguments.
+    // A nested aggregate is evaluated in its own grouped table, so it does not contribute to this key.
+    private string[] ArgumentRelationPaths(IEnumerable<IFieldDefinition> arguments)
         => arguments
-            .SelectMany(argument => System.Text.RegularExpressions.Regex
-                .Matches(argument.ToText(), @"(?<![\w.])((?:[A-Za-z_]\w*\.)+)[A-Za-z_]\w*")
+            .SelectMany(RawPathTexts)
+            .SelectMany(text => System.Text.RegularExpressions.Regex
+                .Matches(StripConstants(text), @"(?<![\w.])((?:[A-Za-z_]\w*\.)+)[A-Za-z_]\w*")
                 .Select(match => match.Groups[1].Value.TrimEnd('.')))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Order(StringComparer.OrdinalIgnoreCase)
             .ToArray();
+
+    private bool IsAggregateCall(FunctionFieldDefinition function)
+        => function.FunctionName.Contains('.') ||
+            (functionProvider.TryGetFunction(function.FunctionName, out var definition) && definition.IsAggregate);
+
+    private IEnumerable<string> RawPathTexts(IFieldDefinition argument)
+        => argument switch
+        {
+            FieldDefinition field => [field.FieldName],
+            ConditionFieldDefinition condition => [condition.Condition.ToText()],
+            GroupFieldDefintion group => group.Fields.SelectMany(RawPathTexts),
+            FunctionFieldDefinition function when !IsAggregateCall(function) =>
+                (function.Arguments ?? []).SelectMany(RawPathTexts),
+            _ => [],
+        };
+
+    private static string StripConstants(string text)
+        => System.Text.RegularExpressions.Regex.Replace(text, @"'[^']*'|<[^>]*>", "''");
 
     private static readonly HashSet<string> PredicateKeywords = new(StringComparer.OrdinalIgnoreCase)
     {

@@ -16,7 +16,7 @@ internal sealed class Db2FunctionDefinition : SqlFunctionDefinitionBuiltinBase
             [new("claimsPaid", DataType.Number), new("premiumRevenue", DataType.Number)],
             DataType.Number, "Calculates paid claims as a percentage of premium revenue.",
             "ROUND(CAST(100.0 AS DECIMAL(31, 15)) * COALESCE(MAX({1}), 0) " +
-            "/ NULLIF(MAX({2}), 0), 2)", isAggregate: true);
+            "/ NULLIF(MAX({2}), 0), 2)");
 
     private SqlFunctionDefintion Round() =>
         Create("Round", [new("value", DataType.Number), new("digits", DataType.Number)],

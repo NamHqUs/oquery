@@ -53,7 +53,7 @@ internal sealed class FirebirdFunctionDefinitionBuiltin : SqlFunctionDefinitionB
         Create("MedicalLossRatio",
             [new("claimsPaid", DataType.Number), new("premiumRevenue", DataType.Number)],
             DataType.Number, "Calculates paid claims as a percentage of premium revenue.",
-            "ROUND(100 * COALESCE(MAX({1}), 0) / NULLIF(MAX({2}), 0), 2)", isAggregate: true);
+            "ROUND(100 * COALESCE(MAX({1}), 0) / NULLIF(MAX({2}), 0), 2)");
 
     protected override SqlFunctionDefintion Concat() =>
         Create("Concat",

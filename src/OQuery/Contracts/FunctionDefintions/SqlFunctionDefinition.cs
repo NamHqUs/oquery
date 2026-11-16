@@ -29,7 +29,6 @@ public sealed class SqlFunctionDefintion
         DataType resultType,
         string description,
         IReadOnlyDictionary<string, string>? sqlTemplates = null,
-        bool isAggregate = false,
         bool bindArgumentsFromEnd = false,
         FunctionApplyFor functionApplyFor = FunctionApplyFor.DataSet)
     {
@@ -77,7 +76,7 @@ public sealed class SqlFunctionDefintion
         Name = name;
         Arguments = Array.AsReadOnly(arguments.ToArray());
         ResultType = resultType;
-        IsAggregate = isAggregate;
+        IsAggregate = BuiltInAggregateFunctions.Contains(name);
         BindArgumentsFromEnd = bindArgumentsFromEnd;
         FunctionApplyFor = functionApplyFor;
         Description = description;
