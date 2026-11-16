@@ -14,6 +14,7 @@ class QueryCompilationResolver(
     CompilationState state)
 {
     private readonly CompilationState _state = state;
+    private readonly Dictionary<GroupedAggregateTableExpression, TableExpression> _outerCopies = new();
     public Stack<(string ArgumentName, TableExpression TableContext)> Arguments => _state.Arguments;
 
     public IEnumerable<DbParameter> DbParameters => _state.DbParameters;
@@ -64,6 +65,9 @@ class QueryCompilationResolver(
 
     public SqlExpression ParseFieldPath(TableExpression tableContext, string fieldPath)
     {
+        if (TryResolveRootFormField(tableContext, fieldPath, out var outerField))
+            return outerField;
+
         var projectionItem = tableContext.ProjectionItems
             .FirstOrDefault(item =>
                 string.Equals(item.Alias, fieldPath, StringComparison.OrdinalIgnoreCase));
@@ -270,6 +274,10 @@ class QueryCompilationResolver(
     {
         if (TryParseCollectionFunction(tableContext, expression, depth, out var collectionFunction))
             return collectionFunction;
+
+        if (TryRewriteRootCollectionAggregate(tableContext, expression, out var receiverPath, out var receiverCall) &&
+            TryParseRelationAggregate(tableContext, receiverPath, receiverCall, depth, out var rootAggregate, rootForm: true))
+            return rootAggregate;
 
         if (TryParseCollectionAggregate(tableContext, expression, depth, out var collectionAggregate))
             return collectionAggregate;
@@ -500,7 +508,8 @@ class QueryCompilationResolver(
         string? relationPath,
         FunctionFieldDefinition aggregateDefinition,
         int depth,
-        out AggregateExpression aggregate)
+        out AggregateExpression aggregate,
+        bool rootForm = false)
     {
         aggregate = null!;
         if (string.IsNullOrWhiteSpace(relationPath))
@@ -531,14 +540,18 @@ class QueryCompilationResolver(
         }
 
         var joinedData = ParseRelationPath(tableContext, relationPath).ToArray();
-        if (joinedData is [{ relation: var relation, joinedEntity: var joinedEntity }] &&
-            relation.Type == RelationType.Collection)
+        var firstCollection = Array.FindIndex(joinedData, step => step.relation.Type == RelationType.Collection);
+        if (firstCollection >= 0)
         {
+            var outer = ApplyJoin(tableContext, joinedData.Take(firstCollection));
+            var (relation, joinedEntity) = joinedData[firstCollection];
             aggregate = ApplyGroupedJoinAggregate(
-                tableContext,
+                outer,
                 relation,
                 joinedEntity,
-                aggregateDefinition);
+                aggregateDefinition,
+                joinedData.Skip(firstCollection + 1),
+                rootForm);
             return true;
         }
 
@@ -993,13 +1006,176 @@ class QueryCompilationResolver(
         return lastTable;
     }
 
+
+    private static string[] ArgumentRelationPaths(IEnumerable<IFieldDefinition> arguments)
+        => arguments
+            .SelectMany(argument => System.Text.RegularExpressions.Regex
+                .Matches(argument.ToText(), @"(?<![\w.])((?:[A-Za-z_]\w*\.)+)[A-Za-z_]\w*")
+                .Select(match => match.Groups[1].Value.TrimEnd('.')))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+    private static readonly HashSet<string> PredicateKeywords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "and", "or", "not", "is", "null", "like", "in", "between", "true", "false",
+    };
+
+    // Internal marker for a root-context name inside a rewritten aggregate. Users never write it.
+    private const string RootFieldMarker = "__root.";
+
+
+    // is evaluated as Members.Sum(Total * Salary) with bare names bound to the call's context (the root). A member's
+    // field is written through the receiver form. Anything else keeps the flat fallback.
+    private bool TryRewriteRootCollectionAggregate(
+        TableExpression tableContext,
+        FunctionFieldDefinition expression,
+        out string receiver,
+        out FunctionFieldDefinition rewritten)
+    {
+        receiver = string.Empty;
+        rewritten = null!;
+        if (_state.AggregateScopes.Count > 0 ||
+            expression.FunctionName.Contains('.') ||
+            expression.Arguments is null ||
+            expression.Arguments.Length == 0 ||
+            !functionProvider.TryGetFunction(expression.FunctionName, out var definition) ||
+            !definition.IsAggregate)
+            return false;
+
+        var fieldArguments = expression.Arguments.SelectMany(FieldTexts).ToArray();
+        var match = (tableContext.Entity.Relations ?? [])
+            .Where(relation => relation.Type == RelationType.Collection)
+            .Select(relation => relation.Name)
+            .FirstOrDefault(name => fieldArguments.Any(text => System.Text.RegularExpressions.Regex.IsMatch(
+                text,
+                @"(?<![\w.])" + System.Text.RegularExpressions.Regex.Escape(name) + @"\.",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase)));
+        if (match is null)
+            return false;
+
+        var prefix = new System.Text.RegularExpressions.Regex(
+            @"(?<![\w.])" + System.Text.RegularExpressions.Regex.Escape(match) + @"\.",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        var arguments = new IFieldDefinition[expression.Arguments.Length];
+        for (var index = 0; index < arguments.Length; index++)
+        {
+            if (!TryStripReceiverPrefix(expression.Arguments[index], match, prefix, out arguments[index]))
+                return false;
+        }
+
+        receiver = match;
+        rewritten = expression with { Arguments = arguments };
+        return true;
+    }
+
+    private static bool TryStripReceiverPrefix(
+        IFieldDefinition argument,
+        string receiver,
+        System.Text.RegularExpressions.Regex prefix,
+        out IFieldDefinition stripped)
+    {
+        stripped = argument;
+        switch (argument)
+        {
+            case ConstFieldDefinition:
+                return true;
+            case GroupFieldDefintion group:
+            {
+                var fields = new IFieldDefinition[group.Fields.Length];
+                for (var index = 0; index < fields.Length; index++)
+                {
+                    if (!TryStripReceiverPrefix(group.Fields[index], receiver, prefix, out fields[index]))
+                        return false;
+                }
+
+                stripped = group with { Fields = fields };
+                return true;
+            }
+            case FieldDefinition field:
+            {
+                // Bare names are context-root references: they are marked before the receiver prefix is removed,
+                // so a stripped member field stays a receiver field and is not mistaken for a root field.
+                if (!OnlyDottedPathsFrom(field.FieldName, receiver))
+                    return false;
+
+                var marked = System.Text.RegularExpressions.Regex.Replace(
+                    field.FieldName,
+                    @"'[^']*'|<[^>]*>|(?<![\w.])([A-Za-z_]\w*)(?![\w.(])",
+                    token => token.Groups[1].Success && !PredicateKeywords.Contains(token.Value)
+                        ? RootFieldMarker + token.Value
+                        : token.Value);
+                stripped = new FieldDefinition(field.Oper, prefix.Replace(marked, string.Empty));
+                return true;
+            }
+            default:
+                return false;
+        }
+    }
+
+    private static IEnumerable<string> FieldTexts(IFieldDefinition argument)
+        => argument switch
+        {
+            FieldDefinition field => [field.FieldName],
+            GroupFieldDefintion group => group.Fields.SelectMany(FieldTexts),
+            _ => [],
+        };
+
+    // Every dotted path in the text must start with the receiver, so no path is re-scoped by the rewrite.
+    private static bool OnlyDottedPathsFrom(string text, string receiver)
+        => System.Text.RegularExpressions.Regex
+            .Matches(text, @"(?<![\w.])([A-Za-z_]\w*)\.")
+            .All(match => string.Equals(match.Groups[1].Value, receiver, StringComparison.OrdinalIgnoreCase));
+
+    // A bare name in a root-form aggregate belongs to the call's context, the root row. That row is joined into the
+    // grouped source on the relation keys, which is one-to-one with each receiver row, so it cannot multiply rows.
+    private bool TryResolveRootFormField(TableExpression tableContext, string fieldPath, out SqlExpression result)
+    {
+        result = null!;
+        if (!fieldPath.StartsWith(RootFieldMarker, StringComparison.Ordinal))
+            return false;
+
+        if (_state.AggregateScopes.Count == 0)
+            throw new FormatException($"Root field [{fieldPath}] is only valid inside an aggregate.");
+
+        var outer = GetOuterCopy(_state.AggregateScopes.Peek());
+        result = ParseFieldPath(outer, fieldPath[RootFieldMarker.Length..]);
+        return true;
+    }
+
+    private TableExpression GetOuterCopy(FunctionAggregateScope scope)
+    {
+        if (_outerCopies.TryGetValue(scope.Grouped, out var copy))
+            return copy;
+
+        copy = CreateTableContext(scope.OuterContext.Entity);
+        var conditions = scope.Relation.RefKeys
+            .Select(key => (SqlExpression)new BinarySqlExpression(
+                new FieldExpression(copy.Alias, new Field(key.DbColumn, key.DbColumn)),
+                "=",
+                new FieldExpression(scope.Grouped.Source.Alias, new Field(key.RefDbColumn, key.RefDbColumn)),
+                typeof(bool)))
+            .ToArray();
+        scope.Grouped.Source.JoinHost.Joins.Add(new JoinExpression(copy, "LEFT JOIN", conditions));
+        _outerCopies[scope.Grouped] = copy;
+        return copy;
+    }
+
     private AggregateExpression ApplyGroupedJoinAggregate(
         TableExpression tableContext,
         Relation relation,
         IEntity joinedEntity,
-        FunctionFieldDefinition aggregateDefinition)
+        FunctionFieldDefinition aggregateDefinition,
+        IEnumerable<(Relation relation, IEntity joinedEntity)> innerPath,
+        bool rootForm)
     {
-        var relationKey = relation.Name;
+        var innerSteps = innerPath.ToArray();
+        // Aggregates over different row sets must not share a grouped table: a deeper receiver hop, a
+        // joined argument path, or a root-context join would multiply or re-scope the outer rows.
+        var argumentPaths = ArgumentRelationPaths(aggregateDefinition.Arguments);
+        var relationKey = string.Join(".", new[] { relation.Name }.Concat(innerSteps.Select(step => step.relation.Name)))
+            + (argumentPaths.Length == 0 ? string.Empty : "|" + string.Join(",", argumentPaths))
+            + (rootForm ? "|root" : string.Empty);
         if (!tableContext.GroupedAggregateJoins.TryGetValue(relationKey, out var grouped))
         {
             var source = CreateTableContext(joinedEntity);
@@ -1018,9 +1194,22 @@ class QueryCompilationResolver(
             tableContext.JoinHost.Joins.Add(new JoinExpression(grouped, "LEFT JOIN", conditions));
         }
 
-        var function = ParseFunctionExpression(grouped.Source, aggregateDefinition, 0) as FunctionSqlExpression
-            ?? throw new InvalidOperationException(
-                $"Aggregate function [{aggregateDefinition.FunctionName}] did not produce a SQL function.");
+        // Hops after the grouped relation are joined inside the grouped source, so the
+        // aggregate reads the same flat row set as an equivalent single-hop argument path.
+        var aggregateSource = ApplyJoin(grouped.Source, innerSteps);
+        _state.AggregateScopes.Push(new FunctionAggregateScope(grouped, tableContext, relation));
+        FunctionSqlExpression function;
+        try
+        {
+            function = ParseFunctionExpression(aggregateSource, aggregateDefinition, 0) as FunctionSqlExpression
+                ?? throw new InvalidOperationException(
+                    $"Aggregate function [{aggregateDefinition.FunctionName}] did not produce a SQL function.");
+        }
+        finally
+        {
+            _state.AggregateScopes.Pop();
+        }
+
         var aggregateAlias = grouped.AddAggregate(function);
         var value = new FieldExpression(grouped.Alias, new Field(aggregateAlias, aggregateAlias));
         var isCount = string.Equals(aggregateDefinition.FunctionName, "Count", StringComparison.OrdinalIgnoreCase);

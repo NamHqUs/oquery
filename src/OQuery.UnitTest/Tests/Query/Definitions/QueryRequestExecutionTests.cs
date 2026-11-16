@@ -450,7 +450,7 @@ public sealed class QueryRequestExecutionTests : TestBase
         var sql = _db.Query(definition).ToSql();
         var records = _db.Query(definition).ToList();
 
-        Assert.That(sql.CommandText, Does.Contain("ORDER BY SUM ("));
+        Assert.That(sql.CommandText, Does.Match(@"ORDER BY \w+\.""a\d+"" ASC"));
         Assert.That(sql.CommandText, Does.Not.Contain("ORDER BY (\n    SELECT"));
         Assert.That(records.Select(record => record["Name"]),
             Is.EqualTo(new object?[] { "Charlie", "Eve", "Frank", "Bob", "David", "Alice" }));

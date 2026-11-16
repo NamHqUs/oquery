@@ -38,6 +38,60 @@ public sealed class AggregateProjectionTests : TestBase
     }
 
     [Test]
+    public void CollectionField_Projection_MultiHopPath_MatchesEquivalentArgumentPath()
+    {
+        var data = _db.Query("User")
+            .Select("Name", "Members.Members.Sum(Age)", "Members.Sum(Members.Age)")
+            .ToList();
+
+        Assert.That(data, Is.Not.Empty);
+        Assert.That(
+            data.All(record => Equals(record["Members.Members.Sum(Age)"], record["Members.Sum(Members.Age)"])),
+            Is.True);
+    }
+
+    [Test]
+    public void CollectionField_Projection_RootAggregate_BareNameBelongsToRootContext()
+    {
+        var data = _db.Query("User")
+            .Select("Name", "Age", "Sum(Members.Age * Age)", "Members.Sum(Age)")
+            .ToList()
+            .Where(record => record["Members.Sum(Age)"] is not null)
+            .ToList();
+
+        Assert.That(data, Is.Not.Empty);
+        Assert.That(
+            data.All(record => Convert.ToDecimal(record["Sum(Members.Age * Age)"]) ==
+                Convert.ToDecimal(record["Age"]) * Convert.ToDecimal(record["Members.Sum(Age)"])),
+            Is.True);
+    }
+
+    [Test]
+    public void CollectionField_Projection_ArgumentPath_DoesNotMultiplyPlainAggregate()
+    {
+        var plain = _db.Query("User").Select("Name", "Members.Count(Id)").ToList()
+            .ToDictionary(record => (string)record["Name"]!, record => record["Members.Count(Id)"]);
+
+        var mixed = _db.Query("User").Select("Name", "Members.Count(Id)", "Members.Count(Members.Id)").ToList();
+
+        Assert.That(mixed.ToDictionary(record => (string)record["Name"]!, record => record["Members.Count(Id)"]),
+            Is.EqualTo(plain));
+    }
+
+    [Test]
+    public void CollectionField_Projection_RootAggregateOverCollectionPath_EqualsReceiverForm()
+    {
+        var data = _db.Query("User")
+            .Select("Name", "Count(Members.Id)", "Members.Count(Id)")
+            .ToList();
+
+        Assert.That(data, Is.Not.Empty);
+        Assert.That(
+            data.All(record => Equals(record["Count(Members.Id)"], record["Members.Count(Id)"])),
+            Is.True);
+    }
+
+    [Test]
     public void CollectionField_Projection_Count()
     {
         var query = _db.Query("User").Select("Name", "Members.Count(Id)");
