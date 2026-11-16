@@ -21,7 +21,8 @@ public record ConstFieldDefinition(MatchOperation Oper, object? Value) : IFieldD
 public record FunctionFieldDefinition(MatchOperation Oper, string FunctionName, IFieldDefinition[] Arguments) : IFieldDefinition
 {
     public FunctionFieldDefinition(string functionName, IFieldDefinition[] arguments) : this(MatchOperation.Add, functionName, arguments) { }
-    public string ToText() => $"{FunctionName}({string.Join(", ", Arguments.Select(argument =>
+    public bool IsDistinct { get; init; }
+    public string ToText() => $"{FunctionName}({(IsDistinct ? "distinct " : string.Empty)}{string.Join(", ", Arguments.Select(argument =>
         argument is GroupFieldDefintion group
             ? FieldDefinitionHelper.Format(group.Fields)
             : argument.ToText()))})";

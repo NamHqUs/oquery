@@ -19,7 +19,7 @@ docs. They have **not** been run through the engine yet.
 | Report | OQuery status | Main gap or check |
 |---|---|---|
 | Sales 1 Category and channel profitability | Expressible | None |
-| Sales 2 Customer lifetime value | Partial | `LastOrderDate` (Max over Datetime), `ChannelsUsed` (CountDistinct over String) |
+| Sales 2 Customer lifetime value | Partial | `LastOrderDate` (Max over Datetime), `ChannelsUsed` (distinct count over String) |
 | Sales 3 Sales rep performance | Partial | `Department` and `HomeCity` need Seller relations that the Sales domain does not define |
 | Sales 4 Best-selling products | Expressible | Verify relation paths inside `SumIf` predicates |
 | Sales 5 Monthly trend | Partial | `Lag` and `WindowSum` over an aggregate alias are not verified |
@@ -48,12 +48,12 @@ docs. They have **not** been run through the engine yet.
 ```text
 OrderItems: Product.Category Category,
     Order.Channel Channel,
-    CountDistinct(Order.Id) OrdersContainingCategory,
+    Count(distinct Order.Id) OrdersContainingCategory,
     Sum(Quantity) UnitsSold,
     Sum(Quantity * UnitPrice - DiscountAmount).Round(<2>) NetRevenue,
     Sum(DiscountAmount).Round(<2>) Discounts,
     Sum(Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount).Round(<2>) GrossProfit,
-    (Sum(Quantity * UnitPrice - DiscountAmount) / NullIf(CountDistinct(Order.Id), <0>)).Round(<2>) AverageCategoryRevenuePerOrder
+    (Sum(Quantity * UnitPrice - DiscountAmount) / NullIf(Count(distinct Order.Id), <0>)).Round(<2>) AverageCategoryRevenuePerOrder
   Where Order.Status = <Completed>
   Order GrossProfit DESC
   Take 10
@@ -86,7 +86,7 @@ Customers: Id UserId,
 
 **Gaps and checks**
 - `LastOrderDate` needs `MAX(OrderDate)`. `MaxIf` is typed as Number, so a Datetime maximum is not supported yet. It is omitted.
-- `ChannelsUsed` needs a distinct count over the `Channel` string. `CountDistinct` is typed as Number, so it is omitted.
+- `ChannelsUsed` uses `Count(distinct Channel)` to count unique channel values.
 - `Orders.SumIf(Items.Sum(...), ...)` uses a nested aggregate as the first argument of `SumIf`. Verify this.
 - `Concat` with a single-space literal `< >` is unverified.
 
@@ -121,7 +121,7 @@ Products: Id ProductId,
     Name Product,
     Category,
     Items.SumIf(Quantity, Order.Status = <Completed>) UnitsSold,
-    Items.CountDistinctIf(Order.Id, Order.Status = <Completed>) OrderCount,
+    Items.CountIf(distinct Order.Id, Order.Status = <Completed>) OrderCount,
     Items.SumIf(Quantity * UnitPrice - DiscountAmount, Order.Status = <Completed>).Round(<2>) NetRevenue,
     Items.SumIf(Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount, Order.Status = <Completed>).Round(<2>) GrossProfit,
     (100.0 * GrossProfit / NullIf(NetRevenue, <0>)).Round(<2>) MarginPercent
@@ -146,7 +146,7 @@ Products: Id ProductId,
 OrderItems:
     MonthKey(Order.OrderDate) SalesMonth,
     Sum(Quantity * UnitPrice - DiscountAmount).Round(<2>) Revenue,
-    CountDistinct(Order.Id) OrderCount,
+    Count(distinct Order.Id) OrderCount,
     Lag(Revenue, <1>, SalesMonth).Round(<2>) PriorMonthRevenue,
     (Revenue - PriorMonthRevenue).Round(<2>) RevenueChange,
     WindowSum(Revenue, SalesMonth).Round(<2>) RunningRevenue
@@ -171,8 +171,8 @@ OrderItems:
 Visits: Diagnose.Name Diagnosis,
     Diagnose.Category DiagnosisCategory,
     Location.City ClinicCity,
-    CountDistinct(Id) VisitCount,
-    CountDistinct(Patient.Id) UniquePatients,
+    Count(distinct Id) VisitCount,
+    Count(distinct Patient.Id) UniquePatients,
     Avg(Charge).Round(<2>) AverageCharge,
     (100.0 * Sum(LabResults.CountIf(IsAbnormal = <True>)) / NullIf(Sum(LabResults.Count()), <0>)).Round(<2>) AbnormalLabPercent
   Where Status = <Completed>
@@ -197,7 +197,7 @@ Doctors: Id DoctorId,
     Department.Name Department,
     Location.City ClinicCity,
     Examinations.CountIf(Status = <Completed>) VisitCount,
-    Examinations.CountDistinctIf(Patient.Id, Status = <Completed>) PatientCount,
+    Examinations.CountIf(distinct Patient.Id, Status = <Completed>) PatientCount,
     Examinations.AvgIf(DurationMinutes, Status = <Completed>).Round(<1>) AverageVisitMinutes,
     Examinations.SumIf(Charge, Status = <Completed>).Round(<2>) Charges,
     (100.0 * Examinations.SumIf(LabResults.CountIf(IsAbnormal = <True>), Status = <Completed>)
@@ -435,7 +435,7 @@ Employees: Id ManagerId,
     Concat(FirstName, < >, LastName) Manager,
     Department.Name Department,
     Members.Count(Id) DirectReports,
-    Members.CountDistinct(LocationId) TeamLocations,
+    Members.Count(distinct LocationId) TeamLocations,
     Members.Avg(Salary).Round(<2>) AverageTeamSalary,
     (Members.Sum(PerformanceReviews.SumIf(Rating, ReviewYear = <2025>)) * 1.0
         / NullIf(Members.Sum(PerformanceReviews.CountIf(ReviewYear = <2025>)), <0>)).Round(<2>) AverageTeamRating,
@@ -459,7 +459,7 @@ Employees: Id ManagerId,
 Locations: City OfficeCity,
     State,
     Employees.Count(Id) Headcount,
-    Employees.CountDistinct(DepartmentId) DepartmentsRepresented,
+    Employees.Count(distinct DepartmentId) DepartmentsRepresented,
     Employees.CountIf(EmploymentType = <Full-time>) FullTime,
     Employees.CountIf(EmploymentType = <Part-time>) PartTime,
     Employees.CountIf(EmploymentType = <Contract>) Contractors,
@@ -487,7 +487,7 @@ LeaveRequests: Employee.Department.Name Department,
     Count() Requests,
     Sum(Days) DaysRequested,
     Avg(Days).Round(<1>) AverageRequestDays,
-    CountDistinct(EmployeeId) EmployeesRequesting
+    Count(distinct EmployeeId) EmployeesRequesting
   Order DaysRequested DESC, Requests DESC
   Take 10
 ```
@@ -518,7 +518,7 @@ PerformanceReviews: Employee.Department.Name Department,
 ## Gaps and open items
 
 1. **Datetime maximum.** `Max` and `MaxIf` are typed as Number, so `LastOrderDate` (Sales 2) and `LastVisitDate` (Healthcare 3) cannot be written. A `Max` over Datetime is needed.
-2. **Distinct count over strings.** `CountDistinct` is typed as Number, so `ChannelsUsed` (Sales 2) cannot be written.
+2. **Distinct count over strings.** `Count(distinct Channel)` supports unique string values such as `ChannelsUsed` (Sales 2).
 3. **Missing Sales relations.** `Seller` has no relations to `Departments` or `Locations` in the Sales domain. This blocks Sales 3's department filter and home city.
 4. **Flat average across nested collections.** The HR 2 team rating needs a sum and count pair. A `Members.Avg(PerformanceReviews.Rating)` form would simplify it.
 5. **Window functions over aggregates.** `Lag` and `WindowSum` over an aggregate alias (Sales 5) are unverified.

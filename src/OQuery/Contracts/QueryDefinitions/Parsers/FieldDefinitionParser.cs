@@ -16,13 +16,26 @@ internal static class FieldDefinitionParser
         if (TryGetFunctionCall(text, out var opening))
         {
             var argumentsText = text[(opening + 1)..^1];
+            var isDistinct = false;
+            var distinctArgument = System.Text.RegularExpressions.Regex.Match(
+                argumentsText,
+                @"^\s*distinct\b",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (distinctArgument.Success)
+            {
+                isDistinct = true;
+                argumentsText = argumentsText[distinctArgument.Length..].TrimStart();
+            }
             var arguments = SplitTopLevel(argumentsText, ',')
                 .Where(argument => !string.IsNullOrWhiteSpace(argument))
                 .Select(argument => LooksLikePredicateExpression(argument)
                     ? new FieldDefinition(argument)
                     : ParseArgument(argument))
                 .ToArray();
-            return new FunctionFieldDefinition(text[..opening].Trim(), arguments);
+            return new FunctionFieldDefinition(text[..opening].Trim(), arguments)
+            {
+                IsDistinct = isDistinct
+            };
         }
 
         if (IsWrappedBy(text, '(', ')'))

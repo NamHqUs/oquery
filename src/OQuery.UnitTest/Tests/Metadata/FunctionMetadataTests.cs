@@ -270,8 +270,9 @@ public sealed class FunctionMetadataTests
         Assert.That(functions.Keys, Does.Not.Contain("DATEDIFF").And.Not.Contain("STRFTIME"));
         Assert.That(functions.Keys, Does.Contain("Count").And.Contain("Sum").And.Contain("Avg")
             .And.Not.Contain("Average").And.Not.Contain("COUNT_DISTINCT"));
-        Assert.That(functions.Keys, Does.Contain("CountDistinct").And.Contain("IfNull").And.Contain("Concat")
-            .And.Contain("CountIf").And.Contain("Lag").And.Contain("WindowSum")
+        Assert.That(functions.Keys, Does.Not.Contain("CountDistinct").And.Not.Contain("CountDistinctIf")
+            .And.Contain("IfNull").And.Contain("Concat").And.Contain("CountIf")
+            .And.Contain("Lag").And.Contain("WindowSum")
             .And.Contain("CountOver").And.Contain("SumOver").And.Contain("AverageOver")
             .And.Contain("MaxOver").And.Contain("MinOver"));
         Assert.That(functions.Values.All(function => !string.IsNullOrWhiteSpace(function.Description)), Is.True);
@@ -314,16 +315,58 @@ public sealed class FunctionMetadataTests
     }
 
     [Test]
-    public void CountDistinctIfCountsDistinctValuesOnlyForMatchingRows()
+    public void CountIfSupportsDistinctValuesOnlyForMatchingRows()
     {
         var sql = GenerateSql(
             new FunctionFieldDefinition(
-                "CountDistinctIf",
-                [new FieldDefinition("Amount"), new FieldDefinition("Amount > 0")]),
+                "CountIf",
+                [new FieldDefinition("Amount"), new FieldDefinition("Amount > 0")])
+            {
+                IsDistinct = true
+            },
             dialect: new SqliteDialect());
 
         Assert.That(sql.CommandText, Does.Match(
             @"COUNT\s*\(\s*DISTINCT\s+CASE\s+WHEN\s+.*THEN\s+.*END\s*\)"));
+    }
+
+    [Test]
+    public void DistinctAggregateSyntaxIsParsedAndRendered()
+    {
+        var count = QueryDefinitionOQueryParser.Parse("Items: Count(distinct Amount)")
+            .Projections!.Single().Field as FunctionFieldDefinition;
+        var conditional = QueryDefinitionOQueryParser.Parse(
+                "Items: CountIf(distinct Amount + <1>, Amount > <0>)")
+            .Projections!.Single().Field as FunctionFieldDefinition;
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(count, Is.Not.Null);
+            Assert.That(count!.IsDistinct, Is.True);
+            Assert.That(conditional, Is.Not.Null);
+            Assert.That(conditional!.IsDistinct, Is.True);
+        });
+
+        var countSql = GenerateSql(count!, dialect: new SqliteDialect());
+        var conditionalSql = GenerateSql(conditional!, dialect: new SqliteDialect());
+
+        Assert.That(countSql.CommandText, Does.Match(@"COUNT\s*\(\s*DISTINCT\s+.*Amount"));
+        Assert.That(conditionalSql.CommandText, Does.Match(
+            @"COUNT\s*\(\s*DISTINCT\s+CASE\s+WHEN\s+.*Amount.*THEN\s+.*Amount"));
+    }
+
+    [Test]
+    public void ProjectionDistinctSyntaxRendersSelectDistinct()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        var metadata = new MetadataProvider(Metadata);
+        using var context = new OQueryEngine(connection, metadata, sqlDialect: new SqliteDialect());
+
+        var definition = QueryDefinitionOQueryParser.Parse("Items: distinct Id, Amount");
+        Assert.That(definition.IsDistinct, Is.True);
+        var sql = context.Query(definition).ToSql();
+
+        Assert.That(sql.CommandText, Does.Match(@"SELECT\s+DISTINCT\s+"));
     }
 
     [Test]

@@ -9,5 +9,5 @@ Query is MonthlySales: SalesMonth,
   Inner Join MonthlySales MonthlySales
 MonthlySales is Orders: MonthKey(OrderDate) SalesMonth,
     SUM(Items.Quantity * Items.UnitPrice - Items.DiscountAmount) Revenue,
-    CountDistinct(Id) OrderCount
+    Count(distinct Id) OrderCount
   Where Status = <Completed>

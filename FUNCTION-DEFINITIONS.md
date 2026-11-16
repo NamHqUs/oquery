@@ -36,13 +36,11 @@ Date parts in templates are fixed per function (for example `DateSub` is
 | Name | Arguments | Returns | Aggregate | SQL Server template | Description |
 |---|---|---|---|---|---|
 | `Count` | `value: Number = 1` | Number | yes | `COUNT({1})` | Counts rows or non-null values. `Count()` counts rows. |
-| `CountDistinct` | `expression: Number` | Number | yes | `COUNT(DISTINCT {1})` | Counts distinct non-null values in a related collection. |
 | `Sum` | `expression: Number` | Number | yes | `SUM({1})` | Sum of numeric values. |
 | `Avg` | `expression: Number` | Number | yes | `AVG({1})` | Average of numeric values. |
 | `Max` | `expression: Number` | Number | yes | `MAX({1})` | Maximum value. |
 | `Min` | `expression: Number` | Number | yes | `MIN({1})` | Minimum value. |
 | `CountIf` | `expression: Number = 1`, `predicate: Boolean` | Number | yes | `COUNT(CASE WHEN {2} THEN {1} END)` | Counts rows matching the predicate, or non-null expression values on matching rows. Binds from end. |
-| `CountDistinctIf` | `expression: Number = 1`, `predicate: Boolean` | Number | yes | `COUNT(DISTINCT CASE WHEN {2} THEN {1} END)` | Counts distinct non-null expression values on matching rows. Binds from end. |
 | `SumIf` | `expression: Number`, `predicate: Boolean` | Number | yes | `SUM(CASE WHEN {2} THEN {1} END)` | Sums values on matching rows. |
 | `AvgIf` | `expression: Number`, `predicate: Boolean` | Number | yes | `AVG(CASE WHEN {2} THEN {1} END)` | Averages values on matching rows. |
 | `MinIf` | `expression: Number`, `predicate: Boolean` | Number | yes | `MIN(CASE WHEN {2} THEN {1} END)` | Minimum value on matching rows. |
@@ -67,6 +65,17 @@ Window functions return a value per detail row and do not collapse rows.
 
 `Rank` and `RowNumber` are registered with the aggregate flag even though
 they are window functions. Treat them as window functions when writing OQuery.
+
+Aggregate distinctness is written inside the aggregate call rather than as a
+separate function name:
+
+```text
+Count(distinct expression)
+CountIf(distinct expression, predicate)
+```
+
+For example, `CountIf(distinct Quantity * UnitPrice, Status = <Completed>)`
+renders as `COUNT(DISTINCT CASE WHEN Status = ... THEN Quantity * UnitPrice END)`.
 
 ## 3. Scalar functions
 

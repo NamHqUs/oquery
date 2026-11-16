@@ -58,6 +58,7 @@ class TableExpression(IEntity entity, string alias, IReadOnlyList<Field> fields)
     public List<SqlExpression> SqlHaving { get; } = [];
     public List<JoinExpression> Joins { get; } = [];
     public List<OrderExpression> Orders { get; } = [];
+    public bool IsDistinct { get; set; }
     public List<SqlExpression> GroupByExpressions { get; } = [];
     public StringBuilder? SqlSelect { get; protected set; }
     public StringBuilder? SqlOrder { get; set; }
@@ -86,6 +87,7 @@ class TableExpression(IEntity entity, string alias, IReadOnlyList<Field> fields)
         SqlHaving.AddRange(source.SqlHaving);
         Joins.AddRange(source.Joins);
         Orders.AddRange(source.Orders);
+        IsDistinct = source.IsDistinct;
         GroupByExpressions.AddRange(source.GroupByExpressions);
         SqlSelect = source.SqlSelect;
         SqlOrder = source.SqlOrder;
@@ -141,6 +143,7 @@ class TableExpression(IEntity entity, string alias, IReadOnlyList<Field> fields)
         clone.SqlHaving.AddRange(SqlHaving);
         clone.Joins.AddRange(Joins);
         clone.Orders.AddRange(Orders);
+        clone.IsDistinct = IsDistinct;
         clone.GroupByExpressions.AddRange(GroupByExpressions);
         clone.SqlSelect = SqlSelect;
         clone.SqlOrder = SqlOrder;

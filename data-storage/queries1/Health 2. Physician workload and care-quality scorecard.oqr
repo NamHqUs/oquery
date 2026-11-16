@@ -13,8 +13,8 @@ Employees: Id DoctorId,
   Left Join DoctorVisits DoctorVisits On Id = DoctorVisits.DoctorId
   Left Join DoctorLabs DoctorLabs On Id = DoctorLabs.DoctorId
 DoctorVisits is Visits: DoctorId DoctorId,
-    CountDistinct(Id) VisitCount,
-    CountDistinct(UserId) PatientCount,
+    Count(distinct Id) VisitCount,
+    Count(distinct UserId) PatientCount,
     AVG(DurationMinutes) AverageVisitMinutes,
     SUM(Charge) Charges
   Where Status = <Completed>

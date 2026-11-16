@@ -164,7 +164,11 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
     }
 
     private static IFieldDefinition ParseFunction(JsonElement element)
-        => new FunctionFieldDefinition(ReadString(element, "function"), ReadArguments(element));
+        => new FunctionFieldDefinition(ReadString(element, "function"), ReadArguments(element))
+        {
+            IsDistinct = TryGetProperty(element, "distinct", out var distinct) &&
+                distinct.ValueKind == JsonValueKind.True
+        };
 
     private static IFieldDefinition ParseCondition(JsonElement element)
     {
@@ -243,6 +247,8 @@ public sealed class ProjectionDefinitionJsonConverter : JsonConverter<Projection
             case FunctionFieldDefinition function:
                 writer.WriteString("kind", "function");
                 writer.WriteString("function", function.FunctionName);
+                if (function.IsDistinct)
+                    writer.WriteBoolean("distinct", true);
                 writer.WritePropertyName("arguments");
                 writer.WriteStartArray();
                 foreach (var argument in function.Arguments)

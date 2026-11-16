@@ -23,10 +23,6 @@ internal sealed class QueryDefinitionVisitor(QueryCompilationResolver queryConte
 {
     public TableExpression Eval(QueryDefinition definition)
     {
-        if (definition.Contexts is not { Count: > 0 } &&
-            definition.Joins is not { Count: > 0 })
-            throw new FormatException("A query-definition expression requires at least one context.");
-
         var definitions = new Dictionary<string, ContextBinding>(StringComparer.OrdinalIgnoreCase);
         foreach (var (name, query) in definition.Contexts ?? [])
         {
@@ -719,6 +715,7 @@ internal sealed class QueryDefinitionVisitor(QueryCompilationResolver queryConte
         TableExpression table,
         IReadOnlyDictionary<string, ContextBinding> definitions)
     {
+        table.IsDistinct = definition.IsDistinct;
         var projections = (definition.Projections ?? []).ToArray();
         if (projections.Length > 0)
         {

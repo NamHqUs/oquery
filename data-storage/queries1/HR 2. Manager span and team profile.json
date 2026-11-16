@@ -41,7 +41,8 @@
     {
       "field": {
         "kind": "function",
-        "function": "CountDistinct",
+        "function": "Count",
+        "distinct": true,
         "arguments": [
           {
             "kind": "field",
@@ -54,7 +55,8 @@
     {
       "field": {
         "kind": "function",
-        "function": "CountDistinct",
+        "function": "Count",
+        "distinct": true,
         "arguments": [
           {
             "kind": "field",

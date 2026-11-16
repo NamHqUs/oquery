@@ -2,10 +2,12 @@ namespace OQuery.Compilation.Expressions;
 
 internal sealed class FunctionSqlExpression(
     SqlFunctionDefintion definition,
-    IReadOnlyList<FunctionSqlArgument?> arguments) : SqlExpression(ToClrType(definition.ResultType))
+    IReadOnlyList<FunctionSqlArgument?> arguments,
+    bool isDistinct = false) : SqlExpression(ToClrType(definition.ResultType))
 {
     public SqlFunctionDefintion Definition { get; } = definition;
     public IReadOnlyList<FunctionSqlArgument?> Arguments { get; } = arguments;
+    public bool IsDistinct { get; } = isDistinct;
 
     private static Type ToClrType(DataType dataType)
         => dataType switch

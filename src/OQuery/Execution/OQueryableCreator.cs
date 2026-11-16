@@ -26,6 +26,7 @@ internal static class OQueryableCreator
             Projections = selected.Projections,
             Filter = selected.Filter,
             Sorts = selected.Sorts,
+            IsDistinct = selected.IsDistinct,
             Take = selected.Take,
             Skip = selected.Skip,
             Joins = selected.Joins,
@@ -37,7 +38,8 @@ internal static class OQueryableCreator
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(definition);
 
-        if (definition.Contexts is { Count: > 0 } ||
+        if (definition.IsDistinct ||
+            definition.Contexts is { Count: > 0 } ||
             definition.Joins is { Count: > 0 })
         {
             var sourceEntity = GetProviderEntityName(definition, definition.Entity);

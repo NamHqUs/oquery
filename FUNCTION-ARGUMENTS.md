@@ -76,8 +76,9 @@ signature, so the editor cannot suggest aggregates by receiver type.
   `Sum(collection: Collection, expression: Number)`,
   `AvgIf(collection: Collection, expression: Number, predicate: Boolean)`.
   Receiver form is the only syntax the user writes (`Employees.Sum(Salary)`).
-- Scope: all collection aggregates (Count, Sum, Avg, Min, Max, the `*If`
-  variants, CountDistinct).
+- Scope: all collection aggregates (Count, Sum, Avg, Min, Max, and the `*If`
+  variants). Distinctness is expressed as `distinct` before the aggregate
+  expression, for example `Employees.Count(distinct DepartmentId)`.
 - Plain `Sum(x)` and `CountIf(...)` without a receiver remain native
   root-context aggregates and are not changed.
 - Fluent suggestion after `<path>.` lists only functions whose first argument
@@ -85,7 +86,9 @@ signature, so the editor cannot suggest aggregates by receiver type.
 
 **Open points to settle in the implementation:**
 
-- `CountDistinctIf` follows the same binding as `CountIf`: `CountDistinctIf(predicate)` and `CountDistinctIf(expression, predicate)`.
+- `CountIf` follows the same binding as before: `CountIf(predicate)` counts
+  matching rows, while `CountIf(distinct expression, predicate)` counts
+  distinct expression values on matching rows.
 - `CountIf` has an optional leading argument and binds from the end. Adding a
   required collection receiver changes its signature, so the binding rule must
   be re-stated for the receiver form.

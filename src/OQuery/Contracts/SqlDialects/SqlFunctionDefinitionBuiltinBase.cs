@@ -30,9 +30,7 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
         MonthAdd(),
         YearSub(),
         YearAdd(),
-        CountDistinct(),
         CountIf(),
-        CountDistinctIf(),
         AverageIf(),
         SumIf(),
         MinimumIf(),
@@ -146,24 +144,12 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
         CreateDateAdjustment("YearAdd", "year",
             "Adds the specified number of years to a date or date-time.");
 
-    protected virtual SqlFunctionDefintion CountDistinct() =>
-        Create("CountDistinct", [new("expression", DataType.Number)], DataType.Number,
-            "Counts distinct non-null values in a related collection.",
-            "COUNT(DISTINCT {1})", isAggregate: true);
-
     protected virtual SqlFunctionDefintion CountIf() =>
         Create("CountIf",
             [new("expression", DataType.Number, 1), new("predicate", DataType.Boolean)],
             DataType.Number,
             "Counts related rows matching a predicate, or non-null expression values on matching rows.",
             "COUNT(CASE WHEN {2} THEN {1} END)", isAggregate: true, bindArgumentsFromEnd: true);
-
-    protected virtual SqlFunctionDefintion CountDistinctIf() =>
-        Create("CountDistinctIf",
-            [new("expression", DataType.Number, 1), new("predicate", DataType.Boolean)],
-            DataType.Number,
-            "Counts distinct non-null expression values on related rows matching a predicate.",
-            "COUNT(DISTINCT CASE WHEN {2} THEN {1} END)", isAggregate: true, bindArgumentsFromEnd: true);
 
     protected virtual SqlFunctionDefintion AverageIf() =>
         Create("AvgIf",

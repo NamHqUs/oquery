@@ -1,7 +1,7 @@
 Employees: Id AgentId,
     Concat(FirstName, < >, LastName) Agent,
     Location.City OfficeCity,
-    CountDistinct(AgentPolicies.Id) PoliciesSold,
+    Count(distinct AgentPolicies.Id) PoliciesSold,
     CountIf(AgentPolicies.Status = <Active>) ActivePolicies,
     ROUND(IfNull(PaidPayments.PaidPremiums, <0>), <2>) PaidPremiums,
     IfNull(LatePayments.LatePayments, <0>) LatePayments,

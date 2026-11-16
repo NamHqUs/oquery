@@ -139,7 +139,8 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
         IReadOnlyList<string> recursiveJoinConditions = recursivePart
             ? recursiveJoinRendering.AdditionalWhereConditions
             : [];
-        var text = $"SELECT {select}\nFROM {recursiveJoinRendering.FromClause}";
+        var distinct = query.IsDistinct ? "DISTINCT " : string.Empty;
+        var text = $"SELECT {distinct}{select}\nFROM {recursiveJoinRendering.FromClause}";
 
         var renderedWhereExpressions = recursiveJoinConditions
             .Concat(whereExpressions.Select(RenderExpression))
@@ -703,6 +704,13 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
             return $"{aggregateName}({arguments[0]}) OVER ()";
 
         var template = function.Definition.GetSqlTemplate(dialect.Key);
+        if (function.IsDistinct)
+        {
+            var openParenthesis = template.IndexOf('(');
+            if (openParenthesis < 0)
+                throw new FormatException($"Distinct function [{function.Definition.Name}] has no argument list.");
+            template = template.Insert(openParenthesis + 1, "DISTINCT ");
+        }
         var sql = new StringBuilder(template.Length);
 
         for (var index = 0; index < template.Length; index++)

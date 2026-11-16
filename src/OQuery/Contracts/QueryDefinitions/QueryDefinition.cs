@@ -18,6 +18,7 @@ public record QueryDefinitionBase
     public List<ProjectionDefinition>? Projections { get; init; } = null;
     public ConditionDefinition? Filter { get;  init; } = null;
     public List<SortDefinition>? Sorts { get; init; } = null;
+    public bool IsDistinct { get; init; }
     public int? Take { get; init; } = null;
     public int? Skip { get;  init; } = null;
     public List<JoinDefinition>? Joins { get;  init; } = null;

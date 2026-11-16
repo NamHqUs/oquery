@@ -12,7 +12,7 @@ Locations: City OfficeCity,
   Inner Join LocationStaff LocationStaff On Id = LocationStaff.LocationId
 LocationStaff is Employees: LocationId LocationId,
     COUNT(Id) Headcount,
-    CountDistinct(DepartmentId) DepartmentsRepresented,
+    Count(distinct DepartmentId) DepartmentsRepresented,
     CountIf(EmploymentType = <Full-time>) FullTime,
     CountIf(EmploymentType = <Part-time>) PartTime,
     CountIf(EmploymentType = <Contract>) Contractors,

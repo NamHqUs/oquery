@@ -148,7 +148,7 @@ explicit `Select` line that starts the projection. `Where`, `Order`, `Skip`, and
 DiagnosisBurden is Visits:
   Left Join VisitLabs On Id = VisitLabs.VisitId
   Select Diagnose.Name Diagnosis,
-    CountDistinct(Id) VisitCount,
+    Count(distinct Id) VisitCount,
     (<100> * Sum(IfNull(VisitLabs.AbnormalCount, <0>))
         / NullIf(Sum(IfNull(VisitLabs.LabCount, <0>)), <0>)).Round(<2>) AbnormalLabPercent
   Where Status = <Completed>
@@ -786,10 +786,10 @@ The full built-in function list, with arguments and per-dialect templates, is in
 
 ```text
 COUNT(expression)
-CountDistinct(expression)
+Count(distinct expression)
 COUNTIF(condition)
 COUNTIF(expression, condition)
-COUNTDISTINCTIF(expression, condition)
+CountIf(distinct expression, condition)
 AVG(expression)
 AVGIF(expression, condition)
 SUM(expression)
@@ -807,6 +807,19 @@ Concat(first, separator, last)
   as `COUNT(CASE WHEN condition THEN 1 END)`.
 - `CountIf(expression, condition)` counts the non-null `expression` values on
   the rows that match the condition, like `SumIf` and `AvgIf`.
+- Prefix the expression with `distinct` to count unique expression values:
+  `CountIf(distinct expression, condition)` renders as
+  `COUNT(DISTINCT CASE WHEN condition THEN expression END)`.
+
+Projection distinctness is written after the query header:
+
+```text
+Products: distinct Id, Name
+```
+
+It renders as `SELECT DISTINCT Id, Name`. Distinct applies to the complete
+projected row, while aggregate distinctness applies only to the aggregate
+expression.
 
 Functions may also be called with fluent syntax. The expression before the dot
 is passed as the first function argument:

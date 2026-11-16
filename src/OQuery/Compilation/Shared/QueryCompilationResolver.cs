@@ -174,7 +174,7 @@ class QueryCompilationResolver(
             })
             .ToArray();
 
-        return new FunctionSqlExpression(function.Definition, arguments);
+        return new FunctionSqlExpression(function.Definition, arguments, function.IsDistinct);
     }
 
     private static bool IsAggregateOver(FunctionSqlExpression function)
@@ -278,6 +278,9 @@ class QueryCompilationResolver(
             return ParseFieldReceiverFunction(tableContext, expression, depth);
 
         var definition = functionProvider.GetFunction(expression.FunctionName);
+        if (expression.IsDistinct && !definition.IsAggregate)
+            throw new FormatException(
+                $"Distinct is only supported for aggregate functions, not [{definition.Name}].");
         var suppliedArguments = expression.Arguments
             ?? throw new FormatException("A function's arguments cannot be null.");
         var minimumArgumentCount = definition.Arguments.Count(argument => !argument.Optional);
@@ -314,7 +317,7 @@ class QueryCompilationResolver(
             TryParseContextAggregate(tableContext, expression, definition, depth, out var contextAggregate))
             return contextAggregate;
 
-        return new FunctionSqlExpression(definition, arguments);
+        return new FunctionSqlExpression(definition, arguments, expression.IsDistinct);
     }
 
     private SqlExpression ParseFieldReceiverFunction(TableExpression tableContext, FunctionFieldDefinition expression, int depth)

@@ -1,6 +1,6 @@
 InsurancePlans: Name Plan,
     Tier,
-    CountDistinct(Policies.Id) PolicyCount,
+    Count(distinct Policies.Id) PolicyCount,
     ROUND(IfNull(PremiumTotals.PremiumRevenue, <0>), <2>) PremiumRevenue,
     IfNull(ClaimTotals.ClaimCount, <0>) ClaimCount,
     ROUND(IfNull(ClaimTotals.ClaimsPaid, <0>), <2>) ClaimsPaid,

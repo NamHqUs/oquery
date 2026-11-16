@@ -1,8 +1,8 @@
 Employees: Id ManagerId,
     Concat(FirstName, < >, LastName) Manager,
     Department.Name Department,
-    CountDistinct(Members.Id) DirectReports,
-    CountDistinct(Members.LocationId) TeamLocations,
+    Count(distinct Members.Id) DirectReports,
+    Count(distinct Members.LocationId) TeamLocations,
     ROUND(AVG(Members.Salary), <2>) AverageTeamSalary,
     ROUND(ReviewSummary.AverageTeamRating, <2>) AverageTeamRating,
     ROUND(SUM(Members.Salary), <2>) TeamPayroll

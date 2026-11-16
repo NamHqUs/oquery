@@ -182,7 +182,7 @@ internal class QueryDefinitionOQueryParserTest : TestBase
             DiagnosisBurden is Visits:
               Left Join VisitLabs On Id = VisitLabs.VisitId
                 Select Diagnose.Name Diagnosis,
-                CountDistinct(Id) VisitCount
+                Count(distinct Id) VisitCount
               Where Status = <Completed>
               Order VisitCount DESC
               Take 10
@@ -198,7 +198,7 @@ internal class QueryDefinitionOQueryParserTest : TestBase
             Assert.That(query.Joins[0].Condition!.ToText(), Is.EqualTo("Id = VisitLabs.VisitId"));
             Assert.That(
                 query.Projections!.Select(projection => projection.ToText()),
-                Is.EqualTo(["Diagnose.Name Diagnosis", "CountDistinct(Id) VisitCount"]));
+                Is.EqualTo(["Diagnose.Name Diagnosis", "Count(distinct Id) VisitCount"]));
             Assert.That(query.Filter, Is.Not.Null);
             Assert.That(query.Sorts, Has.Count.EqualTo(1));
             Assert.That(query.Take, Is.EqualTo(10));
@@ -219,8 +219,8 @@ internal class QueryDefinitionOQueryParserTest : TestBase
                 Select Diagnosis.Name Diagnosis,
                 Diagnosis.Category DiagnosisCategory,
                 Location.City ClinicCity,
-                CountDistinct(Id) VisitCount,
-                CountDistinct(UserId) UniquePatients,
+                Count(distinct Id) VisitCount,
+                Count(distinct UserId) UniquePatients,
                 AVG(Charge).ROUND(<2>) AverageCharge,
                 (100.0 * Sum(IfNull(VisitLabs.AbnormalCount, <0>))
                     / NullIf(Sum(IfNull(VisitLabs.LabCount, <0>)), <0>)).Round(<2>) AbnormalLabPercent

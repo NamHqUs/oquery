@@ -170,8 +170,8 @@ internal sealed class SqliteQueryExecutionTests
             Diagnosis.Name DiagnosisName,
             Diagnosis.Category DiagnosisCategory,
             Location.City ClinicCity,
-            CountDistinct(Id) VisitCount,
-            CountDistinct(UserId) UniquePatients,
+            Count(distinct Id) VisitCount,
+            Count(distinct UserId) UniquePatients,
             Avg(Charge).Round(<2>) AverageCharge,
             (<100.0> * Sum(IfNull(VisitLabs.AbnormalCount, <0>))
                 / NullIf(Sum(IfNull(VisitLabs.LabCount, <0>)), <0>)).Round(<2>) AbnormalLabPercent
@@ -183,8 +183,8 @@ internal sealed class SqliteQueryExecutionTests
             Diagnosis.Name DiagnosisName,
             Diagnosis.Category DiagnosisCategory,
             Location.City ClinicCity,
-            CountDistinct(Id) VisitCount,
-            CountDistinct(UserId) UniquePatients,
+            Count(distinct Id) VisitCount,
+            Count(distinct UserId) UniquePatients,
             Avg(Charge).Round(<2>) AverageCharge,
             (<100.0> * Sum(LabResults.CountIf(IsAbnormal = <True>))
                 / NullIf(Sum(LabResults.Count(Id)), <0>)).Round(<2>) AbnormalLabPercent

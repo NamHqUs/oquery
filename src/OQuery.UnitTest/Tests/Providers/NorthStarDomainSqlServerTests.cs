@@ -24,12 +24,12 @@ internal sealed class NorthStarDomainSqlServerTests
         ["Sales 1"] = (SalesDomain, """
             OrderItems: Product.Category Category,
                 Order.Channel Channel,
-                CountDistinct(Order.Id) OrdersContainingCategory,
+                Count(distinct Order.Id) OrdersContainingCategory,
                 Sum(Quantity) UnitsSold,
                 Sum(Quantity * UnitPrice - DiscountAmount).Round(<2>) NetRevenue,
                 Sum(DiscountAmount).Round(<2>) Discounts,
                 Sum(Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount).Round(<2>) GrossProfit,
-                (Sum(Quantity * UnitPrice - DiscountAmount) / NullIf(CountDistinct(Order.Id), <0>)).Round(<2>) AverageCategoryRevenuePerOrder
+                (Sum(Quantity * UnitPrice - DiscountAmount) / NullIf(Count(distinct Order.Id), <0>)).Round(<2>) AverageCategoryRevenuePerOrder
               Where Order.Status = <Completed>
               Order GrossProfit DESC
               Take 10
@@ -40,7 +40,7 @@ internal sealed class NorthStarDomainSqlServerTests
                 Orders.CountIf(Status = <Completed>) OrderCount,
                 Orders.SumIf(Items.Sum(Quantity * UnitPrice - DiscountAmount), Status = <Completed>).Round(<2>) LifetimeValue,
                 Orders.MaxIf(OrderDate, Status = <Completed>) LastOrderDate,
-                Orders.CountDistinctIf(Channel, Status = <Completed>) ChannelsUsed
+                Orders.CountIf(distinct Channel, Status = <Completed>) ChannelsUsed
               Where OrderCount > <1>
               Order LifetimeValue DESC, LastOrderDate DESC
               Take 10
@@ -63,7 +63,7 @@ internal sealed class NorthStarDomainSqlServerTests
                 Name Product,
                 Category,
                 Items.SumIf(Quantity, Order.Status = <Completed>) UnitsSold,
-                Items.CountDistinctIf(Order.Id, Order.Status = <Completed>) OrderCount,
+                Items.CountIf(distinct Order.Id, Order.Status = <Completed>) OrderCount,
                 Items.SumIf(Quantity * UnitPrice - DiscountAmount, Order.Status = <Completed>).Round(<2>) NetRevenue,
                 Items.SumIf(Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount, Order.Status = <Completed>).Round(<2>) GrossProfit,
                 (100.0 * GrossProfit / NullIf(NetRevenue, <0>)).Round(<2>) MarginPercent
@@ -87,8 +87,8 @@ internal sealed class NorthStarDomainSqlServerTests
             Visits: Diagnose.Name Diagnosis,
                 Diagnose.Category DiagnosisCategory,
                 Location.City ClinicCity,
-                CountDistinct(Id) VisitCount,
-                CountDistinct(Patient.Id) UniquePatients,
+                Count(distinct Id) VisitCount,
+                Count(distinct Patient.Id) UniquePatients,
                 Avg(Charge).Round(<2>) AverageCharge,
                 (100.0 * Sum(LabResults.CountIf(IsAbnormal = <True>)) / NullIf(Sum(LabResults.Count()), <0>)).Round(<2>) AbnormalLabPercent
               Where Status = <Completed>
@@ -101,7 +101,7 @@ internal sealed class NorthStarDomainSqlServerTests
                 Department.Name Department,
                 Location.City ClinicCity,
                 Examinations.CountIf(Status = <Completed>) VisitCount,
-                Examinations.CountDistinctIf(Patient.Id, Status = <Completed>) PatientCount,
+                Examinations.CountIf(distinct Patient.Id, Status = <Completed>) PatientCount,
                 Examinations.AvgIf(DurationMinutes, Status = <Completed>).Round(<1>) AverageVisitMinutes,
                 Examinations.SumIf(Charge, Status = <Completed>).Round(<2>) Charges,
                 (100.0 * Examinations.SumIf(LabResults.CountIf(IsAbnormal = <True>), Status = <Completed>)
@@ -225,7 +225,7 @@ internal sealed class NorthStarDomainSqlServerTests
                 Concat(FirstName, < >, LastName) Manager,
                 Department.Name Department,
                 Members.Count(Id) DirectReports,
-                Members.CountDistinct(LocationId) TeamLocations,
+                Members.Count(distinct LocationId) TeamLocations,
                 Members.Avg(Salary).Round(<2>) AverageTeamSalary,
                 (Members.Sum(PerformanceReviews.SumIf(Rating, ReviewYear = <2025>)) * 1.0
                     / NullIf(Members.Sum(PerformanceReviews.CountIf(ReviewYear = <2025>)), <0>)).Round(<2>) AverageTeamRating,
@@ -238,7 +238,7 @@ internal sealed class NorthStarDomainSqlServerTests
             Locations: City OfficeCity,
                 State,
                 Employees.Count(Id) Headcount,
-                Employees.CountDistinct(DepartmentId) DepartmentsRepresented,
+                Employees.Count(distinct DepartmentId) DepartmentsRepresented,
                 Employees.CountIf(EmploymentType = <Full-time>) FullTime,
                 Employees.CountIf(EmploymentType = <Part-time>) PartTime,
                 Employees.CountIf(EmploymentType = <Contract>) Contractors,
@@ -255,7 +255,7 @@ internal sealed class NorthStarDomainSqlServerTests
                 Count() Requests,
                 Sum(Days) DaysRequested,
                 Avg(Days).Round(<1>) AverageRequestDays,
-                CountDistinct(EmployeeId) EmployeesRequesting
+                Count(distinct EmployeeId) EmployeesRequesting
               Order DaysRequested DESC, Requests DESC
               Take 10
             """),
@@ -452,7 +452,7 @@ internal sealed class NorthStarDomainSqlServerTests
             OrderItems:
                 MonthKey(Order.OrderDate) SalesMonth,
                 Sum(Quantity * UnitPrice - DiscountAmount).Round(<2>) Revenue,
-                CountDistinct(Order.Id) OrderCount,
+                Count(distinct Order.Id) OrderCount,
                 Lag(Revenue, <1>, SalesMonth).Round(<2>) PriorMonthRevenue,
                 (Revenue - PriorMonthRevenue).Round(<2>) RevenueChange,
                 WindowSum(Revenue, SalesMonth).Round(<2>) RunningRevenue

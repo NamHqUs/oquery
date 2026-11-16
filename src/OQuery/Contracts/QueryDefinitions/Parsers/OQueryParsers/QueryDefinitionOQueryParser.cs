@@ -64,6 +64,7 @@ public static class QueryDefinitionOQueryParser
             Projections = selected.Projections,
             Filter = selected.Filter,
             Sorts = selected.Sorts,
+            IsDistinct = selected.IsDistinct,
             Take = selected.Take,
             Skip = selected.Skip,
             Joins = selected.Joins,
@@ -177,14 +178,23 @@ public static class QueryDefinitionOQueryParser
             }
         }
 
+        var projection = block.Projection.Trim();
+        var isDistinct = System.Text.RegularExpressions.Regex.IsMatch(
+            projection,
+            @"^distinct\b",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (isDistinct)
+            projection = projection["distinct".Length..].TrimStart();
+
         var definition = new QueryDefinition(block.Entity)
         {
-            Projections = ParseProjection(block.Projection),
+            Projections = ParseProjection(projection),
             Filter = filter,
             Sorts = sorts,
             Take = pageSize,
             Skip = skip,
-            Joins = relations
+            Joins = relations,
+            IsDistinct = isDistinct
         };
         return definition;
     }
@@ -549,6 +559,7 @@ public static class QueryDefinitionOQueryParser
             ? FormatIdentifier(name)
             : $"{FormatIdentifier(name)} is {FormatIdentifier(entity)}";
         var projections = (definition.Projections ?? []).Select(field => field.ToText()).ToArray();
+        var projectionPrefix = definition.IsDistinct ? "distinct " : string.Empty;
         var projectionText = string.Join(", ", projections);
         var joins = definition.Joins ?? [];
         if (joins.Count > 0)
@@ -560,17 +571,17 @@ public static class QueryDefinitionOQueryParser
             {
                 var suffix = index == projections.Length - 1 ? string.Empty : ",";
                 lines.Add(index == 0
-                    ? $"{indent}  Select {projections[index]}{suffix}"
+                    ? $"{indent}  Select {projectionPrefix}{projections[index]}{suffix}"
                     : $"{indent}    {projections[index]}{suffix}");
             }
         }
         else if (projectionText.Length <= 120 || projections.Length < 2)
         {
-            lines.Add($"{indent}{header}: {projectionText}");
+            lines.Add($"{indent}{header}: {projectionPrefix}{projectionText}");
         }
         else
         {
-            lines.Add($"{indent}{header}: {projections[0]},");
+            lines.Add($"{indent}{header}: {projectionPrefix}{projections[0]},");
             for (var index = 1; index < projections.Length; index++)
             {
                 var suffix = index == projections.Length - 1 ? string.Empty : ",";
