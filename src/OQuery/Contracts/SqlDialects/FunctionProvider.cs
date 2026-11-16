@@ -9,6 +9,10 @@ public interface IFunctionProvider
     SqlFunctionDefintion GetFunction(string functionName);
 
     bool TryGetFunction(string functionName, out SqlFunctionDefintion? function);
+
+    bool TryGetWindowFunction(string aggregateName, out SqlFunctionDefintion? function);
+
+    bool TryGetCollectionPredicate(bool negated, out SqlFunctionDefintion? function);
 }
 
 public class FunctionProvider : IFunctionProvider
@@ -57,6 +61,20 @@ public class FunctionProvider : IFunctionProvider
 
         function = null;
         return false;
+    }
+
+    public bool TryGetWindowFunction(string aggregateName, out SqlFunctionDefintion? function)
+    {
+        function = _functions.Values.FirstOrDefault(candidate =>
+            string.Equals(candidate.WindowOf, aggregateName, StringComparison.OrdinalIgnoreCase));
+        return function is not null;
+    }
+
+    public bool TryGetCollectionPredicate(bool negated, out SqlFunctionDefintion? function)
+    {
+        function = _functions.Values.FirstOrDefault(candidate =>
+            candidate.RequiresContext && candidate.NegatesCollection == negated);
+        return function is not null;
     }
 
     public FunctionProvider RegisterFunctions(IEnumerable<SqlFunctionDefintion> functions)

@@ -35,6 +35,19 @@ internal sealed class DateDifferenceQueryTests
             ])
     ];
 
+    private static readonly Entity[] TypedMetadata =
+    [
+        new(
+            Name: "Invoices",
+            Fields:
+            [
+                new Field("Id", "Id"),
+                new Field("InvoiceNumber", "InvoiceNumber"),
+                new Field("InvoiceDate", "InvoiceDate", DataType.Datetime),
+                new Field("DueDate", "DueDate", DataType.Datetime)
+            ])
+    ];
+
     private static QueryDefinition CreateQuery()
         => new("Invoices")
         {
@@ -183,23 +196,61 @@ internal sealed class DateDifferenceQueryTests
         Assert.That(sql, Does.Match(@"AVG\s*\(.*julianday"));
     }
 
+    [Test]
+    public async Task ToNowFunctionsCountCompletedUnitsOnSqlite()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = """
+                CREATE TABLE "Invoices" (
+                    "Id" INTEGER PRIMARY KEY,
+                    "InvoiceNumber" TEXT NOT NULL,
+                    "InvoiceDate" TEXT NOT NULL,
+                    "DueDate" TEXT NOT NULL
+                );
+                INSERT INTO "Invoices" ("Id", "InvoiceNumber", "InvoiceDate", "DueDate")
+                VALUES (1, 'INV-001', date('now', 'localtime', '-5 years'), date('now', 'localtime', '-3 days'));
+                """;
+            command.ExecuteNonQuery();
+        }
+        using var context = CreateTypedContext(connection);
+        var query = new QueryDefinition("Invoices")
+        {
+            Projections =
+            [
+                new(new FunctionFieldDefinition("InvoiceDate.YearsToNow", []), "Years"),
+                new(new FunctionFieldDefinition("DueDate.DaysToNow", []), "Days")
+            ]
+        };
+
+        var record = (await context.Query(query).ToListWithTotalRecordsAsync()).Records.Single();
+
+        Assert.That(Convert.ToInt32(record["Years"]), Is.EqualTo(5));
+        Assert.That(Convert.ToInt32(record["Days"]), Is.EqualTo(3));
+    }
+
+    [Test]
+    public void MonthsToNowSubtractsIncompleteMonthOnSqlServer()
+    {
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        using var context = new OQueryEngine(connection, new MetadataProvider(TypedMetadata),
+            new FunctionProvider(new SqlServerDialect()), new SqlServerDialect());
+        var query = CreateReceiverQuery(new FunctionFieldDefinition("InvoiceDate.MonthsToNow", []));
+
+        var sql = context.Query(query).ToSql().CommandText;
+
+        Assert.That(sql, Does.Match(@"DATEDIFF\s*\(\s*month,.*GETDATE\s*\(\s*\)"));
+        Assert.That(sql, Does.Match(@"CASE WHEN DAY\s*\(\s*GETDATE\s*\(\s*\)\s*\)\s*<\s*DAY\s*\("));
+    }
+
     private static OQueryEngine CreateTypedContext(SqliteConnection connection)
     {
-        var typedMetadata = new Entity[]
-        {
-            new(
-                Name: "Invoices",
-                Fields:
-                [
-                    new Field("Id", "Id"),
-                    new Field("InvoiceNumber", "InvoiceNumber"),
-                    new Field("InvoiceDate", "InvoiceDate", DataType.Datetime),
-                    new Field("DueDate", "DueDate", DataType.Datetime)
-                ])
-        };
-        return new OQueryEngine(connection, new MetadataProvider(typedMetadata),
+        return new OQueryEngine(connection, new MetadataProvider(TypedMetadata),
             new FunctionProvider(new SqliteDialect()), new SqliteDialect());
     }
+
 
     private static QueryDefinition CreateReceiverQuery(FunctionFieldDefinition function)
         => new("Invoices") { Projections = [new(function, "Days")] };

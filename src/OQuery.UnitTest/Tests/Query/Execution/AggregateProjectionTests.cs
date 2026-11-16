@@ -67,6 +67,19 @@ public sealed class AggregateProjectionTests : TestBase
     }
 
     [Test]
+    public void CollectionField_Pipeline_CountEqualsExplicitCountOver()
+    {
+        var data = _db.Query("User")
+            .Select("Name", "Members.Count()", "CountOver(Members)")
+            .ToList();
+
+        Assert.That(data, Is.Not.Empty);
+        Assert.That(
+            data.All(record => Equals(record["Members.Count()"], record["CountOver(Members)"])),
+            Is.True);
+    }
+
+    [Test]
     public void CollectionField_Projection_NestedAverage_EqualsSumOverCount()
     {
         var data = _db.Query("User")

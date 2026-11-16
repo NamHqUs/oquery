@@ -82,12 +82,10 @@ internal static class FieldDefinitionParser
                     var functionName = suffix[..opening].Trim();
                     var argumentsText = suffix[(opening + 1)..^1];
                     if (source is not GroupFieldDefintion &&
-                        IsAggregatePipelineFunction(functionName) &&
+                        BuiltInAggregateFunctions.Contains(functionName) &&
                         string.IsNullOrWhiteSpace(argumentsText))
                     {
-                        pipeline = new FunctionFieldDefinition(
-                            GetAggregateOverFunctionName(functionName),
-                            [source]);
+                        pipeline = new FunctionFieldDefinition(functionName, [source]) { IsWindow = true };
                         return true;
                     }
 
@@ -112,27 +110,6 @@ internal static class FieldDefinitionParser
 
         return false;
     }
-
-    private static bool IsAggregatePipelineFunction(string functionName)
-        => functionName.Equals("Avg", StringComparison.OrdinalIgnoreCase) ||
-            functionName.Equals("Average", StringComparison.OrdinalIgnoreCase) ||
-            functionName.Equals("Count", StringComparison.OrdinalIgnoreCase) ||
-            functionName.Equals("Max", StringComparison.OrdinalIgnoreCase) ||
-            functionName.Equals("Maximum", StringComparison.OrdinalIgnoreCase) ||
-            functionName.Equals("Min", StringComparison.OrdinalIgnoreCase) ||
-            functionName.Equals("Minimum", StringComparison.OrdinalIgnoreCase) ||
-            functionName.Equals("Sum", StringComparison.OrdinalIgnoreCase);
-
-    private static string GetAggregateOverFunctionName(string functionName)
-        => functionName.ToUpperInvariant() switch
-        {
-            "AVG" or "AVERAGE" => "AverageOver",
-            "COUNT" => "CountOver",
-            "MAX" or "MAXIMUM" => "MaxOver",
-            "MIN" or "MINIMUM" => "MinOver",
-            "SUM" => "SumOver",
-            _ => throw new FormatException($"Unsupported aggregate pipeline function [{functionName}].")
-        };
 
     public static IFieldDefinition[] ParseExpression(string text)
     {

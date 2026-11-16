@@ -65,7 +65,7 @@ internal static class OQueryableCreator
         }
 
         if (definition.Filter is not null)
-            query = query.Where(CreateFilter(definition.Filter));
+            query = query.Where(CreateFilter(definition.Filter, context.FunctionProvider));
 
         foreach (var sortGroup in (definition.Sorts ?? []).Select((sort, index) => (sort, index)))
         {
@@ -119,32 +119,34 @@ internal static class OQueryableCreator
         }
     }
 
-    internal static Expression<Func<IQueryParameter, bool>> CreateFilter(ConditionDefinition filter)
+    internal static Expression<Func<IQueryParameter, bool>> CreateFilter(ConditionDefinition filter, IFunctionProvider functions)
     {
         var parameter = Expression.Parameter(typeof(IQueryParameter), "record");
-        var body = CreateFilterBody(filter, parameter);
+        var body = CreateFilterBody(filter, parameter, functions);
 
         return Expression.Lambda<Func<IQueryParameter, bool>>(body, parameter);
     }
 
     private static Expression CreateFilterBody(
         IConditionDefintion filter,
-        ParameterExpression parameter)
+        ParameterExpression parameter,
+        IFunctionProvider functions)
         => filter switch
         {
-            ConditionDefinition group => CreateLogicalFilter(group, parameter),
+            ConditionDefinition group => CreateLogicalFilter(group, parameter, functions),
             ConditionStatementDefinition binary => CreateCondition(binary, parameter),
-            FunctionCondition function => CreateFunctionCondition(function, parameter),
+            FunctionCondition function => CreateFunctionCondition(function, parameter, functions),
             _ => throw new ArgumentOutOfRangeException(nameof(filter))
         };
 
     private static Expression CreateFunctionCondition(
         FunctionCondition filter,
-        ParameterExpression parameter)
+        ParameterExpression parameter,
+        IFunctionProvider functions)
     {
         var function = filter.Function;
-        var negated = function.FunctionName.Equals("NotAny", StringComparison.OrdinalIgnoreCase);
-        if ((!negated && !function.FunctionName.Equals("Any", StringComparison.OrdinalIgnoreCase)) ||
+        var definition = functions.GetFunction(function.FunctionName);
+        if (!definition.RequiresContext ||
             function.Arguments is not [FieldDefinition { FieldName: var context }, .. var rest] ||
             rest.Length > 2)
             throw new FormatException($"{function.FunctionName} requires a collection path and an optional predicate.");
@@ -160,7 +162,7 @@ internal static class OQueryableCreator
             : QueryDefinitions.Parsers.ConditionDefinitionParser.Parse(predicateText);
         var innerBody = condition is null
             ? Expression.Constant(true)
-            : CreateFilterBody(condition, innerParameter);
+            : CreateFilterBody(condition, innerParameter, functions);
         var predicate = Expression.Lambda<Func<IQueryParameter, bool>>(innerBody, innerParameter);
         var query = Expression.Call(
             parameter,
@@ -168,7 +170,7 @@ internal static class OQueryableCreator
             Expression.Constant(context));
         return Expression.Call(
             typeof(FluentQueryExtensions),
-            negated ? nameof(FluentQueryExtensions.NotAny) : nameof(FluentQueryExtensions.Any),
+            definition.NegatesCollection ? nameof(FluentQueryExtensions.NotAny) : nameof(FluentQueryExtensions.Any),
             null,
             query,
             predicate);
@@ -176,15 +178,16 @@ internal static class OQueryableCreator
 
     private static Expression CreateLogicalFilter(
         ConditionDefinition group,
-        ParameterExpression parameter)
+        ParameterExpression parameter,
+        IFunctionProvider functions)
     {
         if (group.Filters.Count == 0)
             return Expression.Constant(true);
 
-        var expression = CreateFilterBody(group.Filters[0], parameter);
+        var expression = CreateFilterBody(group.Filters[0], parameter, functions);
         foreach (var filter in group.Filters.Skip(1))
         {
-            var next = CreateFilterBody(filter, parameter);
+            var next = CreateFilterBody(filter, parameter, functions);
             var logicalOperation = filter is ConditionStatementDefinition { LogicalOperator: not null } binary
                 ? binary.LogicalOperator.Value
                 : group.LogicalOperation;

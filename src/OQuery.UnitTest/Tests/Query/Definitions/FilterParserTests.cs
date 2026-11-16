@@ -76,4 +76,44 @@ internal sealed class FilterParserTests : TestBase
             Assert.That(((FunctionCondition)notAny!.Filters.Single()).Function.FunctionName, Is.EqualTo("NotAny"));
         });
     }
+
+    [Test]
+    public void Filter_CollectionPredicateJson_UsesFunctionShapeAndMatchesTextForm()
+    {
+        const string json = """
+            {
+              "kind": "function",
+              "function": "Members.NotAny",
+              "arguments": [{ "kind": "field", "field": "Name = <Bob>" }]
+            }
+            """;
+
+        var condition = System.Text.Json.JsonSerializer.Deserialize<IConditionDefintion>(
+            json,
+            QueryDefinitionJsonParser.CreateSerializerOptions());
+        var fromText = QueryDefinitionJsonParser.ParseFilter("Members.NotAny(Name = <Bob>)");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(
+                ((FunctionCondition)condition!).Function.ToText(),
+                Is.EqualTo(((FunctionCondition)fromText!.Filters.Single()).Function.ToText()));
+            Assert.That(
+                System.Text.Json.JsonSerializer.Serialize(condition, QueryDefinitionJsonParser.CreateSerializerOptions()),
+                Does.Contain("\"function\":\"NotAny\""));
+        });
+    }
+
+    [Test]
+    public void Filter_CollectionPredicateFollowedByAnd_ParsesAsSeparateCondition()
+    {
+        var filter = QueryDefinitionJsonParser.ParseFilter("Members.Any(Name = <Bob>) And Age > <1>");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(filter!.Filters, Has.Count.EqualTo(2));
+            Assert.That(filter.Filters[0], Is.TypeOf<FunctionCondition>());
+            Assert.That(filter.Filters[1], Is.TypeOf<ConditionStatementDefinition>());
+        });
+    }
 }

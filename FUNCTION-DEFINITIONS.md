@@ -117,6 +117,11 @@ renders as `COUNT(DISTINCT CASE WHEN Status = ... THEN Quantity * UnitPrice END)
 | `YearAdd` | `value: Datetime`, `amount: Number` | Datetime | `DATEADD(year, {2}, {1})` | Adds years to a date. |
 | `AgeOn` | `birthDate: Datetime`, `asOfDate: Datetime` | Number | `(DATEDIFF(year, {1}, {2}) - CASE WHEN DATEPART(month, {2}) * 100 + DATEPART(day, {2}) < DATEPART(month, {1}) * 100 + DATEPART(day, {1}) THEN 1 ELSE 0 END)` | Completed years between two dates. |
 | `ElapsedYears` | `startDate: Datetime`, `endDate: Datetime` | Number | `(DATEDIFF(day, {1}, {2}) / 365.2425)` | Fractional years between two dates. |
+| `YearsToNow` | `startDate: Datetime` | Number | `AgeOn({1}, GetDate())` | Completed years from startDate until now. Written as `HireDate.YearsToNow()`. |
+| `MonthsToNow` | `startDate: Datetime` | Number | `(MonthSub({1}, GetDate()) - CASE WHEN Day(GetDate()) < Day({1}) THEN 1 ELSE 0 END)` | Completed months from startDate until now. Written as `HireDate.MonthsToNow()`. |
+| `DaysToNow` | `startDate: Datetime` | Number | `DateSub({1}, GetDate())` | Completed days from startDate until now. Written as `HireDate.DaysToNow()`. |
+
+The three `*ToNow` functions reuse each dialect's `AgeOn`, `MonthSub`, `Day`, and `DateSub` templates, with the current time as the end date. The current-time expression is `GETDATE()` on SQL Server, `datetime('now', 'localtime')` on SQLite, `CURRENT TIMESTAMP` on Db2, and `CURRENT_TIMESTAMP` on the other dialects.
 
 `DateFormat` is also registered for SQLite only. See
 [Dialect overrides](#dialect-overrides).

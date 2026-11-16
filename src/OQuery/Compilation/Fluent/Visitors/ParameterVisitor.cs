@@ -105,8 +105,8 @@ class ParameterVisitor(QueryCompilationResolver queryContext) : QueryVisitor(que
             .First(e => e.ArgumentName == parameter.Name)
             .TableContext;
         var predicate = (LambdaExpression)node.Arguments[0].StripQuotes();
-        return QueryContext.CreateCollectionFunction(
-            negated ? nameof(QueryValue.NotAny) : nameof(QueryValue.Any),
+        return QueryContext.CreateCollectionPredicate(
+            negated,
             tableContext,
             relationPath,
             innerTable => new WhereVisitor(innerTable, QueryContext).Eval(predicate));

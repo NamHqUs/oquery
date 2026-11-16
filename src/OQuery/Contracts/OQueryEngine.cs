@@ -14,6 +14,8 @@ public class OQueryEngine(
     private readonly ISqlDialect _sqlDialect = sqlDialect ?? SqlDialect.ForConnection(dbConnection);
     private bool _disposed;
 
+    internal IFunctionProvider FunctionProvider => functionProvider;
+
     public OQueryEngine(IDbConnection dbConnection, IMetadataProvider metaProvider, ISqlDialect? sqlDialect = null)
         : this(
             dbConnection,

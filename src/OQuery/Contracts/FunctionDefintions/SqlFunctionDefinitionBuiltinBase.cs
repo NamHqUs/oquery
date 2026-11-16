@@ -8,6 +8,8 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
 {
     protected abstract string Dialect { get; }
 
+    protected virtual string CurrentDateTimeSql => "CURRENT_TIMESTAMP";
+
     internal virtual IEnumerable<SqlFunctionDefintion> CreateAllFunctions() =>
     [
         Count(),
@@ -39,8 +41,10 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
         MedicalLossRatio(),
         Concat(),
         MonthKey(),
-        AgeOn(),
-        ElapsedYears(),
+        Difference(),
+        YearsTo(),
+        MonthsTo(),
+        DaysTo(),
         Difference(),
         Lag(),
         WindowSum(),
@@ -59,7 +63,7 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
             [new("expression", DataType.Number), new("partitionBy", DataType.Number, "*")],
             DataType.Number,
             "Counts values within a window partition without collapsing rows.",
-            "COUNT({1}) OVER (PARTITION BY {2})");
+            "COUNT({1}) OVER (PARTITION BY {2})", windowOf: "Count");
 
     protected virtual SqlFunctionDefintion Sum() =>
         Create("Sum", [new("expression", DataType.Number)], DataType.Number,
@@ -70,7 +74,7 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
             [new("expression", DataType.Number), new("partitionBy", DataType.Number, "*")],
             DataType.Number,
             "Returns the sum within a window partition without collapsing rows.",
-            "SUM({1}) OVER (PARTITION BY {2})");
+            "SUM({1}) OVER (PARTITION BY {2})", windowOf: "Sum");
 
     protected virtual SqlFunctionDefintion Average() =>
         Create("Avg", [new("expression", DataType.Number)], DataType.Number,
@@ -81,7 +85,7 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
             [new("expression", DataType.Number), new("partitionBy", DataType.Number, "*")],
             DataType.Number,
             "Returns the average within a window partition without collapsing rows.",
-            "AVG({1}) OVER (PARTITION BY {2})");
+            "AVG({1}) OVER (PARTITION BY {2})", windowOf: "Avg");
 
     protected virtual SqlFunctionDefintion Maximum() =>
         Create("Max", [new("expression", DataType.Number)], DataType.Number,
@@ -92,7 +96,7 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
             [new("expression", DataType.Number), new("partitionBy", DataType.Number, "*")],
             DataType.Number,
             "Returns the maximum within a window partition without collapsing rows.",
-            "MAX({1}) OVER (PARTITION BY {2})");
+            "MAX({1}) OVER (PARTITION BY {2})", windowOf: "Max");
 
     protected virtual SqlFunctionDefintion Minimum() =>
         Create("Min", [new("expression", DataType.Number)], DataType.Number,
@@ -103,7 +107,7 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
             [new("expression", DataType.Number), new("partitionBy", DataType.Number, "*")],
             DataType.Number,
             "Returns the minimum within a window partition without collapsing rows.",
-            "MIN({1}) OVER (PARTITION BY {2})");
+            "MIN({1}) OVER (PARTITION BY {2})", windowOf: "Min");
 
     protected virtual SqlFunctionDefintion NullIf() =>
         Create("NullIf", [new("value", DataType.Number), new("otherValue", DataType.Number)],
@@ -198,8 +202,8 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
         Create("MonthKey", [new("value", DataType.Datetime)], DataType.String,
             "Formats a date as a year-month key.", "CONVERT(char(7), {1}, 126)");
 
-    protected virtual SqlFunctionDefintion AgeOn() =>
-        Create("AgeOn",
+    protected virtual SqlFunctionDefintion CompletedYears() =>
+        Create("CompletedYears",
             [new("birthDate", DataType.Datetime), new("asOfDate", DataType.Datetime)],
             DataType.Number,
             "Returns completed years between a start date and an as-of date.",
@@ -210,6 +214,27 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
             [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],
             DataType.Number, "Returns fractional years elapsed between two dates.",
             "(DATEDIFF(day, {1}, {2}) / 365.2425)");
+
+    protected virtual SqlFunctionDefintion YearsTo() =>
+        Create("YearsTo", [new("startDate", DataType.Datetime)], DataType.Number,
+            "Returns completed years from startDate until now.",
+            TemplateWithNow(CompletedYears()));
+
+    protected virtual SqlFunctionDefintion MonthsTo() =>
+        Create("MonthsTo", [new("startDate", DataType.Datetime)], DataType.Number,
+            "Returns completed months from startDate until now.",
+            $"({TemplateWithNow(MonthSub())} - CASE WHEN {DayOfNow()} < {Day().GetSqlTemplate(Dialect)} THEN 1 ELSE 0 END)");
+
+    protected virtual SqlFunctionDefintion DaysTo() =>
+        Create("DaysTo", [new("startDate", DataType.Datetime)], DataType.Number,
+            "Returns completed days from startDate until now.",
+            TemplateWithNow(DateSub()));
+
+    private string TemplateWithNow(SqlFunctionDefintion function) =>
+        function.GetSqlTemplate(Dialect).Replace("{2}", CurrentDateTimeSql, StringComparison.Ordinal);
+
+    private string DayOfNow() =>
+        Day().GetSqlTemplate(Dialect).Replace("{1}", CurrentDateTimeSql, StringComparison.Ordinal);
 
     protected virtual SqlFunctionDefintion Difference() =>
         Create("Difference",
@@ -246,7 +271,24 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
 
     protected virtual SqlFunctionDefintion NotAny() =>
         CreateCollectionPredicate("NotAny", "NOT EXISTS",
-            "Returns true when no related collection row matches the optional predicate.");
+            "Returns true when no related collection row matches the optional predicate.",
+            negatesCollection: true);
+
+    private SqlFunctionDefintion CreateCollectionPredicate(
+        string name,
+        string existsOperator,
+        string description,
+        bool negatesCollection = false)
+        => new(name,
+            [new("predicate", DataType.Boolean, omittable: true)],
+            DataType.Boolean,
+            description,
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                [Dialect] = $"{existsOperator} (SELECT 1 FROM @Context WHERE {{1}} AND @JoinedConditions)"
+            },
+            functionApplyFor: FunctionApplyFor.DataSet,
+            negatesCollection: negatesCollection);
 
     protected SqlFunctionDefintion Create(
         string name,
@@ -255,14 +297,16 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
         string description,
         string sqlTemplate,
         bool bindArgumentsFromEnd = false,
-        FunctionApplyFor? functionApplyFor = null)
+        FunctionApplyFor? functionApplyFor = null,
+        string? windowOf = null)
         => new(name, arguments, resultType, description,
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 [Dialect] = sqlTemplate
             },
             bindArgumentsFromEnd,
-            functionApplyFor ?? InferApplyFor(name, arguments));
+            functionApplyFor ?? InferApplyFor(name, arguments),
+            windowOf: windowOf);
 
     private static FunctionApplyFor InferApplyFor(
         string name,
@@ -281,20 +325,6 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
             _ => FunctionApplyFor.DataSet
         };
     }
-
-    private SqlFunctionDefintion CreateCollectionPredicate(
-        string name,
-        string existsOperator,
-        string description)
-        => new(name,
-            [new("predicate", DataType.Boolean, omittable: true)],
-            DataType.Boolean,
-            description,
-            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                [Dialect] = $"{existsOperator} (SELECT 1 FROM @Context WHERE {{1}} AND @JoinedConditions)"
-            },
-            functionApplyFor: FunctionApplyFor.DataSet);
 
     private SqlFunctionDefintion CreateDateDifference(
         string name,

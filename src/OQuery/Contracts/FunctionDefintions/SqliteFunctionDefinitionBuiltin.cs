@@ -6,6 +6,8 @@ internal sealed class SqliteFunctionDefinitionBuiltin : SqlFunctionDefinitionBui
 {
     protected override string Dialect => "Sqlite";
 
+    protected override string CurrentDateTimeSql => "datetime('now', 'localtime')";
+
     internal override IEnumerable<SqlFunctionDefintion> CreateAllFunctions() =>
         base.CreateAllFunctions().Append(GetDate()).Append(Round()).Append(DateFormat());
 
@@ -64,8 +66,8 @@ internal sealed class SqliteFunctionDefinitionBuiltin : SqlFunctionDefinitionBui
         Create("MonthKey", [new("value", DataType.Datetime)], DataType.String,
             "Formats a date as a year-month key.", "STRFTIME('%Y-%m', {1})");
 
-    protected override SqlFunctionDefintion AgeOn() =>
-        Create("AgeOn", [new("birthDate", DataType.Datetime), new("asOfDate", DataType.Datetime)],
+    protected override SqlFunctionDefintion CompletedYears() =>
+        Create("CompletedYears", [new("birthDate", DataType.Datetime), new("asOfDate", DataType.Datetime)],
             DataType.Number, "Returns completed years between a start date and an as-of date.",
             "(CAST(STRFTIME('%Y', {2}) AS INTEGER) - CAST(STRFTIME('%Y', {1}) AS INTEGER) - CASE WHEN STRFTIME('%m%d', {2}) < STRFTIME('%m%d', {1}) THEN 1 ELSE 0 END)");
 

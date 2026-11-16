@@ -14,26 +14,20 @@ internal sealed class ConditionJsonConverter : JsonConverter<IConditionDefintion
         using var document = JsonDocument.ParseValue(ref reader);
         var root = document.RootElement;
 
-        if (TryGetProperty(root, "context", out _))
+        if (TryGetProperty(root, "kind", out var kind) &&
+            kind.ValueKind == JsonValueKind.String &&
+            kind.GetString() == "function")
         {
-            TryGetProperty(root, "context", out var contextElement);
-            var context = contextElement.GetString()
-                ?? throw new JsonException("The Any context cannot be null.");
-            var negated = TryGetProperty(root, "negated", out var negatedElement) &&
-                negatedElement.GetBoolean();
-            var arguments = new List<IFieldDefinition> { new FieldDefinition(context) };
-            if (TryGetProperty(root, "alias", out var aliasElement) &&
-                !string.IsNullOrWhiteSpace(aliasElement.GetString()))
-                arguments.Add(new FieldDefinition(aliasElement.GetString()!));
-            if (TryGetProperty(root, "condition", out var conditionElement) &&
-                conditionElement.ValueKind != JsonValueKind.Null)
-            {
-                var condition = conditionElement.Deserialize<IConditionDefintion>(options)
-                    ?? throw new JsonException("The Any condition cannot be null.");
-                arguments.Add(new FieldDefinition(condition.ToText()));
-            }
-            return new FunctionCondition(new FunctionFieldDefinition(
-                negated ? "NotAny" : "Any", arguments.ToArray()));
+            var function = JsonSerializer.Deserialize<IFieldDefinition>(root.GetRawText(), options) as FunctionFieldDefinition
+                ?? throw new JsonException("A function condition must be a function expression.");
+            // Predicate arguments are carried as text, matching how the OQuery text parser represents them.
+            var arguments = function.Arguments
+                .Select(argument => argument is ConditionFieldDefinition condition
+                    ? new FieldDefinition(condition.ToText())
+                    : argument)
+                .ToArray();
+            return new FunctionCondition(ConditionDefinitionParser.ToCollectionCall(
+                function with { Arguments = arguments }));
         }
 
         return TryGetProperty(root, "filters", out _)
@@ -47,7 +41,15 @@ internal sealed class ConditionJsonConverter : JsonConverter<IConditionDefintion
         Utf8JsonWriter writer,
         IConditionDefintion value,
         JsonSerializerOptions options)
-        => JsonSerializer.Serialize(writer, value, value.GetType(), options);
+    {
+        if (value is FunctionCondition function)
+        {
+            JsonSerializer.Serialize<IFieldDefinition>(writer, function.Function, options);
+            return;
+        }
+
+        JsonSerializer.Serialize(writer, value, value.GetType(), options);
+    }
 
     private static bool TryGetProperty(JsonElement element, string name, out JsonElement value)
         => element.TryGetProperty(name, out value) ||

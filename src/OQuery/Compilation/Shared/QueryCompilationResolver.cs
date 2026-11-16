@@ -38,6 +38,8 @@ class QueryCompilationResolver(
         return ApplyJoin(tableContext, joinedData);
     }
 
+    public IFunctionProvider FunctionProvider => functionProvider;
+
     public AggregateExpression CreateCountAggregate(TableExpression tableContext, string fieldName)
     {
         if (string.Equals(fieldName, "*", StringComparison.Ordinal))
@@ -182,11 +184,7 @@ class QueryCompilationResolver(
     }
 
     private static bool IsAggregateOver(FunctionSqlExpression function)
-        => function.Definition.Name.Equals("AverageOver", StringComparison.OrdinalIgnoreCase) ||
-            function.Definition.Name.Equals("CountOver", StringComparison.OrdinalIgnoreCase) ||
-            function.Definition.Name.Equals("MaxOver", StringComparison.OrdinalIgnoreCase) ||
-            function.Definition.Name.Equals("MinOver", StringComparison.OrdinalIgnoreCase) ||
-            function.Definition.Name.Equals("SumOver", StringComparison.OrdinalIgnoreCase);
+        => function.Definition.WindowOf is not null;
 
     public SqlExpression ParseQueryExpression(TableExpression tableContext, IFieldDefinition[] expressions, int depth = 0)
     {
@@ -272,6 +270,12 @@ class QueryCompilationResolver(
 
     private SqlExpression ParseFunctionExpression(TableExpression tableContext, FunctionFieldDefinition expression, int depth)
     {
+        if (TryRewriteWindowOverCollection(tableContext, expression, out var collectionCall))
+            return ParseFunctionExpression(tableContext, collectionCall, depth + 1);
+
+        if (TryResolveWindowStage(expression, out var windowCall))
+            return ParseFunctionExpression(tableContext, windowCall, depth + 1);
+
         if (TryParseCollectionFunction(tableContext, expression, depth, out var collectionFunction))
             return collectionFunction;
 
@@ -281,9 +285,6 @@ class QueryCompilationResolver(
 
         if (TryParseCollectionAggregate(tableContext, expression, depth, out var collectionAggregate))
             return collectionAggregate;
-
-        if (TryRewriteWindowOverCollection(tableContext, expression, out var collectionCall))
-            return ParseFunctionExpression(tableContext, collectionCall, depth + 1);
 
         if (expression.FunctionName.Contains('.'))
             return ParseFieldReceiverFunction(tableContext, expression, depth);
@@ -371,6 +372,21 @@ class QueryCompilationResolver(
                 inner.SqlWhere.Add(ParsePredicateExpression(inner, parsedCondition, depth + 1));
             });
         return true;
+    }
+
+    /// <summary>
+    /// Builds an existence test (Any, or NotAny when <paramref name="negated"/>) over a related collection,
+    /// resolved from the function catalog by polarity.
+    /// </summary>
+    public SqlExpression CreateCollectionPredicate(
+        bool negated,
+        TableExpression tableContext,
+        string relationPath,
+        Action<TableExpression> addPredicates)
+    {
+        if (!functionProvider.TryGetCollectionPredicate(negated, out var definition))
+            throw new FormatException("No collection predicate is registered for this dialect.");
+        return CreateCollectionFunction(definition!.Name, tableContext, relationPath, addPredicates);
     }
 
     /// <summary>
@@ -473,24 +489,15 @@ class QueryCompilationResolver(
     }
 
 
-    private static readonly Dictionary<string, string> CollectionWindowAggregates = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["CountOver"] = "Count",
-        ["SumOver"] = "Sum",
-        ["AverageOver"] = "Avg",
-        ["MaxOver"] = "Max",
-        ["MinOver"] = "Min",
-    };
-
-    // Lowering "Relation.Count()" yields CountOver(Relation). When the single argument names a collection relation
-    // rather than a field, the call is the collection aggregate over that relation.
+    // A window stage ("Source.Avg()") or a window call ("CountOver(Relation)") over a collection relation is the
+    // collection aggregate over that relation. The aggregate is read from the window function's catalog link.
     private bool TryRewriteWindowOverCollection(
         TableExpression tableContext,
         FunctionFieldDefinition expression,
         out FunctionFieldDefinition rewritten)
     {
         rewritten = null!;
-        if (!CollectionWindowAggregates.TryGetValue(expression.FunctionName, out var aggregateName) ||
+        if (!TryGetWindowAggregateName(expression, out var aggregateName) ||
             expression.Arguments is not [FieldDefinition { FieldName: var receiver }] ||
             receiver.Contains('.') ||
             tableContext.AuthorizedFields.Any(field => string.Equals(field.Name, receiver, StringComparison.OrdinalIgnoreCase)) ||
@@ -500,6 +507,34 @@ class QueryCompilationResolver(
             return false;
 
         rewritten = new FunctionFieldDefinition($"{receiver}.{aggregateName}", []);
+        return true;
+    }
+
+    private bool TryGetWindowAggregateName(FunctionFieldDefinition expression, out string aggregateName)
+    {
+        aggregateName = expression.FunctionName;
+        if (expression.IsWindow)
+            return true;
+        if (functionProvider.TryGetFunction(expression.FunctionName, out var definition) &&
+            definition.WindowOf is { } windowOf)
+        {
+            aggregateName = windowOf;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryResolveWindowStage(FunctionFieldDefinition expression, out FunctionFieldDefinition windowCall)
+    {
+        windowCall = null!;
+        if (!expression.IsWindow)
+            return false;
+        if (!functionProvider.TryGetWindowFunction(expression.FunctionName, out var window))
+            throw new FormatException(
+                $"Aggregate [{expression.FunctionName}] has no window form for a pipeline stage.");
+
+        windowCall = expression with { FunctionName = window!.Name, IsWindow = false };
         return true;
     }
 
@@ -779,7 +814,12 @@ class QueryCompilationResolver(
         }
 
         if (filter is FunctionCondition function)
+        {
+            if (functionProvider.GetFunction(function.Function.FunctionName).ResultType != DataType.Boolean)
+                throw new FormatException(
+                    $"Function [{function.Function.FunctionName}] cannot be used as a condition because it does not return a boolean.");
             return ParseQueryExpression(tableContext, function.Function, depth + 1);
+        }
 
         if (filter is not ConditionStatementDefinition item)
             throw new FormatException($"Unsupported function predicate [{filter.GetType().Name}].");

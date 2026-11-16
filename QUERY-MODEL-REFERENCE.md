@@ -222,46 +222,29 @@ Condition `operation` values use the `BinaryOperator` enum:
 `logicalOperation` and `logicalOperator` use `LogicalOperator`: `0` is `And`
 and `1` is `Or`.
 
-### Existence condition
+### Collection predicate condition
 
-An existence condition is a Boolean filter node. Its context is represented as
-a constant value because the token identifies a relation, entity, or named
-context rather than a field:
+`Any` and `NotAny` are Boolean collection predicates. They use the same
+function shape as projections, and the first argument names the collection
+path. An optional second argument is an alias, and an optional last argument is
+the predicate text:
 
 ```json
 {
-  "kind": "exists",
-  "context": {
-    "kind": "value",
-    "value": "Users"
-  },
-  "alias": "Customer",
-  "condition": {
-    "logicalOperation": 0,
-    "filters": [
-      {
-        "logicalOperator": null,
-        "left": {
-          "kind": "field",
-          "field": "Customer.Status"
-        },
-        "operation": 0,
-        "right": {
-          "kind": "value",
-          "value": "Active"
-        },
-        "parameterized": true
-      }
-    ]
-  },
-  "negated": false
+  "kind": "function",
+  "function": "NotAny",
+  "arguments": [
+    { "kind": "field", "field": "Users" },
+    { "kind": "field", "field": "Customer" },
+    { "kind": "field", "field": "Customer.Status = <Active>" }
+  ]
 }
 ```
 
-`negated: false` renders `EXISTS`; `negated: true` renders `NOT EXISTS`.
-The condition is evaluated in the referenced context scope, while
-`CurrentContext` refers to the outer query scope. A missing condition tests
-whether any related or contextual row exists.
+The equivalent OQuery text is `NotAny(Users, Customer, Customer.Status = <Active>)`.
+The dotted form `Users.NotAny(Status = <Active>)` is the same condition: the
+receiver becomes the first argument. `NotAny` renders `NOT EXISTS`; `Any`
+renders `EXISTS`. The predicate is evaluated in the collection's scope.
 
 ## 5. Relations
 

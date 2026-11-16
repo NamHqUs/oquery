@@ -22,10 +22,18 @@ public record FunctionFieldDefinition(MatchOperation Oper, string FunctionName, 
 {
     public FunctionFieldDefinition(string functionName, IFieldDefinition[] arguments) : this(MatchOperation.Add, functionName, arguments) { }
     public bool IsDistinct { get; init; }
-    public string ToText() => $"{FunctionName}({(IsDistinct ? "distinct " : string.Empty)}{string.Join(", ", Arguments.Select(argument =>
-        argument is GroupFieldDefintion group
-            ? FieldDefinitionHelper.Format(group.Fields)
-            : argument.ToText()))})";
+    /// <summary>A pipeline stage such as <c>Source.Avg()</c>: the aggregate is computed as a window over the source.</summary>
+    public bool IsWindow { get; init; }
+    public string ToText()
+    {
+        if (IsWindow && Arguments is [var source])
+            return $"{(source is GroupFieldDefintion group ? $"({FieldDefinitionHelper.Format(group.Fields)})" : source.ToText())}.{FunctionName}()";
+
+        return $"{FunctionName}({(IsDistinct ? "distinct " : string.Empty)}{string.Join(", ", Arguments.Select(argument =>
+            argument is GroupFieldDefintion group
+                ? FieldDefinitionHelper.Format(group.Fields)
+                : argument.ToText()))})";
+    }
 }
 
 public record GroupFieldDefintion(MatchOperation Oper, IFieldDefinition[] Fields) : IFieldDefinition

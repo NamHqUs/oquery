@@ -30,7 +30,9 @@ public sealed class SqlFunctionDefintion
         string description,
         IReadOnlyDictionary<string, string>? sqlTemplates = null,
         bool bindArgumentsFromEnd = false,
-        FunctionApplyFor functionApplyFor = FunctionApplyFor.DataSet)
+        FunctionApplyFor functionApplyFor = FunctionApplyFor.DataSet,
+        string? windowOf = null,
+        bool negatesCollection = false)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("A function name is required.", nameof(name));
@@ -77,6 +79,8 @@ public sealed class SqlFunctionDefintion
         Arguments = Array.AsReadOnly(arguments.ToArray());
         ResultType = resultType;
         IsAggregate = BuiltInAggregateFunctions.Contains(name);
+        WindowOf = windowOf;
+        NegatesCollection = negatesCollection;
         BindArgumentsFromEnd = bindArgumentsFromEnd;
         FunctionApplyFor = functionApplyFor;
         Description = description;
@@ -99,6 +103,10 @@ public sealed class SqlFunctionDefintion
     public IReadOnlyList<SqlFunctionArgumentDefinition> Arguments { get; }
     public DataType ResultType { get; }
     public bool IsAggregate { get; }
+    /// <summary>The aggregate this window function computes over a partition, e.g. CountOver wraps Count.</summary>
+    public string? WindowOf { get; }
+    /// <summary>True for a collection predicate that tests for no matching rows (NOT EXISTS).</summary>
+    public bool NegatesCollection { get; }
     public bool BindArgumentsFromEnd { get; }
     public FunctionApplyFor FunctionApplyFor { get; }
     public bool RequiresContext { get; }

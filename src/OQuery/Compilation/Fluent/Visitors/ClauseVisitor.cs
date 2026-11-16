@@ -48,8 +48,8 @@ class ClauseVisitor(QueryCompilationResolver queryContext)
         var outerTable = QueryContext.Arguments.Peek().TableContext;
         var predicate = (LambdaExpression)last.Arguments[1].StripQuotes();
 
-        return QueryContext.CreateCollectionFunction(
-            last.Method.Name,
+        return QueryContext.CreateCollectionPredicate(
+            last.Method.Name == nameof(FluentQueryExtensions.NotAny),
             outerTable,
             relationPath,
             innerTable =>
@@ -65,6 +65,11 @@ class ClauseVisitor(QueryCompilationResolver queryContext)
                     new WhereVisitor(table, QueryContext).Eval(predicate);
             });
     }
+
+    private string CountWindowName()
+        => QueryContext.FunctionProvider.TryGetWindowFunction("Count", out var window)
+            ? window!.Name
+            : throw new FormatException("Count has no window form in this dialect.");
 
     private TableExpression EvalRecursive(IReadOnlyList<MethodCallExpression> statements)
     {
@@ -118,7 +123,7 @@ class ClauseVisitor(QueryCompilationResolver queryContext)
                 ? value[(relation.Name.Length + 1)..] switch
                 {
                     var aggregate when aggregate.StartsWith("Count(", StringComparison.OrdinalIgnoreCase)
-                        => $"CountOver(member.{aggregate[6..^1]}, manager.{key.DbColumn})",
+                        => $"{CountWindowName()}(member.{aggregate[6..^1]}, manager.{key.DbColumn})",
                     var memberField => $"member.{memberField}"
                 }
                 : value;

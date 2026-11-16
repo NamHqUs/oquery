@@ -6,6 +6,8 @@ internal sealed class SqlServerFunctionDefinitionBuiltin : SqlFunctionDefinition
 {
     protected override string Dialect => "SqlServer";
 
+    protected override string CurrentDateTimeSql => "GETDATE()";
+
     internal override IEnumerable<SqlFunctionDefintion> CreateAllFunctions() =>
         base.CreateAllFunctions().Append(GetDate()).Append(Round());
 

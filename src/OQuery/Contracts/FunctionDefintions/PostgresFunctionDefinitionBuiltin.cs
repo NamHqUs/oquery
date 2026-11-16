@@ -49,8 +49,8 @@ internal sealed class PostgresFunctionDefinitionBuiltin : SqlFunctionDefinitionB
         Create("MonthKey", [new("value", DataType.Datetime)], DataType.String,
             "Formats a date as a year-month key.", "TO_CHAR({1}, 'YYYY-MM')");
 
-    protected override SqlFunctionDefintion AgeOn() =>
-        Create("AgeOn", [new("birthDate", DataType.Datetime), new("asOfDate", DataType.Datetime)],
+    protected override SqlFunctionDefintion CompletedYears() =>
+        Create("CompletedYears", [new("birthDate", DataType.Datetime), new("asOfDate", DataType.Datetime)],
             DataType.Number, "Returns completed years between a start date and an as-of date.",
             "(EXTRACT(YEAR FROM CAST({2} AS DATE)) - EXTRACT(YEAR FROM CAST({1} AS DATE)) - CASE WHEN EXTRACT(MONTH FROM CAST({2} AS DATE)) * 100 + EXTRACT(DAY FROM CAST({2} AS DATE)) < EXTRACT(MONTH FROM CAST({1} AS DATE)) * 100 + EXTRACT(DAY FROM CAST({1} AS DATE)) THEN 1 ELSE 0 END)");
 

@@ -88,28 +88,15 @@ internal sealed class ConditionDefinitionParser
             return grouped;
         }
 
-        if (Peek("exists") || Peek("notexists"))
-            return ParseAny();
-
         var left = Next();
         if (left.Type is not (TokenType.Identifier or TokenType.Field or TokenType.FieldExpression))
             throw new FormatException($"Expected a filter field, received [{left.Text}].");
-        var canonicalCollectionPredicate = left.Type == TokenType.FieldExpression
-            ? ToCanonicalCollectionPredicate(left.Text)
-            : null;
-        if (canonicalCollectionPredicate is not null &&
-            FieldDefinitionParser.Parse(canonicalCollectionPredicate) is FunctionFieldDefinition collectionFunction)
-            return new FunctionCondition(collectionFunction);
 
-        if (left.Text.StartsWith("Any(", StringComparison.OrdinalIgnoreCase) ||
-            left.Text.StartsWith("NotAny(", StringComparison.OrdinalIgnoreCase))
-        {
-            var function = FieldDefinitionParser.Parse(left.Text);
-            if (function is FunctionFieldDefinition { FunctionName: var name } functionDefinition &&
-                (name.Equals("Any", StringComparison.OrdinalIgnoreCase) ||
-                 name.Equals("NotAny", StringComparison.OrdinalIgnoreCase)))
-                return new FunctionCondition(functionDefinition);
-        }
+        if (left.Type == TokenType.FieldExpression &&
+            !IsOperatorNext() &&
+            FieldDefinitionParser.Parse(left.Text) is FunctionFieldDefinition function)
+            return new FunctionCondition(ToCollectionCall(function));
+
         var leftField = new FieldDefinition(left.Text);
 
         var operationToken = Next();
@@ -152,60 +139,23 @@ internal sealed class ConditionDefinitionParser
         };
     }
 
-    private static string? ToCanonicalCollectionPredicate(string text)
+    // "Relation.Fn(args)" is the call "Fn(Relation, args)": the receiver becomes the first argument.
+    internal static FunctionFieldDefinition ToCollectionCall(FunctionFieldDefinition function)
     {
-        var match = System.Text.RegularExpressions.Regex.Match(
-            text,
-            @"^\s*([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\.(Any|NotAny)\((.*)\)\s*$",
-            System.Text.RegularExpressions.RegexOptions.Singleline | System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        if (!match.Success)
-            return null;
+        var separator = function.FunctionName.LastIndexOf('.');
+        if (separator <= 0)
+            return function;
 
-        var collection = match.Groups[1].Value;
-        var function = match.Groups[2].Value;
-        var predicate = match.Groups[3].Value.Trim();
-        return predicate.Length == 0
-            ? $"{function}({collection})"
-            : $"{function}({collection}, {predicate})";
+        return new FunctionFieldDefinition(
+            function.FunctionName[(separator + 1)..],
+            [new FieldDefinition(function.FunctionName[..separator]), .. function.Arguments]);
     }
 
-    private FunctionCondition ParseAny()
-    {
-        var negated = Match("notexists");
-        if (!negated)
-            Expect("exists");
-
-        var context = Next();
-        if (context.Type is not (TokenType.Identifier or TokenType.Field))
-            throw new FormatException($"Expected an exists context, received [{context.Text}].");
-
-        string? alias = null;
-        if (!Peek("on") && !Peek(")") && !IsEnd())
-        {
-            var aliasToken = Next();
-            if (aliasToken.Type is not (TokenType.Identifier or TokenType.Field))
-                throw new FormatException($"Expected an exists alias, received [{aliasToken.Text}].");
-            alias = aliasToken.Text;
-        }
-
-        IConditionDefintion? condition = null;
-        if (Match("on"))
-        {
-            var parenthesized = Match("(");
-            condition = ParseOr();
-            if (parenthesized)
-                Expect(")");
-        }
-
-        var arguments = new List<IFieldDefinition> { new FieldDefinition(context.Text) };
-        if (!string.IsNullOrWhiteSpace(alias))
-            arguments.Add(new FieldDefinition(alias));
-        if (condition is not null)
-            arguments.Add(new FieldDefinition(condition.ToText()));
-        return new FunctionCondition(new FunctionFieldDefinition(
-            negated ? "NotAny" : "Any",
-            arguments.ToArray()));
-    }
+    private bool IsOperatorNext()
+        => _position < _tokens.Count &&
+           _tokens[_position].Type == TokenType.Operator &&
+           !_tokens[_position].Text.Equals("AND", StringComparison.OrdinalIgnoreCase) &&
+           !_tokens[_position].Text.Equals("OR", StringComparison.OrdinalIgnoreCase);
 
     private IFieldDefinition? ParseFilterValue(string operation)
     {

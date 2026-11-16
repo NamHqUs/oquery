@@ -8,6 +8,8 @@ internal sealed class Db2FunctionDefinition : SqlFunctionDefinitionBuiltinBase
 {
     protected override string Dialect => "Db2";
 
+    protected override string CurrentDateTimeSql => "CURRENT TIMESTAMP";
+
     internal override IEnumerable<SqlFunctionDefintion> CreateAllFunctions() =>
         base.CreateAllFunctions().Append(Round());
 
@@ -56,8 +58,8 @@ internal sealed class Db2FunctionDefinition : SqlFunctionDefinitionBuiltinBase
         Create("MonthKey", [new("value", DataType.Datetime)], DataType.String,
             "Formats a date as a year-month key.", "VARCHAR_FORMAT({1}, 'YYYY-MM')");
 
-    protected override SqlFunctionDefintion AgeOn() =>
-        Create("AgeOn",
+    protected override SqlFunctionDefintion CompletedYears() =>
+        Create("CompletedYears",
             [new("birthDate", DataType.Datetime), new("asOfDate", DataType.Datetime)],
             DataType.Number, "Returns completed years between a birth date and an as-of date.",
             "(YEAR(CAST({2} AS DATE)) - YEAR(CAST({1} AS DATE)) - " +
