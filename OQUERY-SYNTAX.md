@@ -360,12 +360,13 @@ Boolean functions whose template and fragment rules are in
 
 ```text
 Products: Id, Name
-  Where Any(Users, Status = <Active>)
+  Where Users.Any(Status = <Active>)
     AND State = <CA>
 ```
 
-The predicate is optional: `Any(Users)` tests only that a related row exists.
-Use `NotAny(...)` for the negative test. Programmatic query definitions use the
+`Users` is a collection relation of `Products`; the collection is the receiver.
+The predicate is optional: `Users.Any()` tests only that a related row exists.
+Use `Users.NotAny(...)` for the negative test. Programmatic query definitions use the
 same function names.
 
 ## 8. Aggregation and grouping
@@ -613,7 +614,7 @@ HighRiskPatientCare is Patients:
     Id PatientId,
     FirstName,
     LastName,
-    BirthDate.AgeOn(<2025-10-31>) Age,
+    BirthDate.YearsTo(<2025-10-31>) Age,
     Visits.SumIf(Charge, Status = <Completed>).Round(<2>) TotalCharges,
     Visits.CountIf(Status = <Completed>) CompletedVisits,
     Visits.CountIf(Diagnose.IsChronic = <True>) ChronicVisits,

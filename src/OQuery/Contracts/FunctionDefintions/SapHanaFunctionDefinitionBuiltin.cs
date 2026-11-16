@@ -60,9 +60,9 @@ internal sealed class SapHanaFunctionDefinitionBuiltin : SqlFunctionDefinitionBu
             DataType.Number, "Returns the first non-null numeric value.",
             "COALESCE(CAST({1} AS DECIMAL(34, 10)), 0)");
 
-    protected override SqlFunctionDefintion CompletedYears() =>
-        Create("CompletedYears",
-            [new("birthDate", DataType.Datetime), new("asOfDate", DataType.Datetime)],
+    protected override SqlFunctionDefintion YearsTo() =>
+        Create("YearsTo",
+            [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],
             DataType.Number, "Returns completed years between a birth date and an as-of date.",
             "YEARS_BETWEEN({1}, {2})");
 

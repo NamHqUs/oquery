@@ -222,7 +222,7 @@ Doctors: Id DoctorId,
 ```text
 Patients: Id PatientId,
     Concat(FirstName, < >, LastName) Patient,
-    BirthDate.AgeOn(<2025-10-31>) Age,
+    BirthDate.YearsTo(<2025-10-31>) Age,
     Visits.CountIf(Status = <Completed> AND Diagnose.IsChronic = <True>) ChronicVisits,
     Visits.CountIf(Status = <Completed>) CompletedVisits,
     Visits.SumIf(LabResults.CountIf(IsAbnormal = <True>), Status = <Completed>) AbnormalResults,

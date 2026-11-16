@@ -69,23 +69,25 @@ public static class QueryDefinitionJsonParser
     }
 
 
-    public static void ValidateContextReferences(QueryDefinition definition)
+    public static void ValidateContextReferences(QueryDefinition definition, Func<string, bool>? isEntityName = null)
     {
         ArgumentNullException.ThrowIfNull(definition);
 
         ValidateContextReferences(
             definition,
             definition.Contexts?.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase)
-                ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+                ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+            isEntityName);
     }
 
     private static void ValidateContextReferences(
         QueryDefinition definition,
-        HashSet<string> availableContexts)
+        HashSet<string> availableContexts,
+        Func<string, bool>? isEntityName = null)
     {
         foreach (var relation in definition.Joins ?? [])
         {
-            if (!availableContexts.Contains(relation.RefContext))
+            if (!availableContexts.Contains(relation.RefContext) && isEntityName?.Invoke(relation.RefContext) != true)
                 throw new FormatException(
                     $"Query relation references unknown context [{relation.RefContext}].");
         }
@@ -103,7 +105,7 @@ public static class QueryDefinitionJsonParser
                 if (nested.Contexts is not null)
                     foreach (var nestedName in nested.Contexts.Keys)
                         nestedAvailableContexts.Add(nestedName);
-                ValidateContextReferences(nested, nestedAvailableContexts);
+                ValidateContextReferences(nested, nestedAvailableContexts, isEntityName);
             }
         }
     }

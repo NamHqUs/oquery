@@ -55,9 +55,9 @@ internal sealed class MariaFunctionDefinitionBuiltin : SqlFunctionDefinitionBuil
         Create("MonthKey", [new("value", DataType.Datetime)], DataType.String,
             "Formats a date as a year-month key.", "DATE_FORMAT({1}, '%Y-%m')");
 
-    protected override SqlFunctionDefintion CompletedYears() =>
-        Create("CompletedYears",
-            [new("birthDate", DataType.Datetime), new("asOfDate", DataType.Datetime)],
+    protected override SqlFunctionDefintion YearsTo() =>
+        Create("YearsTo",
+            [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],
             DataType.Number,
             "Returns completed years between a birth date and an as-of date.",
             "TIMESTAMPDIFF(YEAR, {1}, {2})");

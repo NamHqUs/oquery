@@ -66,8 +66,8 @@ internal sealed class SqliteFunctionDefinitionBuiltin : SqlFunctionDefinitionBui
         Create("MonthKey", [new("value", DataType.Datetime)], DataType.String,
             "Formats a date as a year-month key.", "STRFTIME('%Y-%m', {1})");
 
-    protected override SqlFunctionDefintion CompletedYears() =>
-        Create("CompletedYears", [new("birthDate", DataType.Datetime), new("asOfDate", DataType.Datetime)],
+    protected override SqlFunctionDefintion YearsTo() =>
+        Create("YearsTo", [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],
             DataType.Number, "Returns completed years between a start date and an as-of date.",
             "(CAST(STRFTIME('%Y', {2}) AS INTEGER) - CAST(STRFTIME('%Y', {1}) AS INTEGER) - CASE WHEN STRFTIME('%m%d', {2}) < STRFTIME('%m%d', {1}) THEN 1 ELSE 0 END)");
 

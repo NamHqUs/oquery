@@ -64,8 +64,8 @@ internal sealed class FirebirdFunctionDefinitionBuiltin : SqlFunctionDefinitionB
         Create("MonthKey", [new("value", DataType.Datetime)], DataType.String,
             "Formats a date as a year-month key.", "SUBSTRING(CAST({1} AS VARCHAR(10)) FROM 1 FOR 7)");
 
-    protected override SqlFunctionDefintion CompletedYears() =>
-        Create("CompletedYears", [new("birthDate", DataType.Datetime), new("asOfDate", DataType.Datetime)],
+    protected override SqlFunctionDefintion YearsTo() =>
+        Create("YearsTo", [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],
             DataType.Number, "Returns completed years between a start date and an as-of date.",
             "(EXTRACT(YEAR FROM CAST({2} AS DATE)) - EXTRACT(YEAR FROM CAST({1} AS DATE)) - CASE WHEN EXTRACT(MONTH FROM CAST({2} AS DATE)) * 100 + EXTRACT(DAY FROM CAST({2} AS DATE)) < EXTRACT(MONTH FROM CAST({1} AS DATE)) * 100 + EXTRACT(DAY FROM CAST({1} AS DATE)) THEN 1 ELSE 0 END)");
 

@@ -197,7 +197,7 @@ internal sealed class DateDifferenceQueryTests
     }
 
     [Test]
-    public async Task ToNowFunctionsCountCompletedUnitsOnSqlite()
+    public async Task ToNowAndDateRangeFunctionsCountCompletedUnitsOnSqlite()
     {
         using var connection = new SqliteConnection("Data Source=:memory:");
         connection.Open();
@@ -221,6 +221,7 @@ internal sealed class DateDifferenceQueryTests
             Projections =
             [
                 new(new FunctionFieldDefinition("InvoiceDate.YearsToNow", []), "Years"),
+                new(new FunctionFieldDefinition("InvoiceDate.YearsTo", [new FieldDefinition("DueDate")]), "YearsBetween"),
                 new(new FunctionFieldDefinition("DueDate.DaysToNow", []), "Days")
             ]
         };
@@ -229,6 +230,7 @@ internal sealed class DateDifferenceQueryTests
 
         Assert.That(Convert.ToInt32(record["Years"]), Is.EqualTo(5));
         Assert.That(Convert.ToInt32(record["Days"]), Is.EqualTo(3));
+        Assert.That(Convert.ToInt32(record["YearsBetween"]), Is.EqualTo(4));
     }
 
     [Test]
@@ -243,6 +245,90 @@ internal sealed class DateDifferenceQueryTests
 
         Assert.That(sql, Does.Match(@"DATEDIFF\s*\(\s*month,.*GETDATE\s*\(\s*\)"));
         Assert.That(sql, Does.Match(@"CASE WHEN DAY\s*\(\s*GETDATE\s*\(\s*\)\s*\)\s*<\s*DAY\s*\("));
+    }
+
+    [Test]
+    public void ReceiverFunctionInsideCollectionPredicateResolvesAgainstCollection()
+    {
+        var sellerMetadata = new Entity[]
+        {
+            new(
+                Name: "Seller",
+                Fields:
+                [
+                    new Field("Id", "Id"),
+                    new Field("ManagerId", "ManagerId"),
+                    new Field("Salary", "Salary", DataType.Number),
+                    new Field("HireDate", "HireDate", DataType.Datetime)
+                ],
+                Relations:
+                [
+                    new(
+                        Name: "Members",
+                        RefEntity: "Seller",
+                        Type: RelationType.Collection,
+                        RefKeys: [new("Id", "ManagerId")])
+                ])
+        };
+        var definition = QueryDefinitionOQueryParser.Parse(
+            "Seller: Id\n  Where Members.Any(Salary > <80000> AND HireDate.DateSub(<2025-10-31>) >= <5>)");
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        using var context = new OQueryEngine(connection, new MetadataProvider(sellerMetadata),
+            new FunctionProvider(new SqliteDialect()), new SqliteDialect());
+
+        var sql = context.Query(definition).ToSql().CommandText;
+
+        Assert.That(sql, Does.Match(@"EXISTS"));
+        Assert.That(sql, Does.Match(@"julianday"));
+    }
+
+    [Test]
+    public void EntityJoinToSameEntityFiltersMembersHiredBeforeManager()
+    {
+        var metadata = new Entity[]
+        {
+            new(
+                Name: "Seller",
+                Fields:
+                [
+                    new Field("Id", "Id", DataType.Number),
+                    new Field("FirstName", "FirstName", DataType.String),
+                    new Field("ManagerId", "ManagerId", DataType.Number),
+                    new Field("HireDate", "HireDate", DataType.Datetime)
+                ])
+        };
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        connection.Open();
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = """
+                CREATE TABLE "Seller" (
+                    "Id" INTEGER PRIMARY KEY,
+                    "FirstName" TEXT NOT NULL,
+                    "ManagerId" INTEGER NULL,
+                    "HireDate" TEXT NOT NULL
+                );
+                INSERT INTO "Seller" ("Id", "FirstName", "ManagerId", "HireDate") VALUES
+                    (1, 'Ann', NULL, '2015-01-01'),
+                    (2, 'Ben', 1, '2010-01-01'),
+                    (3, 'Cara', 1, '2020-01-01');
+                """;
+            command.ExecuteNonQuery();
+        }
+        using var context = new OQueryEngine(connection, new MetadataProvider(metadata),
+            new FunctionProvider(new SqliteDialect()), new SqliteDialect());
+        var definition = QueryDefinitionOQueryParser.Parse("""
+            Seller:
+              Join Seller m On Id = m.ManagerId
+              Select FirstName ManagerName, HireDate ManagerHireDate,
+                m.FirstName MemberName, m.HireDate MemberHireDate
+              Where m.HireDate < HireDate
+            """);
+
+        var rows = context.Query(definition).ToList();
+
+        Assert.That(rows, Has.Count.EqualTo(1));
+        Assert.That(rows[0]["MemberName"], Is.EqualTo("Ben"));
     }
 
     private static OQueryEngine CreateTypedContext(SqliteConnection connection)

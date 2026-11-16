@@ -58,9 +58,9 @@ internal sealed class Db2FunctionDefinition : SqlFunctionDefinitionBuiltinBase
         Create("MonthKey", [new("value", DataType.Datetime)], DataType.String,
             "Formats a date as a year-month key.", "VARCHAR_FORMAT({1}, 'YYYY-MM')");
 
-    protected override SqlFunctionDefintion CompletedYears() =>
-        Create("CompletedYears",
-            [new("birthDate", DataType.Datetime), new("asOfDate", DataType.Datetime)],
+    protected override SqlFunctionDefintion YearsTo() =>
+        Create("YearsTo",
+            [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],
             DataType.Number, "Returns completed years between a birth date and an as-of date.",
             "(YEAR(CAST({2} AS DATE)) - YEAR(CAST({1} AS DATE)) - " +
             "CASE WHEN MONTH(CAST({2} AS DATE)) * 100 + DAY(CAST({2} AS DATE)) < " +

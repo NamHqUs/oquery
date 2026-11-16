@@ -85,6 +85,9 @@ class QueryCompilationResolver(
             tableContext.PendingProjectionAliases.TryGetValue(fieldPath, out var pendingType))
             return new ProjectionAliasExpression(fieldPath, pendingType);
 
+        if (TryParseScalarReceiverFunction(tableContext, fieldPath, out var receiverFunction))
+            return ParseFunctionExpression(tableContext, receiverFunction, 0);
+
         if (TryParseFunction(fieldPath, out var wrappedFunction))
             return ParseFunctionExpression(tableContext, wrappedFunction, 0);
 
@@ -957,6 +960,29 @@ class QueryCompilationResolver(
         if (FieldDefinitionParser.Parse(fieldName) is not FunctionFieldDefinition parsedFunction ||
             !functionProvider.TryGetFunction(parsedFunction.FunctionName, out var definition) ||
             definition is not { IsAggregate: true })
+            return false;
+
+        function = parsedFunction;
+        return true;
+    }
+
+    // A fluent path such as HireDate.YearsToNow() calls a function on a scalar field; relation paths are left to the relation branches.
+    private bool TryParseScalarReceiverFunction(
+        TableExpression tableContext,
+        string fieldPath,
+        out FunctionFieldDefinition function)
+    {
+        function = null!;
+        if (FieldDefinitionParser.Parse(fieldPath) is not FunctionFieldDefinition parsedFunction ||
+            !parsedFunction.FunctionName.Contains('.'))
+            return false;
+
+        var separator = parsedFunction.FunctionName.LastIndexOf('.');
+        var receiverPath = parsedFunction.FunctionName[..separator];
+        var functionName = parsedFunction.FunctionName[(separator + 1)..];
+        if (!functionProvider.TryGetFunction(functionName, out _) ||
+            !tableContext.AuthorizedFields.Any(field =>
+                string.Equals(field.Name, receiverPath, StringComparison.OrdinalIgnoreCase)))
             return false;
 
         function = parsedFunction;

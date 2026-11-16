@@ -251,7 +251,7 @@ utilization, total charges, and most recent care date.
         GROUP BY VisitId
     )
     SELECT TOP (10) pe.Id AS PatientId, CONCAT(pe.FirstName, ' ', pe.LastName) AS Patient,
-           CAST(DATEDIFF(DAY, pe.BirthDate, CONVERT(date, '2025-10-31')) / 365.25 AS int) AS Age,
+           (DATEDIFF(year, pe.BirthDate, CONVERT(date, '2025-10-31')) - CASE WHEN DATEPART(month, CONVERT(date, '2025-10-31')) * 100 + DATEPART(day, CONVERT(date, '2025-10-31')) < DATEPART(month, pe.BirthDate) * 100 + DATEPART(day, pe.BirthDate) THEN 1 ELSE 0 END) AS Age,
            COUNT(DISTINCT CASE WHEN d.IsChronic = 1 THEN v.Id END) AS ChronicVisits,
            COUNT(DISTINCT v.Id) AS CompletedVisits,
            SUM(COALESCE(vl.AbnormalCount, 0)) AS AbnormalResults,

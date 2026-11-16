@@ -41,10 +41,12 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
         MedicalLossRatio(),
         Concat(),
         MonthKey(),
-        Difference(),
         YearsTo(),
         MonthsTo(),
         DaysTo(),
+        YearsToNow(),
+        MonthsToNow(),
+        DaysToNow(),
         Difference(),
         Lag(),
         WindowSum(),
@@ -202,11 +204,11 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
         Create("MonthKey", [new("value", DataType.Datetime)], DataType.String,
             "Formats a date as a year-month key.", "CONVERT(char(7), {1}, 126)");
 
-    protected virtual SqlFunctionDefintion CompletedYears() =>
-        Create("CompletedYears",
-            [new("birthDate", DataType.Datetime), new("asOfDate", DataType.Datetime)],
+    protected virtual SqlFunctionDefintion YearsTo() =>
+        Create("YearsTo",
+            [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],
             DataType.Number,
-            "Returns completed years between a start date and an as-of date.",
+            "Returns completed years between startDate and endDate.",
             "(DATEDIFF(year, {1}, {2}) - CASE WHEN DATEPART(month, {2}) * 100 + DATEPART(day, {2}) < DATEPART(month, {1}) * 100 + DATEPART(day, {1}) THEN 1 ELSE 0 END)");
 
     protected virtual SqlFunctionDefintion ElapsedYears() =>
@@ -215,26 +217,46 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
             DataType.Number, "Returns fractional years elapsed between two dates.",
             "(DATEDIFF(day, {1}, {2}) / 365.2425)");
 
-    protected virtual SqlFunctionDefintion YearsTo() =>
-        Create("YearsTo", [new("startDate", DataType.Datetime)], DataType.Number,
+    protected virtual SqlFunctionDefintion YearsToNow() =>
+        Create("YearsToNow", [new("startDate", DataType.Datetime)], DataType.Number,
             "Returns completed years from startDate until now.",
-            TemplateWithNow(CompletedYears()));
+            WithNowEnd(YearsTo()));
 
     protected virtual SqlFunctionDefintion MonthsTo() =>
-        Create("MonthsTo", [new("startDate", DataType.Datetime)], DataType.Number,
+        Create("MonthsTo",
+            [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],
+            DataType.Number, "Returns completed months between startDate and endDate.",
+            MonthsTemplate());
+
+    protected virtual SqlFunctionDefintion MonthsToNow() =>
+        Create("MonthsToNow", [new("startDate", DataType.Datetime)], DataType.Number,
             "Returns completed months from startDate until now.",
-            $"({TemplateWithNow(MonthSub())} - CASE WHEN {DayOfNow()} < {Day().GetSqlTemplate(Dialect)} THEN 1 ELSE 0 END)");
+            WithNowEnd(MonthsTo()));
 
     protected virtual SqlFunctionDefintion DaysTo() =>
-        Create("DaysTo", [new("startDate", DataType.Datetime)], DataType.Number,
-            "Returns completed days from startDate until now.",
-            TemplateWithNow(DateSub()));
+        Create("DaysTo",
+            [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],
+            DataType.Number, "Returns completed days between startDate and endDate.",
+            DateSub().GetSqlTemplate(Dialect));
 
-    private string TemplateWithNow(SqlFunctionDefintion function) =>
+    protected virtual SqlFunctionDefintion DaysToNow() =>
+        Create("DaysToNow", [new("startDate", DataType.Datetime)], DataType.Number,
+            "Returns completed days from startDate until now.",
+            WithNowEnd(DaysTo()));
+
+    private string WithNowEnd(SqlFunctionDefintion function) =>
         function.GetSqlTemplate(Dialect).Replace("{2}", CurrentDateTimeSql, StringComparison.Ordinal);
 
-    private string DayOfNow() =>
-        Day().GetSqlTemplate(Dialect).Replace("{1}", CurrentDateTimeSql, StringComparison.Ordinal);
+    // Calendar-month boundaries, minus one when the end day-of-month is earlier than the start's.
+    private string MonthsTemplate()
+    {
+        var dayOfEnd = DayPart("{2}");
+        var dayOfStart = DayPart("{1}");
+        return $"({MonthSub().GetSqlTemplate(Dialect)} - CASE WHEN {dayOfEnd} < {dayOfStart} THEN 1 ELSE 0 END)";
+    }
+
+    private string DayPart(string date) =>
+        Day().GetSqlTemplate(Dialect).Replace("{1}", date, StringComparison.Ordinal);
 
     protected virtual SqlFunctionDefintion Difference() =>
         Create("Difference",

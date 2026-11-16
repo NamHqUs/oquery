@@ -115,13 +115,15 @@ renders as `COUNT(DISTINCT CASE WHEN Status = ... THEN Quantity * UnitPrice END)
 | `DateAdd` | `value: Datetime`, `amount: Number` | Datetime | `DATEADD(day, {2}, {1})` | Adds days to a date. |
 | `MonthAdd` | `value: Datetime`, `amount: Number` | Datetime | `DATEADD(month, {2}, {1})` | Adds months to a date. |
 | `YearAdd` | `value: Datetime`, `amount: Number` | Datetime | `DATEADD(year, {2}, {1})` | Adds years to a date. |
-| `AgeOn` | `birthDate: Datetime`, `asOfDate: Datetime` | Number | `(DATEDIFF(year, {1}, {2}) - CASE WHEN DATEPART(month, {2}) * 100 + DATEPART(day, {2}) < DATEPART(month, {1}) * 100 + DATEPART(day, {1}) THEN 1 ELSE 0 END)` | Completed years between two dates. |
 | `ElapsedYears` | `startDate: Datetime`, `endDate: Datetime` | Number | `(DATEDIFF(day, {1}, {2}) / 365.2425)` | Fractional years between two dates. |
-| `YearsToNow` | `startDate: Datetime` | Number | `AgeOn({1}, GetDate())` | Completed years from startDate until now. Written as `HireDate.YearsToNow()`. |
-| `MonthsToNow` | `startDate: Datetime` | Number | `(MonthSub({1}, GetDate()) - CASE WHEN Day(GetDate()) < Day({1}) THEN 1 ELSE 0 END)` | Completed months from startDate until now. Written as `HireDate.MonthsToNow()`. |
-| `DaysToNow` | `startDate: Datetime` | Number | `DateSub({1}, GetDate())` | Completed days from startDate until now. Written as `HireDate.DaysToNow()`. |
+| `YearsTo` | `startDate: Datetime`, `endDate: Datetime` | Number | `(DATEDIFF(year, {1}, {2}) - CASE WHEN DATEPART(month, {2}) * 100 + DATEPART(day, {2}) < DATEPART(month, {1}) * 100 + DATEPART(day, {1}) THEN 1 ELSE 0 END)` | Completed years between startDate and endDate. Written as `HireDate.YearsTo(<2025-10-31>)`. |
+| `MonthsTo` | `startDate: Datetime`, `endDate: Datetime` | Number | `(MonthSub({1}, {2}) - CASE WHEN Day({2}) < Day({1}) THEN 1 ELSE 0 END)` | Completed months between startDate and endDate. Written as `HireDate.MonthsTo(<2025-10-31>)`. |
+| `DaysTo` | `startDate: Datetime`, `endDate: Datetime` | Number | `DateSub({1}, {2})` | Completed days between startDate and endDate. Written as `HireDate.DaysTo(<2025-10-31>)`. |
+| `YearsToNow` | `startDate: Datetime` | Number | `YearsTo({1}, GetDate())` | Completed years from startDate until now. Written as `HireDate.YearsToNow()`. |
+| `MonthsToNow` | `startDate: Datetime` | Number | `MonthsTo({1}, GetDate())` | Completed months from startDate until now. Written as `HireDate.MonthsToNow()`. |
+| `DaysToNow` | `startDate: Datetime` | Number | `DaysTo({1}, GetDate())` | Completed days from startDate until now. Written as `HireDate.DaysToNow()`. |
 
-The three `*ToNow` functions reuse each dialect's `AgeOn`, `MonthSub`, `Day`, and `DateSub` templates, with the current time as the end date. The current-time expression is `GETDATE()` on SQL Server, `datetime('now', 'localtime')` on SQLite, `CURRENT TIMESTAMP` on Db2, and `CURRENT_TIMESTAMP` on the other dialects.
+`YearsTo`, `MonthsTo`, and `DaysTo` reuse each dialect's `MonthSub`, `Day`, and `DateSub` templates, and the `*ToNow` variants fill in the current time as the end date. The current-time expression is `GETDATE()` on SQL Server, `datetime('now', 'localtime')` on SQLite, `CURRENT TIMESTAMP` on Db2, and `CURRENT_TIMESTAMP` on the other dialects. `YearsTo` is overridden per dialect; `MonthsTo` and `DaysTo` are built from the base templates.
 
 `DateFormat` is also registered for SQLite only. See
 [Dialect overrides](#dialect-overrides).
@@ -134,14 +136,14 @@ dialect changes or adds. A function not listed uses the SQL Server template.
 | Dialect (`Key`) | Adds | Overrides |
 |---|---|---|
 | `SqlServer` | `GetDate`, `Round` | none |
-| `Sqlite` | `GetDate`, `Round`, `DateFormat` | `Day`, `Month`, `Year`, `DateSub`, `MonthSub`, `YearSub`, `DateAdd`, `MonthAdd`, `YearAdd`, `MonthKey`, `AgeOn`, `ElapsedYears` |
-| `Postgres` | `GetDate`, `Round` | `Day`, `Month`, `Year`, `DateSub`, `MonthSub`, `YearSub`, `DateAdd`, `MonthAdd`, `YearAdd`, `MonthKey`, `AgeOn`, `ElapsedYears`, `Lag` |
-| `Cockroach` | `GetDate`, `Round` | `Day`, `Month`, `Year`, `DateSub`, `MonthSub`, `YearSub`, `DateAdd`, `MonthAdd`, `YearAdd`, `MonthKey`, `AgeOn`, `ElapsedYears`, `Lag` |
-| `Firebird` | `GetDate`, `Round` | `Day`, `Month`, `Year`, `DateSub`, `MonthSub`, `YearSub`, `DateAdd`, `MonthAdd`, `YearAdd`, `IfNull`, `MedicalLossRatio`, `Concat`, `MonthKey`, `AgeOn`, `ElapsedYears`, `Lag` |
-| `Maria` | `GetDate`, `Round` | `Day`, `Month`, `Year`, `DateSub`, `MonthSub`, `YearSub`, `DateAdd`, `MonthAdd`, `YearAdd`, `MonthKey`, `AgeOn`, `ElapsedYears`, `Lag` |
-| `Oracle` | `GetDate`, `Round` | `Day`, `Month`, `Year`, `DateSub`, `MonthSub`, `YearSub`, `MonthKey`, `AgeOn` |
-| `SapHana` | `GetDate`, `Round` | `Concat`, `Day`, `Month`, `Year`, `DateSub`, `MonthSub`, `YearSub`, `DateAdd`, `MonthAdd`, `YearAdd`, `MonthKey`, `IfNull`, `AgeOn`, `ElapsedYears`, `Lag` |
-| `Db2` | `Round` | `MedicalLossRatio`, `Concat`, `DateSub`, `MonthSub`, `YearSub`, `DateAdd`, `MonthAdd`, `YearAdd`, `MonthKey`, `AgeOn`, `ElapsedYears`, `Lag` |
+| `Sqlite` | `GetDate`, `Round`, `DateFormat` | `Day`, `Month`, `Year`, `DateSub`, `MonthSub`, `YearSub`, `DateAdd`, `MonthAdd`, `YearAdd`, `MonthKey`, `ElapsedYears` |
+| `Postgres` | `GetDate`, `Round` | `Day`, `Month`, `Year`, `DateSub`, `MonthSub`, `YearSub`, `DateAdd`, `MonthAdd`, `YearAdd`, `MonthKey`, `ElapsedYears`, `Lag` |
+| `Cockroach` | `GetDate`, `Round` | `Day`, `Month`, `Year`, `DateSub`, `MonthSub`, `YearSub`, `DateAdd`, `MonthAdd`, `YearAdd`, `MonthKey`, `ElapsedYears`, `Lag` |
+| `Firebird` | `GetDate`, `Round` | `Day`, `Month`, `Year`, `DateSub`, `MonthSub`, `YearSub`, `DateAdd`, `MonthAdd`, `YearAdd`, `IfNull`, `MedicalLossRatio`, `Concat`, `MonthKey`, `ElapsedYears`, `Lag` |
+| `Maria` | `GetDate`, `Round` | `Day`, `Month`, `Year`, `DateSub`, `MonthSub`, `YearSub`, `DateAdd`, `MonthAdd`, `YearAdd`, `MonthKey`, `ElapsedYears`, `Lag` |
+| `Oracle` | `GetDate`, `Round` | `Day`, `Month`, `Year`, `DateSub`, `MonthSub`, `YearSub`, `MonthKey` |
+| `SapHana` | `GetDate`, `Round` | `Concat`, `Day`, `Month`, `Year`, `DateSub`, `MonthSub`, `YearSub`, `DateAdd`, `MonthAdd`, `YearAdd`, `MonthKey`, `IfNull`, `ElapsedYears`, `Lag` |
+| `Db2` | `Round` | `MedicalLossRatio`, `Concat`, `DateSub`, `MonthSub`, `YearSub`, `DateAdd`, `MonthAdd`, `YearAdd`, `MonthKey`, `ElapsedYears`, `Lag` |
 
 Dialect caveats:
 - `Db2` `Lag` renders `LAG({1}, 1)`, so the `offset` argument is ignored.
