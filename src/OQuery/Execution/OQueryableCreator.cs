@@ -134,84 +134,44 @@ internal static class OQueryableCreator
         {
             ConditionDefinition group => CreateLogicalFilter(group, parameter),
             ConditionStatementDefinition binary => CreateCondition(binary, parameter),
-            ExistsConditionDefinition exists => CreateExistsCondition(exists, parameter),
+            FunctionCondition function => CreateFunctionCondition(function, parameter),
             _ => throw new ArgumentOutOfRangeException(nameof(filter))
         };
 
-    private static Expression CreateExistsCondition(
-        ExistsConditionDefinition filter,
+    private static Expression CreateFunctionCondition(
+        FunctionCondition filter,
         ParameterExpression parameter)
     {
-        if (filter.Context.Value is not string contextName ||
-            string.IsNullOrWhiteSpace(contextName))
-            throw new FormatException("An exists condition requires a context name.");
+        var function = filter.Function;
+        var negated = function.FunctionName.Equals("NotAny", StringComparison.OrdinalIgnoreCase);
+        if ((!negated && !function.FunctionName.Equals("Any", StringComparison.OrdinalIgnoreCase)) ||
+            function.Arguments is not [FieldDefinition { FieldName: var context }, .. var rest] ||
+            rest.Length > 2)
+            throw new FormatException($"{function.FunctionName} requires a collection path and an optional predicate.");
 
+        var predicateArgument = rest.Length == 2 ? rest[1] : rest.FirstOrDefault();
+        var alias = rest.Length == 2 ? rest[0].ToText() : null;
+        var predicateText = predicateArgument?.ToText();
+        if (alias is not null && predicateText?.StartsWith(alias + ".", StringComparison.OrdinalIgnoreCase) == true)
+            predicateText = predicateText[(alias.Length + 1)..];
         var innerParameter = Expression.Parameter(typeof(IQueryParameter), "existsRecord");
-        var condition = filter.Condition is null
+        var condition = string.IsNullOrWhiteSpace(predicateText)
             ? null
-            : RewriteExistsCondition(filter.Condition, filter.Alias);
-        var innerBody = filter.Condition is null
+            : QueryDefinitions.Parsers.ConditionDefinitionParser.Parse(predicateText);
+        var innerBody = condition is null
             ? Expression.Constant(true)
-            : CreateFilterBody(condition!, innerParameter);
+            : CreateFilterBody(condition, innerParameter);
         var predicate = Expression.Lambda<Func<IQueryParameter, bool>>(innerBody, innerParameter);
         var query = Expression.Call(
             parameter,
             typeof(IQueryParameter).GetMethod(nameof(IQueryParameter.Query))!,
-            Expression.Constant(contextName));
-        var any = Expression.Call(
+            Expression.Constant(context));
+        return Expression.Call(
             typeof(FluentQueryExtensions),
-            filter.Negated
-                ? nameof(FluentQueryExtensions.NotAny)
-                : nameof(FluentQueryExtensions.Any),
+            negated ? nameof(FluentQueryExtensions.NotAny) : nameof(FluentQueryExtensions.Any),
             null,
             query,
             predicate);
-        return any;
-    }
-
-    private static IConditionDefintion RewriteExistsCondition(
-        IConditionDefintion condition,
-        string? alias)
-        => condition switch
-        {
-            ConditionDefinition group => new ConditionDefinition(
-                group.LogicalOperation,
-                group.Filters.Select(filter => RewriteExistsCondition(filter, alias)).ToArray()),
-            ConditionStatementDefinition statement => statement with
-            {
-                Left = RewriteExistsField(statement.Left, alias),
-                Right = statement.Right is null
-                    ? null
-                    : RewriteExistsField(statement.Right, alias)
-            },
-            ExistsConditionDefinition nested => nested with
-            {
-                Condition = nested.Condition is null
-                    ? null
-                    : RewriteExistsCondition(nested.Condition, nested.Alias)
-            },
-            _ => condition
-        };
-
-    private static IFieldDefinition RewriteExistsField(
-        IFieldDefinition field,
-        string? alias)
-    {
-        if (field is FieldDefinition fieldDefinition &&
-            !string.IsNullOrWhiteSpace(alias) &&
-            fieldDefinition.FieldName.StartsWith(alias + ".", StringComparison.OrdinalIgnoreCase))
-            return fieldDefinition with
-            {
-                FieldName = fieldDefinition.FieldName[(alias.Length + 1)..]
-            };
-
-        if (field is GroupFieldDefintion group)
-            return group with
-            {
-                Fields = group.Fields.Select(value => RewriteExistsField(value, alias)).ToArray()
-            };
-
-        return field;
     }
 
     private static Expression CreateLogicalFilter(

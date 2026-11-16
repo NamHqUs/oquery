@@ -36,11 +36,11 @@ internal sealed class FilterParserTests : TestBase
     public void Filter_ParsesExistsAndNotExistsContextConditions()
     {
         var filter = QueryDefinitionJsonParser.ParseFilter(
-            "(Members HasAny Name = <Bob>) AND Members HasNone Name = <David>");
+            "(Any(Members, Name = <Bob>)) AND NotAny(Members, Name = <David>)");
 
         Assert.That(
             filter!.ToText(),
-            Is.EqualTo("Members HasAny Name = <Bob> AND Members HasNone Name = <David>"));
+            Is.EqualTo("Any(Members, Name = <Bob>) AND NotAny(Members, Name = <David>)"));
     }
 
     [Test]
@@ -60,6 +60,20 @@ internal sealed class FilterParserTests : TestBase
             Assert.That(statement.Operator, Is.EqualTo(BinaryOperator.IsNotNull));
             Assert.That(statement.Right, Is.Null);
             Assert.That(sql.CommandText, Does.Contain("IS NOT NULL"));
+        });
+    }
+
+    [Test]
+    public void Filter_ParsesDottedCollectionAnyAndNotAny()
+    {
+        var any = QueryDefinitionJsonParser.ParseFilter("Members.Any(Salary > <80000>)");
+        var notAny = QueryDefinitionJsonParser.ParseFilter("Members.NotAny()");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(any!.Filters.Single(), Is.TypeOf<FunctionCondition>());
+            Assert.That(((FunctionCondition)any.Filters.Single()).Function.FunctionName, Is.EqualTo("Any"));
+            Assert.That(((FunctionCondition)notAny!.Filters.Single()).Function.FunctionName, Is.EqualTo("NotAny"));
         });
     }
 }

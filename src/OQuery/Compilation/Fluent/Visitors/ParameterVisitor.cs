@@ -104,10 +104,12 @@ class ParameterVisitor(QueryCompilationResolver queryContext) : QueryVisitor(que
         var tableContext = QueryContext.Arguments
             .First(e => e.ArgumentName == parameter.Name)
             .TableContext;
-        var innerTable = QueryContext.JoinCollection(tableContext, relationPath);
         var predicate = (LambdaExpression)node.Arguments[0].StripQuotes();
-        innerTable = new WhereVisitor(innerTable, QueryContext).Eval(predicate);
-        return new AnyExpression(innerTable, negated);
+        return QueryContext.CreateCollectionFunction(
+            negated ? nameof(QueryValue.NotAny) : nameof(QueryValue.Any),
+            tableContext,
+            relationPath,
+            innerTable => new WhereVisitor(innerTable, QueryContext).Eval(predicate));
     }
 
     //e => e["Lookup.FieldName"]

@@ -121,7 +121,7 @@ var results = db.Query("User")
     .ToList();
 ```
 
-The equivalent OQuery uses the existence operators `HasAny` and `HasNone`. Their
+The equivalent OQuery uses the existence functions `Any` and `NotAny`. Their
 syntax and examples are in
 [FUNCTION-DEFINITIONS.md](./FUNCTION-DEFINITIONS.md#6-existence-operators).
 

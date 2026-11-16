@@ -354,15 +354,19 @@ metadata relationship.
 
 ## 7. Collection existence conditions
 
-`HasAny` and `HasNone` test whether a collection has matching rows. Their
-rules and examples are in
+`Any` and `NotAny` test whether a collection has matching rows. They are built-in
+Boolean functions whose template and fragment rules are in
 [FUNCTION-DEFINITIONS.md](./FUNCTION-DEFINITIONS.md#6-existence-operators).
 
 ```text
 Products: Id, Name
-  Where (Users HasAny Status = <Active>)
+  Where Any(Users, Status = <Active>)
     AND State = <CA>
 ```
+
+The predicate is optional: `Any(Users)` tests only that a related row exists.
+Use `NotAny(...)` for the negative test. Programmatic query definitions use the
+same function names.
 
 ## 8. Aggregation and grouping
 

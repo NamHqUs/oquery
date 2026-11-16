@@ -92,42 +92,66 @@ public sealed class FilterFieldTests : TestBase
     }
 
     [Test]
-    public void _03_Field_Collection_Any_FromOQuery()
-    {
-        var query = _db.QueryOqr("""
-            User: Name
-              Where Members HasAny Name = <Bob>
-            """);
-
-        var data = query.ToList();
-
-        Assert.That(data.Select(row => row["Name"]).ToArray(), Is.EqualTo(["Alice"]));
-    }
-
-    [Test]
-    public void _03_Field_Collection_Any_FromOQuery_WithAlias()
-    {
-        var query = _db.QueryOqr("""
-            User: Name
-              Where Members Member HasAny Member.Name = <Bob>
-            """);
-
-        var data = query.ToList();
-
-        Assert.That(data.Select(row => row["Name"]).ToArray(), Is.EqualTo(["Alice"]));
-    }
-
-    [Test]
     public void _03_Field_Collection_NotExists_FromOQuery()
     {
         var query = _db.QueryOqr("""
             User: Name
-              Where Members HasNone Name = <Bob>
+              Where NotAny(Members, Name = <Bob>)
             """);
 
         var data = query.ToList();
 
         Assert.That(data.Select(row => row["Name"]), Does.Not.Contain("Alice"));
+    }
+
+    [Test]
+    public void _03_Field_Collection_GenericAny_FromOQuery()
+    {
+        var query = _db.QueryOqr("""
+            User: Name
+              Where Any(Members, Name = <Bob>)
+            """);
+
+        var data = query.ToList();
+
+        Assert.That(data.Select(row => row["Name"]).ToArray(), Is.EqualTo(["Alice"]));
+    }
+
+    [Test]
+    public void _03_Field_Collection_Any_RendersExistsTemplateWithCorrelatedJoin()
+    {
+        var sql = _db.Query("User")
+            .Where(e => e.Query("Members").Any(x => x["Name"] == "Bob"))
+            .ToSql().CommandText;
+
+        Assert.That(sql, Does.Match(@"(?is)\bEXISTS\s*\(\s*SELECT\s+1\s+FROM\s+.+?\s+t1\b.*\bWHERE\b.*\bt1\..*=.*\bt0\."));
+        Assert.That(sql, Does.Not.Match(@"(?i)\bNOT\s+EXISTS\b"));
+    }
+
+    [Test]
+    public void _03_Field_Collection_NotAny_RendersNotExistsTemplate()
+    {
+        var sql = _db.Query("User")
+            .Where(e => e.Query("Members").NotAny(x => x["Name"] == "Bob"))
+            .ToSql().CommandText;
+
+        Assert.That(sql, Does.Match(@"(?is)\bNOT\s+EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+.+?\s+t1\b.*\bWHERE\b.*\bt1\..*=.*\bt0\."));
+    }
+
+    [Test]
+    public void _03_Field_Collection_Any_WithoutPredicate_RendersOnlyCorrelation()
+    {
+        var query = _db.QueryOqr("""
+            User: Name
+              Where Any(Members)
+            """);
+
+        var sql = query.ToSql().CommandText;
+
+        Assert.That(sql, Does.Match(@"(?is)\bEXISTS\s*\(\s*SELECT\s+1\s+FROM\s+.+?\s+t1\s+WHERE\s+\(?t1\."));
+        Assert.That(sql, Does.Not.Match(@"(?i)\bAND\s*\)"));
+        Assert.That(sql, Does.Not.Match(@"(?i)\bWHERE\s+AND\b"));
+        Assert.That(query.ToList().Count, Is.GreaterThan(0));
     }
 
     [Test]

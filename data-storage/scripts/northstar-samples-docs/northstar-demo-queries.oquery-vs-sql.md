@@ -32,7 +32,7 @@ docs. They have **not** been run through the engine yet.
 | Insurance 2 Plan MLR | Expressible | None |
 | Insurance 3 Agent portfolio | Expressible | None |
 | Insurance 4 Claims adjudication | Expressible | Simpler at claim grain |
-| Insurance 5 Member utilization | Expressible | Needs the `HasAny` fix in the app |
+| Insurance 5 Member utilization | Expressible | Uses `Any(Policies)` |
 | HR 1 Department compensation | Expressible | Verbose average across reviews |
 | HR 2 Manager span | Expressible | Average rating needs a sum and count pair |
 | HR 3 Workforce by location | Expressible | `ElapsedYears` divides by 365.2425, SQL uses 365.25 |
@@ -390,7 +390,7 @@ Clients: Id MemberId,
     (IfNull(Policies.Sum(Claims.Sum(PaidAmount)), <0>)).Round(<2>) InsurerPaid,
     IfNull(Policies.Sum(Claims.Count(Id)), <0>) ClaimCount,
     (100.0 * InsurerPaid / NullIf(PremiumsCollected, <0>)).Round(<2>) MemberLossRatioPercent
-  Where Policies HasAny
+  Where Any(Policies)
   Order MemberLossRatioPercent DESC, ClaimCount DESC
   Take 10
 ```
@@ -399,7 +399,7 @@ Clients: Id MemberId,
 - The member is the root, so the premium and claim totals are separate relation aggregates. The two CTEs and the policy join are not needed.
 
 **Gaps and checks**
-- `Where Policies HasAny` is rejected by the app with `Unsupported filter definition [ExistsConditionDefinition]`. Until that is fixed, use `Where Policies.Count(Id) > <0>`, which has the same meaning.
+- `Where Any(Policies)` is the generic `Any` function and is supported.
 - The SQL reports `Plan` and `PolicyStatus` per policy. The member root drops them, because a member can have several policies.
 
 ## Human resources
@@ -524,7 +524,7 @@ PerformanceReviews: Employee.Department.Name Department,
 5. **Window functions over aggregates.** `Lag` and `WindowSum` over an aggregate alias (Sales 5) are unverified.
 6. **Nested aggregates as `SumIf` or `CountIf` arguments.** Used in Sales 2, Healthcare 2, Healthcare 3, and Insurance 2. Verify the pattern.
 7. **Relation paths inside predicates.** Used in Sales 4, for example `Order.Status = <Completed>` inside `SumIf`. Verify.
-8. **Existence conditions in the app.** `Where Policies HasAny` (Insurance 5) is rejected by the app. The fix is described in the previous reply.
+8. **Existence conditions in the app.** `Where Any(Policies)` (Insurance 5) uses the generic `Any` function.
 9. **Datetime count.** `Count(ProcessedDate)` (Insurance 4) passes a Datetime to a Number-typed function. Align the signature.
 10. **Literal forms.** `Concat(FirstName, < >, LastName)` and `Department.Name In (<...>)` with multi-word literals are unverified.
 11. **Source SQL problems.** Healthcare 5 groups by a select-list alias, which SQL Server rejects. Insurance 4 and Healthcare 1 use integer `AVG`, which truncates; the OQuery uses `* 1.0` or `Avg` on decimals, so the results differ by design.

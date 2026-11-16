@@ -62,7 +62,7 @@ phases:
         title: Fluent aggregates and collection aggregates
         status: planned
       - id: existence-conditions
-        title: HasAny and HasNone conditions
+        title: Any and NotAny conditions
         status: planned
       - id: calculated-fields
         title: Calculated and raw SQL fields

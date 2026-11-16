@@ -24,12 +24,46 @@ class ClauseVisitor(QueryCompilationResolver queryContext)
         if (statements.Any(statement => statement.Method.Name == nameof(FluentQueryExtensions.Recursive)))
             return EvalRecursive(statements);
 
+        if (IsCollectionAny(statements))
+            return EvalCollectionAny(statements);
+
         var tableContext = CreateTableContext(statements);
 
         foreach (var statement in statements)
             tableContext = ProcessStatement(tableContext, statement);
 
         return tableContext;
+    }
+
+    private static bool IsCollectionAny(IReadOnlyList<MethodCallExpression> statements)
+        => statements.Count > 1 &&
+            statements[0].Method == _queryMethod &&
+            statements[^1].Method.Name is nameof(FluentQueryExtensions.Any) or nameof(FluentQueryExtensions.NotAny);
+
+    private SqlExpression EvalCollectionAny(IReadOnlyList<MethodCallExpression> statements)
+    {
+        var root = statements[0];
+        var last = statements[^1];
+        var relationPath = (string)Expression.Lambda(root.Arguments[0]).Compile().DynamicInvoke()!;
+        var outerTable = QueryContext.Arguments.Peek().TableContext;
+        var predicate = (LambdaExpression)last.Arguments[1].StripQuotes();
+
+        return QueryContext.CreateCollectionFunction(
+            last.Method.Name,
+            outerTable,
+            relationPath,
+            innerTable =>
+            {
+                var table = innerTable;
+                foreach (var statement in statements.Skip(1).SkipLast(1))
+                    table = ProcessStatement(table, statement);
+                if (!ReferenceEquals(table, innerTable))
+                    throw new NotSupportedException(
+                        $"Only Where statements can precede {last.Method.Name} on a collection.");
+                // An omitted predicate arrives as a constant-true lambda; the template then renders no predicate.
+                if (predicate.Body is not ConstantExpression { Value: true })
+                    new WhereVisitor(table, QueryContext).Eval(predicate);
+            });
     }
 
     private TableExpression EvalRecursive(IReadOnlyList<MethodCallExpression> statements)

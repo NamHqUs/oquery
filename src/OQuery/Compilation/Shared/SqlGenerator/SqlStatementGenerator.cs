@@ -597,8 +597,6 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
             SubqueryExpression subquery => $"({RenderQuery(subquery.Query)})",
 
-            AnyExpression any => $"{(any.Negated ? "NOT " : string.Empty)}EXISTS({RenderQuery(any.Query, true)})",
-
             AggregateExpression { GroupedJoinValue: not null } aggregate =>
                 $"{(aggregate.GroupedJoinCount ? "COALESCE(" : string.Empty)}{RenderExpression(aggregate.GroupedJoinValue!)}{(aggregate.GroupedJoinCount ? ", 0)" : string.Empty)}",
 
@@ -688,6 +686,55 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
     private string RenderFunction(FunctionSqlExpression function)
     {
+        if (function.ContextTable is null)
+            return RenderFunctionCore(function, contextSql: null, joinedConditionsSql: null);
+
+        var previousEntities = _entities;
+        _entities = GetEntities(function.ContextTable, previousEntities);
+        try
+        {
+            var contextSql = RenderContextSource(function.ContextTable);
+            var joinedConditionsSql = function.JoinConditions.Count == 0
+                ? null
+                : string.Join(" AND ", function.JoinConditions.Select(RenderExpression));
+            return RenderFunctionCore(function, contextSql, joinedConditionsSql);
+        }
+        finally
+        {
+            _entities = previousEntities;
+        }
+    }
+
+    private string RenderContextSource(TableExpression table)
+        => RenderTable(table) + string.Concat(table.Joins.Select(join =>
+            $"\n\t{join.JoinType} {RenderTable(join.Table)} ON {string.Join(" AND ", join.Conditions.Select(RenderExpression))}"));
+
+    private static bool IsOmittedToken(
+        SqlFunctionDefintion definition,
+        IReadOnlyList<string?> arguments,
+        string? joinedConditionsSql,
+        string token)
+    {
+        if (token == "@JoinedConditions")
+            return joinedConditionsSql is null;
+
+        var argumentIndex = ResolveArgumentIndex(definition, token[1..^1]);
+        return arguments[argumentIndex - 1] is null;
+    }
+
+    private static int ResolveArgumentIndex(SqlFunctionDefintion definition, string placeholder)
+        => int.TryParse(placeholder, out var numericIndex)
+            ? numericIndex
+            : definition.Arguments
+                .Select((argument, argumentIndex) => (argument, argumentIndex))
+                .First(pair => string.Equals(placeholder, pair.argument.Name, StringComparison.OrdinalIgnoreCase))
+                .argumentIndex + 1;
+
+    private string RenderFunctionCore(
+        FunctionSqlExpression function,
+        string? contextSql,
+        string? joinedConditionsSql)
+    {
         var arguments = function.Arguments
             .Select(argument => argument switch
             {
@@ -703,7 +750,11 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
             TryGetAggregateOverName(function.Definition.Name, out var aggregateName))
             return $"{aggregateName}({arguments[0]}) OVER ()";
 
-        var template = function.Definition.GetSqlTemplate(dialect.Key);
+        var template = function.Definition.GetSqlTemplate(
+            dialect.Key,
+            contextSql,
+            joinedConditionsSql,
+            token => IsOmittedToken(function.Definition, arguments, joinedConditionsSql, token));
         if (function.IsDistinct)
         {
             var openParenthesis = template.IndexOf('(');
@@ -723,12 +774,7 @@ internal sealed class SqlStatementGenerator(ISqlDialect dialect)
 
             var close = template.IndexOf('}', index + 1);
             var placeholder = template.Substring(index + 1, close - index - 1);
-            var argumentIndex = int.TryParse(placeholder, out var numericIndex)
-                ? numericIndex
-                : function.Definition.Arguments
-                    .Select((argument, argumentIndex) => (argument, argumentIndex))
-                    .First(pair => string.Equals(placeholder, pair.argument.Name, StringComparison.OrdinalIgnoreCase))
-                    .argumentIndex + 1;
+            var argumentIndex = ResolveArgumentIndex(function.Definition, placeholder);
             sql.Append(arguments[argumentIndex - 1]
                 ?? throw new FormatException(
                     $"SQL template for function [{function.Definition.Name}] references an omitted argument."));

@@ -26,6 +26,19 @@ from those files. If the code changes, update this document.
 - **Binding from end** means arguments are matched from the end, so optional
   leading arguments can be omitted (see
   [FUNCTION-ARGUMENTS.md](./FUNCTION-ARGUMENTS.md)).
+- `FunctionApplyFor` is a flags value identifying compatible inputs:
+  `DataSet = 1`, `Text = 2`, `Number = 4`, `DateTime = 8`, and
+  `Boolean = 16`. A template that uses `@Context` must include `DataSet`.
+- Context-aware templates use two compiler-provided fragments:
+  - `@Context` is the inner source of a related collection, with its alias
+    (for example `"OrderItems" t1`) and any joins needed by the predicate.
+  - `@JoinedConditions` is the correlation predicate built from relation
+    metadata (for example `t1."ProductId" = t0."Id"`), with multiple keys
+    joined by `AND`.
+  An omitted fragment removes its connective: an absent predicate renders
+  `WHERE @JoinedConditions`, an uncorrelated context renders `WHERE {1}`, and
+  when both are absent the `WHERE` is dropped. `GetSqlTemplate(dialect, context,
+  joinedConditions)` substitutes the two fragments into a template directly.
 
 Date parts in templates are fixed per function (for example `DateSub` is
 `DATEDIFF(day, ...)`). Dialect-specific rendering is listed in
@@ -134,43 +147,55 @@ Dialect caveats:
 
 ## 6. Existence operators
 
-`HasAny` and `HasNone` are Boolean condition operators. They are not entries
-in the function provider. The parser reads them as existence condition nodes,
-and SQL generation emits an `EXISTS` or `NOT EXISTS` subquery.
+`Any` and `NotAny` are built-in Boolean functions registered with
+`FunctionApplyFor.DataSet`. The compiler resolves the collection path and
+renders the function's template; SQL text for `EXISTS` and `NOT EXISTS` comes
+only from these definitions. The fluent `Any`/`NotAny` query methods normalize
+to these functions.
 
-- The source is an unquoted context reference. It can be a collection relation
-  on the current entity, a metadata entity, or a named query context.
-- The condition is optional. When present, it is evaluated in the source scope.
-- An explicit source alias may precede the operator. Use it when the condition
-  also references the outer context.
-- `CurrentContext` refers to the outer query context.
+| Name | Arguments | Returns | Template (all dialects) |
+|---|---|---|---|
+| `Any` | `predicate: Boolean` (omittable) | Boolean | `EXISTS (SELECT 1 FROM @Context WHERE {1} AND @JoinedConditions)` |
+| `NotAny` | `predicate: Boolean` (omittable) | Boolean | `NOT EXISTS (SELECT 1 FROM @Context WHERE {1} AND @JoinedConditions)` |
+
+- `{1}` is the predicate, parsed in the inner source scope. It is optional, so
+  `Any(Members)` is valid.
+- `@Context` is the inner source, for example `"User" t1`.
+- `@JoinedConditions` is the correlation from the relation keys, for example
+  `(t1."ManagerId" = t0."Id")`.
+- With both fragments, `Any(Members, Name = <Bob>)` renders
+  `EXISTS (SELECT 1 FROM "User" t1 WHERE (t1."Name" = @p0) AND (t1."ManagerId" = t0."Id"))`.
+  Without a predicate, the `WHERE` holds only the correlation. Without
+  correlation, it holds only the predicate. With neither, no `WHERE` is emitted.
+- The source is an unquoted context reference: a collection relation on the
+  current entity, or a dotted relation path such as `Members.Member`.
 - Combine an existence condition with other Boolean expressions using
   parentheses.
 
 ```text
 User: Name
-  Where Members HasAny Name = <Bob>
+  Where Any(Members, Name = <Bob>)
 ```
 
 ```text
 User: Name
-  Where Members HasNone Name = <David>
+  Where NotAny(Members)
 ```
 
 ```text
-User: Id
-  Where Members Member HasAny Member.Name = <Bob>
+User: Name
+  Where NotAny(Members, Name = <David>)
 ```
 
 ```text
 Products: Id, Name
-  Where (Users HasAny Status = <Active>)
+  Where Any(Users, Status = <Active>)
     AND State = <CA>
 ```
 
 ```text
 Products: Id, Name
-  Where Users Customer HasNone Customer.Status = <Inactive>
+  Where NotAny(Users, Status = <Inactive>)
 ```
 
 ## 7. Not function definitions

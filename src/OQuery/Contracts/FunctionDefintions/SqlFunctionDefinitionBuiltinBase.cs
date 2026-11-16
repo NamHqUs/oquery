@@ -45,7 +45,9 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
         Lag(),
         WindowSum(),
         Rank(),
-        RowNumber()
+        RowNumber(),
+        Any(),
+        NotAny()
     ];
 
     protected virtual SqlFunctionDefintion Count() =>
@@ -239,6 +241,14 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
             DataType.Number, "Numbers rows independently within each partition in descending order.",
             "ROW_NUMBER() OVER (PARTITION BY {1} ORDER BY {2} DESC)", isAggregate: true);
 
+    protected virtual SqlFunctionDefintion Any() =>
+        CreateCollectionPredicate("Any", "EXISTS",
+            "Returns true when a related collection has a row matching the optional predicate.");
+
+    protected virtual SqlFunctionDefintion NotAny() =>
+        CreateCollectionPredicate("NotAny", "NOT EXISTS",
+            "Returns true when no related collection row matches the optional predicate.");
+
     protected SqlFunctionDefintion Create(
         string name,
         IReadOnlyList<SqlFunctionArgumentDefinition> arguments,
@@ -246,14 +256,49 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
         string description,
         string sqlTemplate,
         bool isAggregate = false,
-        bool bindArgumentsFromEnd = false)
+        bool bindArgumentsFromEnd = false,
+        FunctionApplyFor? functionApplyFor = null)
         => new(name, arguments, resultType, description,
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 [Dialect] = sqlTemplate
             },
             isAggregate,
-            bindArgumentsFromEnd);
+            bindArgumentsFromEnd,
+            functionApplyFor ?? InferApplyFor(name, arguments, isAggregate));
+
+    private static FunctionApplyFor InferApplyFor(
+        string name,
+        IReadOnlyList<SqlFunctionDefintion.SqlFunctionArgumentDefinition> arguments,
+        bool isAggregate)
+    {
+        if (isAggregate)
+            return FunctionApplyFor.DataSet;
+        if (arguments.Count == 0)
+            return FunctionApplyFor.DataSet;
+        return arguments[0].DataType switch
+        {
+            DataType.String => FunctionApplyFor.Text,
+            DataType.Number => FunctionApplyFor.Number,
+            DataType.Datetime => FunctionApplyFor.DateTime,
+            DataType.Boolean => FunctionApplyFor.Boolean,
+            _ => FunctionApplyFor.DataSet
+        };
+    }
+
+    private SqlFunctionDefintion CreateCollectionPredicate(
+        string name,
+        string existsOperator,
+        string description)
+        => new(name,
+            [new("predicate", DataType.Boolean, omittable: true)],
+            DataType.Boolean,
+            description,
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                [Dialect] = $"{existsOperator} (SELECT 1 FROM @Context WHERE {{1}} AND @JoinedConditions)"
+            },
+            functionApplyFor: FunctionApplyFor.DataSet);
 
     private SqlFunctionDefintion CreateDateDifference(
         string name,

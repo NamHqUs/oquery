@@ -7,6 +7,11 @@ public interface IConditionDefintion
     string ToText();
 }
 
+public sealed record FunctionCondition(FunctionFieldDefinition Function) : IConditionDefintion
+{
+    public string ToText() => Function.ToText();
+}
+
 public class ConditionDefinition(LogicalOperator logicalOperator, params IConditionDefintion[] filter) : IConditionDefintion
 {
     public ConditionDefinition(IEnumerable<IConditionDefintion> filter)
@@ -83,25 +88,6 @@ public record ConditionStatementDefinition(
             BinaryOperator.NotLike => "NOT LIKE",
             _ => throw new ArgumentOutOfRangeException(nameof(operation))
         };
-}
-
-public sealed record ExistsConditionDefinition(
-    ConstFieldDefinition Context,
-    string? Alias = null,
-    IConditionDefintion? Condition = null,
-    bool Negated = false,
-    LogicalOperator? LogicalOperator = null) : IConditionDefintion
-{
-    public string ToText()
-    {
-        var operation = Negated ? "HasNone" : "HasAny";
-        var source = Context.Value?.ToString()
-            ?? throw new FormatException("An exists condition requires a context name.");
-        var alias = string.IsNullOrWhiteSpace(Alias) ? string.Empty : $" {Alias}";
-        return Condition is null
-            ? $"{source}{alias} {operation}"
-            : $"{source}{alias} {operation} {Condition.ToText()}";
-    }
 }
 
 public enum BinaryOperator

@@ -1,11 +1,26 @@
 using System.Collections.ObjectModel;
+using System.Text.RegularExpressions;
 
 #pragma warning disable IDE0130
 namespace OQuery;
 #pragma warning restore IDE0130
 
+[Flags]
+public enum FunctionApplyFor
+{
+    DataSet = 1,
+    Text = 2,
+    Number = 4,
+    DateTime = 8,
+    Boolean = 16
+}
+
 public sealed class SqlFunctionDefintion
 {
+    private static readonly Regex WhereConjunction = new(
+        @"(?<lead>\s*)\bWHERE\s+(?<first>\{[^{}]+\}|@JoinedConditions)(?:\s+AND\s+(?<second>\{[^{}]+\}|@JoinedConditions))?",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+
     private readonly ReadOnlyDictionary<string, string> _sqlTemplates;
 
     public SqlFunctionDefintion(
@@ -15,17 +30,29 @@ public sealed class SqlFunctionDefintion
         string description,
         IReadOnlyDictionary<string, string>? sqlTemplates = null,
         bool isAggregate = false,
-        bool bindArgumentsFromEnd = false)
+        bool bindArgumentsFromEnd = false,
+        FunctionApplyFor functionApplyFor = FunctionApplyFor.DataSet)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("A function name is required.", nameof(name));
         ArgumentNullException.ThrowIfNull(arguments);
         if (!Enum.IsDefined(resultType))
             throw new ArgumentOutOfRangeException(nameof(resultType));
+        const FunctionApplyFor allApplyFor =
+            FunctionApplyFor.DataSet |
+            FunctionApplyFor.Text |
+            FunctionApplyFor.Number |
+            FunctionApplyFor.DateTime |
+            FunctionApplyFor.Boolean;
+        if (functionApplyFor == 0 || (functionApplyFor & ~allApplyFor) != 0)
+            throw new ArgumentOutOfRangeException(nameof(functionApplyFor));
         if (string.IsNullOrWhiteSpace(description))
             throw new ArgumentException("A function description is required.", nameof(description));
         if (sqlTemplates is null || sqlTemplates.Count == 0)
             throw new ArgumentException("At least one dialect-specific SQL template is required.");
+        RequiresContext = sqlTemplates.Values.Any(template => template.Contains("@Context", StringComparison.Ordinal));
+        if (RequiresContext && !functionApplyFor.HasFlag(FunctionApplyFor.DataSet))
+            throw new ArgumentException("A function template that uses @Context must apply to DataSet.", nameof(functionApplyFor));
         if (arguments.Any(argument => argument is null))
             throw new ArgumentException("Function arguments cannot contain null definitions.", nameof(arguments));
         if (arguments.Select(argument => argument.Name).Distinct(StringComparer.OrdinalIgnoreCase).Count() != arguments.Count)
@@ -52,6 +79,7 @@ public sealed class SqlFunctionDefintion
         ResultType = resultType;
         IsAggregate = isAggregate;
         BindArgumentsFromEnd = bindArgumentsFromEnd;
+        FunctionApplyFor = functionApplyFor;
         Description = description;
 
         var templates = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -73,6 +101,8 @@ public sealed class SqlFunctionDefintion
     public DataType ResultType { get; }
     public bool IsAggregate { get; }
     public bool BindArgumentsFromEnd { get; }
+    public FunctionApplyFor FunctionApplyFor { get; }
+    public bool RequiresContext { get; }
     public string Description { get; }
     public IReadOnlyDictionary<string, string> SqlTemplates => _sqlTemplates;
 
@@ -86,6 +116,53 @@ public sealed class SqlFunctionDefintion
               _sqlTemplates.TryGetValue("Postgres", out var postgresTemplate)
                 ? postgresTemplate
             : throw new FormatException($"Function [{Name}] has no SQL template for dialect [{dialect}].");
+
+    /// <summary>
+    /// Resolves the template for a dialect. <paramref name="isOmitted"/> reports whether a
+    /// placeholder token ({n}, {name} or @JoinedConditions) renders empty; a WHERE clause whose
+    /// conditions are all omitted is dropped, and an omitted side of an AND is removed.
+    /// </summary>
+    public string GetSqlTemplate(
+        string dialect,
+        string? context = null,
+        string? joinedConditions = null,
+        Func<string, bool>? isOmitted = null)
+    {
+        var template = GetSqlTemplate(dialect);
+        if (isOmitted is not null)
+            template = RemoveOmittedConjunctions(template, isOmitted);
+        if (template.Contains("@Context", StringComparison.Ordinal))
+            template = template.Replace(
+                "@Context",
+                context ?? throw new FormatException(
+                    $"Function [{Name}] requires a context SQL fragment."),
+                StringComparison.Ordinal);
+        if (template.Contains("@JoinedConditions", StringComparison.Ordinal))
+            template = template.Replace(
+                "@JoinedConditions",
+                joinedConditions ?? throw new FormatException(
+                    $"Function [{Name}] requires joined conditions SQL."),
+                StringComparison.Ordinal);
+        return template;
+    }
+
+    private static string RemoveOmittedConjunctions(string template, Func<string, bool> isOmitted)
+        => WhereConjunction.Replace(template, match =>
+        {
+            var first = match.Groups["first"].Value;
+            var lead = match.Groups["lead"].Value;
+            if (!match.Groups["second"].Success)
+                return isOmitted(first) ? string.Empty : match.Value;
+
+            var second = match.Groups["second"].Value;
+            return (isOmitted(first), isOmitted(second)) switch
+            {
+                (true, true) => string.Empty,
+                (true, false) => $"{lead}WHERE {second}",
+                (false, true) => $"{lead}WHERE {first}",
+                _ => match.Value
+            };
+        });
 
     private static void ValidateTemplate(
         string template,
@@ -117,7 +194,7 @@ public sealed class SqlFunctionDefintion
 
     public sealed record SqlFunctionArgumentDefinition
     {
-        public SqlFunctionArgumentDefinition(string name, DataType dataType, object? defaultValue = null)
+        public SqlFunctionArgumentDefinition(string name, DataType dataType, object? defaultValue = null, bool omittable = false)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("An argument name is required.", nameof(name));
@@ -129,12 +206,15 @@ public sealed class SqlFunctionDefintion
             Name = name;
             DataType = dataType;
             DefaultValue = defaultValue;
+            Omittable = omittable;
         }
 
         public string Name { get; }
         public DataType DataType { get; }
         public object? DefaultValue { get; }
-        public bool Optional => DefaultValue is not null;
+        /// <summary>When true, the argument may be left out of a call and renders as an omitted fragment.</summary>
+        public bool Omittable { get; }
+        public bool Optional => DefaultValue is not null || Omittable;
 
         private static bool IsDefaultValueType(DataType dataType, object value)
             => dataType switch

@@ -21,6 +21,28 @@ public sealed class FunctionMetadataTests
     ];
 
     [Test]
+    public void ContextTemplateUsesFunctionApplicationMetadataAndFragments()
+    {
+        var function = new SqlFunctionDefintion(
+            "AnyRows",
+            [],
+            DataType.Boolean,
+            "Tests a context-aware template.",
+            new Dictionary<string, string>
+            {
+                ["Sqlite"] = "EXISTS (@Context WHERE @JoinedConditions)"
+            },
+            functionApplyFor: FunctionApplyFor.DataSet | FunctionApplyFor.Boolean);
+
+        Assert.That(
+            function.FunctionApplyFor,
+            Is.EqualTo(FunctionApplyFor.DataSet | FunctionApplyFor.Boolean));
+        Assert.That(
+            function.GetSqlTemplate("Sqlite", "Members", "Members.Id = Users.MemberId"),
+            Is.EqualTo("EXISTS (Members WHERE Members.Id = Users.MemberId)"));
+    }
+
+    [Test]
     public void UserDefinedTemplateUsesActiveDialectAndKeepsExpressionParameters()
     {
         var subtract = new SqlFunctionDefintion(

@@ -34,8 +34,8 @@ public static class QueryDefinitionJsonParser
                 new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
         }
         AddConverter<FieldDefinitionJsonConverter>(options);
+        AddConverter<ConditionJsonConverter>(options);
         AddConverter<ConditionDefinitionJsonConverter>(options);
-        AddConverter<ConditionDefintionJsonConverter>(options);
         AddConverter<ConditionStatementDefinitionJsonConverter>(options);
         AddConverter<ProjectionDefinitionJsonConverter>(options);
         options.TypeInfoResolver = (options.TypeInfoResolver ?? new DefaultJsonTypeInfoResolver())

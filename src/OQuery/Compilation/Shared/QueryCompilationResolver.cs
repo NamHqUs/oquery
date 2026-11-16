@@ -268,6 +268,9 @@ class QueryCompilationResolver(
 
     private SqlExpression ParseFunctionExpression(TableExpression tableContext, FunctionFieldDefinition expression, int depth)
     {
+        if (TryParseCollectionFunction(tableContext, expression, depth, out var collectionFunction))
+            return collectionFunction;
+
         if (TryParseCollectionAggregate(tableContext, expression, depth, out var collectionAggregate))
             return collectionAggregate;
 
@@ -320,6 +323,97 @@ class QueryCompilationResolver(
         return new FunctionSqlExpression(definition, arguments, expression.IsDistinct);
     }
 
+    private bool TryParseCollectionFunction(
+        TableExpression tableContext,
+        FunctionFieldDefinition expression,
+        int depth,
+        out SqlExpression result)
+    {
+        result = null!;
+        if (expression.FunctionName.Contains('.') ||
+            !functionProvider.TryGetFunction(expression.FunctionName, out var definition) ||
+            definition is not { RequiresContext: true })
+            return false;
+        if (expression.Arguments is not [FieldDefinition { FieldName: var relationPath }, .. var rest] ||
+            rest.Length > 2)
+            throw new FormatException($"{expression.FunctionName} requires a collection path and an optional predicate.");
+
+        result = CreateCollectionFunction(
+            expression.FunctionName,
+            tableContext,
+            relationPath,
+            inner =>
+            {
+                if (rest.Length == 0)
+                    return;
+                var predicateArgument = rest.Length == 2 ? rest[1] : rest[0];
+                var alias = rest.Length == 2 && rest[0] is FieldDefinition aliasField
+                    ? aliasField.FieldName
+                    : null;
+                var predicateText = predicateArgument switch
+                {
+                    FieldDefinition field => field.FieldName,
+                    ConditionFieldDefinition condition => condition.Condition.ToText(),
+                    _ => throw new FormatException($"{expression.FunctionName} requires a predicate expression.")
+                };
+                if (alias is not null && predicateText.StartsWith(alias + ".", StringComparison.OrdinalIgnoreCase))
+                    predicateText = predicateText[(alias.Length + 1)..];
+                var parsedCondition = QueryDefinitions.Parsers.ConditionDefinitionParser.Parse(predicateText)
+                    ?? throw new FormatException($"{expression.FunctionName} requires a predicate expression.");
+                inner.SqlWhere.Add(ParsePredicateExpression(inner, parsedCondition, depth + 1));
+            });
+        return true;
+    }
+
+    /// <summary>
+    /// Builds a call to a context-bound function (one whose template uses @Context) over a related collection.
+    /// The inner source and its correlation predicates are kept separate so the generator can render
+    /// them into @Context and @JoinedConditions; <paramref name="addPredicates"/> adds the optional predicate to the inner source.
+    /// </summary>
+    public SqlExpression CreateCollectionFunction(
+        string functionName,
+        TableExpression tableContext,
+        string relationPath,
+        Action<TableExpression> addPredicates)
+    {
+        var definition = functionProvider.GetFunction(functionName);
+        if (!definition.RequiresContext)
+            throw new FormatException($"Function [{functionName}] cannot be applied to a collection.");
+
+        var inner = JoinCollection(tableContext, relationPath);
+        var joinConditions = inner.SqlWhere.ToArray();
+        inner.SqlWhere.Clear();
+        addPredicates(inner);
+        var predicates = inner.SqlWhere.ToArray();
+        inner.SqlWhere.Clear();
+
+        if (predicates.Length == 0)
+            return new FunctionSqlExpression(definition, CreateCollectionArguments(definition, null), false, inner, joinConditions);
+
+        var predicate = predicates.Aggregate((left, right) =>
+            new BinarySqlExpression(left, "AND", right, typeof(bool)));
+        return new FunctionSqlExpression(
+            definition,
+            CreateCollectionArguments(definition, new FunctionSqlExpressionArgument(predicate)),
+            false,
+            inner,
+            joinConditions);
+    }
+
+    private static FunctionSqlArgument?[] CreateCollectionArguments(
+        SqlFunctionDefintion definition,
+        FunctionSqlArgument? predicate)
+    {
+        if (definition.Arguments.Count == 0)
+        {
+            if (predicate is not null)
+                throw new FormatException($"Function [{definition.Name}] does not accept a predicate.");
+            return [];
+        }
+
+        return [predicate];
+    }
+
     private SqlExpression ParseFieldReceiverFunction(TableExpression tableContext, FunctionFieldDefinition expression, int depth)
     {
         var separator = expression.FunctionName.LastIndexOf('.');
@@ -369,6 +463,7 @@ class QueryCompilationResolver(
         var aggregateDefinition = expression with { FunctionName = functionName };
         return TryParseRelationAggregate(tableContext, relationPath, aggregateDefinition, depth, out aggregate);
     }
+
 
     private static readonly Dictionary<string, string> CollectionWindowAggregates = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -670,8 +765,8 @@ class QueryCompilationResolver(
                 ?? throw new FormatException("A function predicate cannot be empty.");
         }
 
-        if (filter is ExistsConditionDefinition exists)
-            return ParseExistsPredicate(tableContext, exists, depth + 1);
+        if (filter is FunctionCondition function)
+            return ParseQueryExpression(tableContext, function.Function, depth + 1);
 
         if (filter is not ConditionStatementDefinition item)
             throw new FormatException($"Unsupported function predicate [{filter.GetType().Name}].");
@@ -729,158 +824,6 @@ class QueryCompilationResolver(
             operation,
             ParseQueryExpression(tableContext, right, depth + 1),
             typeof(bool));
-    }
-
-    private SqlExpression ParseExistsPredicate(
-        TableExpression outerTable,
-        ExistsConditionDefinition exists,
-        int depth)
-    {
-        if (exists.Context.Value is not string contextName ||
-            string.IsNullOrWhiteSpace(contextName))
-            throw new FormatException("An exists condition requires a context name.");
-
-        var source = outerTable.Entity.Relations?.Any(relation =>
-            string.Equals(relation.Name, contextName, StringComparison.OrdinalIgnoreCase)) == true
-            ? JoinCollection(outerTable, contextName)
-            : outerTable.JoinedTables.TryGetValue(contextName, out var joined)
-                ? joined
-                : CreateTableContext(GetEntity(contextName));
-
-        var subquery = source.CloneForSubquery();
-        if (exists.Condition is not null)
-            subquery.SqlWhere.Add(ParseExistsCondition(outerTable, subquery, exists, exists.Condition, depth));
-
-        return new AnyExpression(subquery, exists.Negated);
-    }
-
-    private SqlExpression ParseExistsCondition(
-        TableExpression outerTable,
-        TableExpression innerTable,
-        ExistsConditionDefinition exists,
-        IConditionDefintion condition,
-        int depth)
-    {
-        if (condition is ConditionDefinition group)
-        {
-            SqlExpression? result = null;
-            foreach (var child in group.Filters)
-            {
-                var expression = ParseExistsCondition(outerTable, innerTable, exists, child, depth + 1);
-                if (result is null)
-                {
-                    result = expression;
-                    continue;
-                }
-
-                var logicalOperation = child is ConditionStatementDefinition { LogicalOperator: { } logical }
-                    ? logical
-                    : group.LogicalOperation;
-                result = new BinarySqlExpression(
-                    result,
-                    logicalOperation.ToString().ToUpperInvariant(),
-                    expression,
-                    typeof(bool));
-            }
-
-            return result ?? throw new FormatException("An exists condition cannot be empty.");
-        }
-
-        if (condition is ExistsConditionDefinition nested)
-            return ParseExistsPredicate(innerTable, nested, depth + 1);
-
-        if (condition is not ConditionStatementDefinition statement)
-            throw new FormatException($"Unsupported exists condition [{condition.GetType().Name}].");
-
-        var left = ParseExistsExpression(outerTable, innerTable, exists, statement.Left, depth + 1);
-        if (statement.Operator is BinaryOperator.IsNull or BinaryOperator.IsNotNull)
-            return new PredicateExpression(
-                left,
-                statement.Operator == BinaryOperator.IsNull ? "IS NULL" : "IS NOT NULL");
-
-        var right = statement.Right
-            ?? throw new FormatException($"Predicate operator [{statement.Operator}] requires a right operand.");
-
-        if (statement.Operator is BinaryOperator.In or BinaryOperator.NotIn)
-        {
-            if (right is not GroupFieldDefintion { Fields.Length: > 0 } values)
-                throw new FormatException("An exists set comparison requires values.");
-            return new SetPredicateExpression(
-                left,
-                statement.Operator == BinaryOperator.In ? "IN" : "NOT IN",
-                values.Fields.Select(value =>
-                    ParseExistsExpression(outerTable, innerTable, exists, value, depth + 1)).ToArray());
-        }
-
-        if (statement.Operator is BinaryOperator.Between or BinaryOperator.NotBetween)
-        {
-            if (right is not GroupFieldDefintion { Fields.Length: 2 } range)
-                throw new FormatException("An exists range comparison requires two bounds.");
-            return new RangePredicateExpression(
-                left,
-                statement.Operator == BinaryOperator.Between ? "BETWEEN" : "NOT BETWEEN",
-                ParseExistsExpression(outerTable, innerTable, exists, range.Fields[0], depth + 1),
-                ParseExistsExpression(outerTable, innerTable, exists, range.Fields[1], depth + 1));
-        }
-
-        var operation = statement.Operator switch
-        {
-            BinaryOperator.Equals => "=",
-            BinaryOperator.NotEquals => "<>",
-            BinaryOperator.Like => "LIKE",
-            BinaryOperator.NotLike => "NOT LIKE",
-            BinaryOperator.GreaterThan => ">",
-            BinaryOperator.LessThan => "<",
-            BinaryOperator.GreaterThanOrEqual => ">=",
-            BinaryOperator.LessThanOrEqual => "<=",
-            _ => throw new FormatException($"Unsupported exists predicate operator [{statement.Operator}].")
-        };
-
-        return new BinarySqlExpression(
-            left,
-            operation,
-            ParseExistsExpression(outerTable, innerTable, exists, right, depth + 1),
-            typeof(bool));
-    }
-
-    private SqlExpression ParseExistsExpression(
-        TableExpression outerTable,
-        TableExpression innerTable,
-        ExistsConditionDefinition exists,
-        IFieldDefinition expression,
-        int depth)
-    {
-        if (expression is FieldDefinition field)
-        {
-            var separator = field.FieldName.IndexOf('.');
-            if (separator > 0)
-            {
-                var prefix = field.FieldName[..separator];
-                var remaining = field.FieldName[(separator + 1)..];
-                if (string.Equals(prefix, "CurrentContext", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(prefix, outerTable.Entity.Name, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(prefix, outerTable.Alias, StringComparison.OrdinalIgnoreCase))
-                    return ParseFieldPath(outerTable, remaining);
-
-                if (string.Equals(prefix, exists.Alias, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(prefix, exists.Context.Value?.ToString(), StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(prefix, innerTable.Entity.Name, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(prefix, innerTable.Alias, StringComparison.OrdinalIgnoreCase))
-                    return ParseFieldPath(innerTable, remaining);
-            }
-
-            return ParseFieldPath(innerTable, field.FieldName);
-        }
-
-        if (expression is GroupFieldDefintion group)
-        {
-            var fields = group.Fields
-                .Select(field => ParseExistsExpression(outerTable, innerTable, exists, field, depth + 1))
-                .ToArray();
-            return ParseQueryExpression(innerTable, group with { Fields = group.Fields }, depth + 1);
-        }
-
-        return ParseQueryExpression(innerTable, expression, depth + 1);
     }
 
     private static bool LooksLikePredicate(string expression)

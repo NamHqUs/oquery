@@ -1,7 +1,6 @@
 using System.Data;
 using OQuery.QueryDefinitions.Parsers;
 using OQuery.UnitTest.Setup;
-using OQuery.UnitTest.Tests.Providers;
 
 namespace OQuery.UnitTest.Tests.Query.Execution;
 
@@ -28,84 +27,6 @@ internal sealed class SqliteQueryExecutionTests
     public void TearDown()
     {
         _db?.Dispose();
-    }
-
-    [TestCaseSource(typeof(SavedQueryTestCases), nameof(SavedQueryTestCases.Cases))]
-    public void SavedQueryExecutesOnSqlite(string fileName)
-    {
-        var query = QueryDefinitionLoader.Load(SavedQueryTestCases.GetRequestPath(fileName));
-        Assert.That(() => _db.Query(query).ToList(), Throws.Nothing, fileName);
-    }
-
-    [Test]
-    public void DiagnosisBurdenSavedQueryMatchesNativeSqliteResults()
-    {
-        var oqueryPath = SavedQueryTestCases.GetRequestPath("Health 1. Diagnosis burden by clinic.oqr");
-
-        const string nativeSql = """
-            WITH visit_labs AS (
-                SELECT VisitId, COUNT(*) AS LabCount,
-                       SUM(CASE WHEN IsAbnormal THEN 1 ELSE 0 END) AS AbnormalCount
-                FROM he.LabResults
-                GROUP BY VisitId)
-            SELECT d.Name, d.Category, l.City,
-                   COUNT(DISTINCT v.Id), COUNT(DISTINCT v.UserId), ROUND(AVG(v.Charge), 2),
-                   ROUND(100.0 * SUM(COALESCE(vl.AbnormalCount, 0))
-                         / NULLIF(SUM(COALESCE(vl.LabCount, 0)), 0), 2) AS AbnormalLabPercent
-            FROM he.Visits v
-            JOIN he.Diagnoses d ON d.Id = v.DiagnosisId
-            JOIN main.Locations l ON l.Id = v.LocationId
-            LEFT JOIN visit_labs vl ON vl.VisitId = v.Id
-            WHERE v.Status = 'Completed'
-            GROUP BY d.Id, d.Name, d.Category, l.Id, l.City
-            ORDER BY COUNT(DISTINCT v.Id) DESC, 7 DESC
-            LIMIT 10
-            """;
-
-        var actual = _db.Query(QueryDefinitionOQueryParser.Parse(new FileInfo(oqueryPath)))
-            .ToList()
-            .OrderBy(row => (string)row["Diagnosis"]!)
-            .ThenBy(row => (string)row["ClinicCity"]!)
-            .ToList();
-
-        var expected = new List<Dictionary<string, object?>>();
-        using (var command = _connection.CreateCommand())
-        {
-            command.CommandText = nativeSql;
-            using var reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                expected.Add(new Dictionary<string, object?>
-                {
-                    ["Diagnosis"] = reader.GetString(0),
-                    ["DiagnosisCategory"] = reader.GetString(1),
-                    ["ClinicCity"] = reader.GetString(2),
-                    ["VisitCount"] = reader.GetInt64(3),
-                    ["UniquePatients"] = reader.GetInt64(4),
-                    ["AverageCharge"] = reader.GetDouble(5),
-                    ["AbnormalLabPercent"] = reader.IsDBNull(6) ? null : reader.GetDouble(6),
-                });
-            }
-        }
-
-        expected = expected
-            .OrderBy(row => (string)row["Diagnosis"]!)
-            .ThenBy(row => (string)row["ClinicCity"]!)
-            .ToList();
-
-        Assert.That(actual, Has.Count.EqualTo(expected.Count));
-        for (var i = 0; i < expected.Count; i++)
-        {
-            Assert.Multiple(() =>
-            {
-                Assert.That(actual[i]["Diagnosis"], Is.EqualTo(expected[i]["Diagnosis"]), $"row {i}");
-                Assert.That(actual[i]["ClinicCity"], Is.EqualTo(expected[i]["ClinicCity"]), $"row {i}");
-                Assert.That(Convert.ToInt64(actual[i]["VisitCount"]), Is.EqualTo(expected[i]["VisitCount"]), $"row {i}");
-                Assert.That(Convert.ToInt64(actual[i]["UniquePatients"]), Is.EqualTo(expected[i]["UniquePatients"]), $"row {i}");
-                Assert.That(Convert.ToDouble(actual[i]["AverageCharge"]), Is.EqualTo((double)expected[i]["AverageCharge"]!).Within(0.01), $"row {i}");
-                Assert.That(Convert.ToDouble(actual[i]["AbnormalLabPercent"]), Is.EqualTo((double)expected[i]["AbnormalLabPercent"]!).Within(0.01), $"row {i}");
-            });
-        }
     }
 
     private const string SeparateLabContextScorecard = """

@@ -4,7 +4,7 @@ using System.Globalization;
 
 namespace OQuery.QueryDefinitions.Parsers.JsonConverters;
 
-internal sealed class ConditionDefinitionJsonConverter : JsonConverter<IConditionDefintion>
+internal sealed class ConditionJsonConverter : JsonConverter<IConditionDefintion>
 {
     public override IConditionDefintion Read(
         ref Utf8JsonReader reader,
@@ -15,8 +15,26 @@ internal sealed class ConditionDefinitionJsonConverter : JsonConverter<IConditio
         var root = document.RootElement;
 
         if (TryGetProperty(root, "context", out _))
-            return JsonSerializer.Deserialize<ExistsConditionDefinition>(root, options)
-                ?? throw new JsonException("The exists condition cannot be null.");
+        {
+            TryGetProperty(root, "context", out var contextElement);
+            var context = contextElement.GetString()
+                ?? throw new JsonException("The Any context cannot be null.");
+            var negated = TryGetProperty(root, "negated", out var negatedElement) &&
+                negatedElement.GetBoolean();
+            var arguments = new List<IFieldDefinition> { new FieldDefinition(context) };
+            if (TryGetProperty(root, "alias", out var aliasElement) &&
+                !string.IsNullOrWhiteSpace(aliasElement.GetString()))
+                arguments.Add(new FieldDefinition(aliasElement.GetString()!));
+            if (TryGetProperty(root, "condition", out var conditionElement) &&
+                conditionElement.ValueKind != JsonValueKind.Null)
+            {
+                var condition = conditionElement.Deserialize<IConditionDefintion>(options)
+                    ?? throw new JsonException("The Any condition cannot be null.");
+                arguments.Add(new FieldDefinition(condition.ToText()));
+            }
+            return new FunctionCondition(new FunctionFieldDefinition(
+                negated ? "NotAny" : "Any", arguments.ToArray()));
+        }
 
         return TryGetProperty(root, "filters", out _)
             ? JsonSerializer.Deserialize<ConditionDefinition>(root, options)
@@ -36,7 +54,7 @@ internal sealed class ConditionDefinitionJsonConverter : JsonConverter<IConditio
             element.TryGetProperty(char.ToUpperInvariant(name[0]) + name[1..], out value);
 }
 
-internal sealed class ConditionDefintionJsonConverter : JsonConverter<ConditionDefinition>
+internal sealed class ConditionDefinitionJsonConverter : JsonConverter<ConditionDefinition>
 {
     public override ConditionDefinition Read(
         ref Utf8JsonReader reader,
