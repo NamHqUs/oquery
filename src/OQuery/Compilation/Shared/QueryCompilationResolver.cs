@@ -183,7 +183,12 @@ class QueryCompilationResolver(
             })
             .ToArray();
 
-        return new FunctionSqlExpression(function.Definition, arguments, function.IsDistinct);
+        return new FunctionSqlExpression(
+            function.Definition,
+            arguments,
+            function.IsDistinct,
+            function.ContextTable,
+            function.JoinConditions);
     }
 
     private static bool IsAggregateOver(FunctionSqlExpression function)
@@ -279,6 +284,9 @@ class QueryCompilationResolver(
         if (TryResolveWindowStage(expression, out var windowCall))
             return ParseFunctionExpression(tableContext, windowCall, depth + 1);
 
+        if (TryRewriteDottedCollectionFunction(expression, out var collectionForm))
+            return ParseFunctionExpression(tableContext, collectionForm, depth + 1);
+
         if (TryParseCollectionFunction(tableContext, expression, depth, out var collectionFunction))
             return collectionFunction;
 
@@ -333,6 +341,29 @@ class QueryCompilationResolver(
             return contextAggregate;
 
         return new FunctionSqlExpression(definition, arguments, expression.IsDistinct);
+    }
+
+    /// <summary>
+    /// Rewrites the dotted form <c>Relation.Any(predicate)</c> to the function form <c>Any(Relation, predicate)</c>
+    /// when the function is context-bound, so projections share the filter's collection rendering.
+    /// </summary>
+    private bool TryRewriteDottedCollectionFunction(FunctionFieldDefinition expression, out FunctionFieldDefinition rewritten)
+    {
+        rewritten = null!;
+        var separator = expression.FunctionName.LastIndexOf('.');
+        if (separator < 0)
+            return false;
+
+        var functionName = expression.FunctionName[(separator + 1)..];
+        if (!functionProvider.TryGetFunction(functionName, out var definition) ||
+            definition is not { RequiresContext: true })
+            return false;
+
+        var arguments = new IFieldDefinition[expression.Arguments.Length + 1];
+        arguments[0] = new FieldDefinition(expression.Oper, expression.FunctionName[..separator]);
+        expression.Arguments.CopyTo(arguments, 1);
+        rewritten = expression with { FunctionName = functionName, Arguments = arguments };
+        return true;
     }
 
     private bool TryParseCollectionFunction(

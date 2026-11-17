@@ -176,6 +176,11 @@ to these functions.
   correlation, it holds only the predicate. With neither, no `WHERE` is emitted.
 - The source is an unquoted context reference: a collection relation on the
   current entity, or a dotted relation path such as `Members.Member`.
+- The same functions work in a projection (SELECT list), where each call yields a
+  Boolean column. `Orders: Id` with `Any(Items, Quantity >= <5>) HasBulk` renders
+  `EXISTS (SELECT 1 FROM "OrderItems" t1 WHERE (t1."Quantity" >= @p0) AND (t1."OrderId" = t0."Id")) "HasBulk"`.
+  The dotted form `Items.Any(...)` and `Items.NotAny()` is equivalent and is rewritten
+  to the function form before compilation.
 - Combine an existence condition with other Boolean expressions using
   parentheses.
 

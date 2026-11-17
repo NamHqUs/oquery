@@ -369,6 +369,17 @@ The predicate is optional: `Users.Any()` tests only that a related row exists.
 Use `Users.NotAny(...)` for the negative test. Programmatic query definitions use the
 same function names.
 
+`Any` and `NotAny` are also valid in a projection. Each one renders as a correlated
+`EXISTS` or `NOT EXISTS` expression in the SELECT list, and the result is a Boolean column:
+
+```text
+Orders: Id
+  Any(Items, Quantity >= <5>) HasBulk
+  NotAny(Items) NoItems
+```
+
+The dotted form is equivalent: `Items.Any(Quantity >= <5>) HasBulk` and `Items.NotAny() NoItems`.
+
 ## 8. Aggregation and grouping
 
 An aggregate function is grouped when the same projection contains both:

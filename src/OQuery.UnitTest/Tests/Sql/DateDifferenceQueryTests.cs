@@ -282,6 +282,40 @@ internal sealed class DateDifferenceQueryTests
         Assert.That(sql, Does.Match(@"julianday"));
     }
 
+    [TestCase("Orders: Id, Any(Items, Quantity >= <5>) HasBulk, NotAny(Items) NoItems")]
+    [TestCase("Orders: Id, Items.Any(Quantity >= <5>) HasBulk, Items.NotAny() NoItems")]
+    public void ProjectedAnyAndNotAnyRenderCorrelatedExistsInSelectList(string oquery)
+    {
+        var metadata = new Entity[]
+        {
+            new(
+                Name: "Orders",
+                Fields: [new Field("Id", "Id", DataType.Number), new Field("Status", "Status", DataType.String)],
+                Relations:
+                [
+                    new(Name: "Items", RefEntity: "OrderItems", Type: RelationType.Collection,
+                        RefKeys: [new("Id", "OrderId")])
+                ]),
+            new(
+                Name: "OrderItems",
+                Fields:
+                [
+                    new Field("Id", "Id", DataType.Number),
+                    new Field("OrderId", "OrderId", DataType.Number),
+                    new Field("Quantity", "Quantity", DataType.Number)
+                ])
+        };
+        var definition = QueryDefinitionOQueryParser.Parse(oquery);
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        using var context = new OQueryEngine(connection, new MetadataProvider(metadata),
+            new FunctionProvider(new SqliteDialect()), new SqliteDialect());
+
+        var sql = context.Query(definition).ToSql().CommandText;
+
+        Assert.That(sql, Does.Match(@"SELECT[\s\S]*EXISTS\s*\(\s*SELECT 1\s+FROM[\s\S]*t1\.""OrderId"""));
+        Assert.That(sql, Does.Match(@"SELECT[\s\S]*NOT EXISTS\s*\(\s*SELECT 1\s+FROM"));
+    }
+
     [Test]
     public void EntityJoinToSameEntityFiltersMembersHiredBeforeManager()
     {
