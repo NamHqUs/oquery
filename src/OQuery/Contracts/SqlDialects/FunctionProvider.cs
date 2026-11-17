@@ -8,7 +8,7 @@ public interface IFunctionProvider
 {
     SqlFunctionDefintion GetFunction(string functionName);
 
-    bool TryGetFunction(string functionName, out SqlFunctionDefintion? function);
+    bool TryGetFunction(string functionName, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out SqlFunctionDefintion? function);
 
     bool TryGetWindowFunction(string aggregateName, out SqlFunctionDefintion? function);
 
@@ -50,7 +50,7 @@ public class FunctionProvider : IFunctionProvider
     public IReadOnlyCollection<SqlFunctionDefintion> GetFunctions()
         => _functions.Values.ToArray();
 
-    public bool TryGetFunction(string functionName, out SqlFunctionDefintion? function)
+    public bool TryGetFunction(string functionName, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out SqlFunctionDefintion? function)
     {
         if (!string.IsNullOrWhiteSpace(functionName) &&
             _functions.TryGetValue(functionName, out var found))
