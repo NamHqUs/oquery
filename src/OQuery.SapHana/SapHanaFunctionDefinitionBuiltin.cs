@@ -2,11 +2,11 @@
 namespace OQuery;
 #pragma warning restore IDE0130
 
-internal sealed class MariaFunctionDefinitionBuiltin : SqlFunctionDefinitionBuiltinBase
+internal sealed class SapHanaFunctionDefinitionBuiltin : SqlFunctionDefinitionBuiltinBase
 {
-    protected override string Dialect => "Maria";
+    protected override string Dialect => "SapHana";
 
-    internal override IEnumerable<SqlFunctionDefintion> CreateAllFunctions() =>
+    public override IEnumerable<SqlFunctionDefintion> CreateAllFunctions() =>
         base.CreateAllFunctions().Append(GetDate()).Append(Round());
 
     private SqlFunctionDefintion GetDate() =>
@@ -15,58 +15,62 @@ internal sealed class MariaFunctionDefinitionBuiltin : SqlFunctionDefinitionBuil
     private SqlFunctionDefintion Round() =>
         Create("Round", [new("value", DataType.Number), new("digits", DataType.Number)],
             DataType.Number, "Rounds a number to the specified number of decimal places.",
-            "ROUND({1}, {2})");
+        "ROUND({1}, CAST({2} AS INTEGER))");
 
-    protected override SqlFunctionDefintion Day() => ExtractDatePart("DAY");
-    protected override SqlFunctionDefintion Month() => ExtractDatePart("MONTH");
-    protected override SqlFunctionDefintion Year() => ExtractDatePart("YEAR");
+    protected override SqlFunctionDefintion Concat() =>
+        Create("Concat",
+            [new("first", DataType.String), new("separator", DataType.String), new("last", DataType.String)],
+            DataType.String, "Concatenates three text values.", "({1} || {2} || {3})");
+
+    protected override SqlFunctionDefintion Day() => CreateDatePart("DAYOFMONTH");
+    protected override SqlFunctionDefintion Month() => CreateDatePart("MONTH");
+    protected override SqlFunctionDefintion Year() => CreateDatePart("YEAR");
 
     protected override SqlFunctionDefintion DateSub() => DateDifference(
-        "DATESUB",
-        "DATEDIFF({2}, {1})",
+        "DATESUB", "DAYS_BETWEEN({1}, {2})",
         "Returns the number of elapsed whole days from startDate to endDate.");
 
     protected override SqlFunctionDefintion MonthSub() => DateDifference(
-        "MONTHSUB",
-        "TIMESTAMPDIFF(MONTH, {1}, {2})",
+        "MONTHSUB", "((YEAR({2}) - YEAR({1})) * 12 + MONTH({2}) - MONTH({1}))",
         "Returns the number of calendar-month boundaries from startDate to endDate.");
 
     protected override SqlFunctionDefintion YearSub() => DateDifference(
-        "YEARSUB",
-        "TIMESTAMPDIFF(YEAR, {1}, {2})",
+        "YEARSUB", "(YEAR({2}) - YEAR({1}))",
         "Returns the number of calendar-year boundaries from startDate to endDate.");
 
     protected override SqlFunctionDefintion DateAdd() => DateAdjustment(
-        "DATEADD",
-        "DATE_ADD({1}, INTERVAL {2} DAY)",
+        "DATEADD", "ADD_DAYS({1}, {2})",
         "Adds the specified number of days to a date or date-time.");
 
     protected override SqlFunctionDefintion MonthAdd() => DateAdjustment(
-        "MONTHADD",
-        "DATE_ADD({1}, INTERVAL {2} MONTH)",
+        "MONTHADD", "ADD_MONTHS({1}, {2})",
         "Adds the specified number of months to a date or date-time.");
 
     protected override SqlFunctionDefintion YearAdd() => DateAdjustment(
-        "YEARADD",
-        "DATE_ADD({1}, INTERVAL {2} YEAR)",
+        "YEARADD", "ADD_YEARS({1}, {2})",
         "Adds the specified number of years to a date or date-time.");
 
     protected override SqlFunctionDefintion MonthKey() =>
         Create("MonthKey", [new("value", DataType.Datetime)], DataType.String,
-            "Formats a date as a year-month key.", "DATE_FORMAT({1}, '%Y-%m')");
+            "Formats a date as a year-month key.", "TO_VARCHAR({1}, 'YYYY-MM')");
+
+    protected override SqlFunctionDefintion IfNull() =>
+        Create("IfNull",
+            [new("value", DataType.Number), new("fallback", DataType.Number)],
+            DataType.Number, "Returns the first non-null numeric value.",
+            "COALESCE(CAST({1} AS DECIMAL(34, 10)), 0)");
 
     protected override SqlFunctionDefintion YearsTo() =>
         Create("YearsTo",
             [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],
-            DataType.Number,
-            "Returns completed years between a birth date and an as-of date.",
-            "TIMESTAMPDIFF(YEAR, {1}, {2})");
+            DataType.Number, "Returns completed years between a birth date and an as-of date.",
+            "YEARS_BETWEEN({1}, {2})");
 
     protected override SqlFunctionDefintion ElapsedYears() =>
         Create("ElapsedYears",
             [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],
             DataType.Number, "Returns fractional years elapsed between two dates.",
-            "(DATEDIFF({2}, {1}) / 365.2425)");
+            "(DAYS_BETWEEN({1}, {2}) / 365.2425)");
 
     protected override SqlFunctionDefintion Lag() =>
         Create("Lag",
@@ -74,10 +78,10 @@ internal sealed class MariaFunctionDefinitionBuiltin : SqlFunctionDefinitionBuil
             DataType.Number, "Returns the previous row's value in ascending order.",
             "LAG({1}, {2}) OVER (ORDER BY {3} ASC)");
 
-    private SqlFunctionDefintion ExtractDatePart(string part) =>
-        Create(part, [new("extractDate", DataType.Datetime)], DataType.Number,
-            $"Extracts the {part.ToLowerInvariant()} part from a date.",
-            $"{part}({{1}})");
+    private SqlFunctionDefintion CreateDatePart(string functionName) =>
+        Create(functionName, [new("extractDate", DataType.Datetime)], DataType.Number,
+            $"Extracts the {functionName.ToLowerInvariant()} part from a date.",
+            $"{functionName}({{1}})");
 
     private SqlFunctionDefintion DateDifference(string name, string template, string description) =>
         Create(name, [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],

@@ -6,7 +6,7 @@ internal sealed class OracleFunctionDefinitionBuiltin : SqlFunctionDefinitionBui
 {
     protected override string Dialect => "Oracle";
 
-    internal override IEnumerable<SqlFunctionDefintion> CreateAllFunctions() =>
+    public override IEnumerable<SqlFunctionDefintion> CreateAllFunctions() =>
         base.CreateAllFunctions().Append(GetDate()).Append(Round());
 
     private SqlFunctionDefintion GetDate() =>

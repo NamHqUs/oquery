@@ -2,18 +2,18 @@
 namespace OQuery;
 #pragma warning restore IDE0130
 
-internal sealed class CockroachFunctionDefinition : SqlFunctionDefinitionBuiltinBase
+internal sealed class PostgresFunctionDefinitionBuiltin : SqlFunctionDefinitionBuiltinBase
 {
-    protected override string Dialect => "Cockroach";
+    protected override string Dialect => "Postgres";
 
-    internal override IEnumerable<SqlFunctionDefintion> CreateAllFunctions()
-        => base.CreateAllFunctions().Append(GetDate()).Append(Round());
+    public override IEnumerable<SqlFunctionDefintion> CreateAllFunctions() =>
+        base.CreateAllFunctions().Append(GetDate()).Append(Round());
 
-    private SqlFunctionDefintion GetDate()
-        => Create("GetDate", [], DataType.Datetime, "Returns the current date and time.", "CURRENT_TIMESTAMP");
+    private SqlFunctionDefintion GetDate() =>
+        Create("GetDate", [], DataType.Datetime, "Returns the current date and time.", "CURRENT_TIMESTAMP");
 
-    private SqlFunctionDefintion Round()
-        => Create("Round", [new("value", DataType.Number), new("digits", DataType.Number)],
+    private SqlFunctionDefintion Round() =>
+        Create("Round", [new("value", DataType.Number), new("digits", DataType.Number)],
             DataType.Number, "Rounds a number to the specified number of decimal places.",
             "ROUND({1}, CAST({2} AS INTEGER))");
 
@@ -64,16 +64,16 @@ internal sealed class CockroachFunctionDefinition : SqlFunctionDefinitionBuiltin
             DataType.Number, "Returns the previous row's value in ascending order.",
             "LAG({1}, CAST({2} AS INTEGER)) OVER (ORDER BY {3} ASC)");
 
-    private SqlFunctionDefintion ExtractDatePart(string part)
-        => Create(part, [new("extractDate", DataType.Datetime)], DataType.Number,
+    private SqlFunctionDefintion ExtractDatePart(string part) =>
+        Create(part, [new("extractDate", DataType.Datetime)], DataType.Number,
             $"Extracts the {part.ToLowerInvariant()} part from a date.",
             $"CAST(EXTRACT({part} FROM {{1}}) AS INTEGER)");
 
-    private SqlFunctionDefintion DateDifference(string name, string datePart, string template, string description)
-        => Create(name, [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],
+    private SqlFunctionDefintion DateDifference(string name, string datePart, string template, string description) =>
+        Create(name, [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],
             DataType.Number, description, template);
 
-    private SqlFunctionDefintion DateAdjustment(string name, string unit, string template, string description)
-        => Create(name, [new("value", DataType.Datetime), new("amount", DataType.Number)],
+    private SqlFunctionDefintion DateAdjustment(string name, string unit, string template, string description) =>
+        Create(name, [new("value", DataType.Datetime), new("amount", DataType.Number)],
             DataType.Datetime, description, template);
 }

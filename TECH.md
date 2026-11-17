@@ -131,13 +131,27 @@ src/OQuery.Core/Compilation and src/OQuery.Core/Execution
     SqlStatementGenerator, ADO.NET execution, and result mapping
 
 src/OQuery.Core/Contracts
-    Parsers (JSON and OQuery text), dialect extension points, and function
-    definitions
+    Parsers (JSON and OQuery text), dialect extension points
+    (ISqlDialect, SqlDialectRegistry), and function-definition base classes
+
+src/OQuery.Core/Database
+    DbInstance base class: connection testing, schema discovery, and
+    provisioning for a provider. Provider-specific SQL lives in each provider
+
+src/OQuery.<DatabaseType> (Sqlite, SqlServer, Postgres, CockroachDb, MySql,
+Oracle, Db2, Firebird, SapHana)
+    Dialect, builtin function definitions, convenience engine (where it
+    existed), DbInstance, and a <DatabaseType>DialectModule.Register() call.
+    Each references OQuery.Core and targets net10.0
 
 src/OQuery.UnitTest
     NUnit tests, metadata fixtures, provider tests, and SQL diagnostics tests
 
 ```
+
+Applications must call each dialect module's `Register()` (or the shared
+`DialectModules.RegisterAll()` in Demo.DbServices) before creating an engine
+with a dialect looked up by provider name or connection type.
 
 ## Important public classes
 

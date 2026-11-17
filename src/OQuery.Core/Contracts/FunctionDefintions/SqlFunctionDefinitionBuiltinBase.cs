@@ -4,13 +4,13 @@ using static OQuery.SqlFunctionDefintion;
 namespace OQuery;
 #pragma warning restore IDE0130
 
-internal abstract class SqlFunctionDefinitionBuiltinBase
+public abstract class SqlFunctionDefinitionBuiltinBase
 {
     protected abstract string Dialect { get; }
 
     protected virtual string CurrentDateTimeSql => "CURRENT_TIMESTAMP";
 
-    internal virtual IEnumerable<SqlFunctionDefintion> CreateAllFunctions() =>
+    public virtual IEnumerable<SqlFunctionDefintion> CreateAllFunctions() =>
     [
         Count(),
         CountOver(),

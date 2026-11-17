@@ -73,39 +73,3 @@ public class OQueryEngine(
         }
     }
 }
-
-public class SqlServerOQueryEngine(IDbConnection dbConnection, IMetadataProvider metaProvider, IFunctionProvider functionProvider)
-    : OQueryEngine(dbConnection, metaProvider, functionProvider, new SqlServerDialect())
-{
-    public SqlServerOQueryEngine(IDbConnection dbConnection, IMetadataProvider metaProvider)
-        : this(dbConnection, metaProvider, new FunctionProvider(new SqlServerDialect()))
-    {
-    }
-}
-
-public class SqliteOQueryEngine(IDbConnection dbConnection, IMetadataProvider metaProvider, IFunctionProvider functionProvider)
-    : OQueryEngine(dbConnection, metaProvider, functionProvider, new SqliteDialect())
-{
-    public SqliteOQueryEngine(IDbConnection dbConnection, IMetadataProvider metaProvider)
-        : this(dbConnection, metaProvider, new FunctionProvider(new SqliteDialect()))
-    {
-    }
-}
-
-public class PostgresOQueryEngine(IDbConnection dbConnection, IMetadataProvider metaProvider, IFunctionProvider functionProvider)
-    : OQueryEngine(dbConnection, metaProvider, functionProvider, new PostgresDialect())
-{
-    public PostgresOQueryEngine(IDbConnection dbConnection, IMetadataProvider metaProvider)
-        : this(dbConnection, metaProvider, new FunctionProvider(new PostgresDialect()))
-    {
-    }
-}
-
-public class CockroachOQueryEngine(IDbConnection dbConnection, IMetadataProvider metaProvider, IFunctionProvider functionProvider)
-    : OQueryEngine(dbConnection, metaProvider, functionProvider, new CockroachDialect())
-{
-    public CockroachOQueryEngine(IDbConnection dbConnection, IMetadataProvider metaProvider)
-        : this(dbConnection, metaProvider, new FunctionProvider(new CockroachDialect()))
-    {
-    }
-}

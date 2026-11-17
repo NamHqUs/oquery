@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<PackageId>OQuery.MySql</PackageId>
+		<Version>1.0.2</Version>
+		<Authors>Namh</Authors>
+		<Description>OQuery MySQL and MariaDB dialect, builtin function definitions, and database provisioning.</Description>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<RepositoryUrl>https://github.com/NamHqUs/oquery</RepositoryUrl>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\OQuery.Core\OQuery.Core.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="MySqlConnector" Version="2.6.1" />
+	</ItemGroup>
+
+</Project>

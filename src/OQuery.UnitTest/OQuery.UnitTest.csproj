@@ -45,5 +45,14 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\OQuery.Core\OQuery.Core.csproj" />
+	  <ProjectReference Include="..\OQuery.Sqlite\OQuery.Sqlite.csproj" />
+	  <ProjectReference Include="..\OQuery.SqlServer\OQuery.SqlServer.csproj" />
+	  <ProjectReference Include="..\OQuery.Postgres\OQuery.Postgres.csproj" />
+	  <ProjectReference Include="..\OQuery.CockroachDb\OQuery.CockroachDb.csproj" />
+	  <ProjectReference Include="..\OQuery.MySql\OQuery.MySql.csproj" />
+	  <ProjectReference Include="..\OQuery.Oracle\OQuery.Oracle.csproj" />
+	  <ProjectReference Include="..\OQuery.Db2\OQuery.Db2.csproj" />
+	  <ProjectReference Include="..\OQuery.Firebird\OQuery.Firebird.csproj" />
+	  <ProjectReference Include="..\OQuery.SapHana\OQuery.SapHana.csproj" />
 	</ItemGroup>
 </Project>

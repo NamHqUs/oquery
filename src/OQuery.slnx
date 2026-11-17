@@ -7,4 +7,13 @@
   <Project Path="OQuery.UnitTest/OQuery.UnitTest.csproj" Id="f65d7da3-d0b0-49c3-b963-a0ee3519366c" />
   <Project Path="OQuery.Abstracts/OQuery.Abstracts.csproj" />
   <Project Path="OQuery.Core/OQuery.Core.csproj" />
+  <Project Path="OQuery.Sqlite/OQuery.Sqlite.csproj" />
+  <Project Path="OQuery.SqlServer/OQuery.SqlServer.csproj" />
+  <Project Path="OQuery.Postgres/OQuery.Postgres.csproj" />
+  <Project Path="OQuery.CockroachDb/OQuery.CockroachDb.csproj" />
+  <Project Path="OQuery.MySql/OQuery.MySql.csproj" />
+  <Project Path="OQuery.Oracle/OQuery.Oracle.csproj" />
+  <Project Path="OQuery.Db2/OQuery.Db2.csproj" />
+  <Project Path="OQuery.Firebird/OQuery.Firebird.csproj" />
+  <Project Path="OQuery.SapHana/OQuery.SapHana.csproj" />
 </Solution>

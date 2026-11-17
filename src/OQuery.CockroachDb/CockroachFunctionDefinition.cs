@@ -2,34 +2,34 @@
 namespace OQuery;
 #pragma warning restore IDE0130
 
-internal sealed class FirebirdFunctionDefinitionBuiltin : SqlFunctionDefinitionBuiltinBase
+internal sealed class CockroachFunctionDefinition : SqlFunctionDefinitionBuiltinBase
 {
-    protected override string Dialect => "Firebird";
+    protected override string Dialect => "Cockroach";
 
-    internal override IEnumerable<SqlFunctionDefintion> CreateAllFunctions() =>
-        base.CreateAllFunctions().Append(GetDate()).Append(Round());
+    public override IEnumerable<SqlFunctionDefintion> CreateAllFunctions()
+        => base.CreateAllFunctions().Append(GetDate()).Append(Round());
 
-    private SqlFunctionDefintion GetDate() =>
-        Create("GetDate", [], DataType.Datetime, "Returns the current date and time.", "CURRENT_TIMESTAMP");
+    private SqlFunctionDefintion GetDate()
+        => Create("GetDate", [], DataType.Datetime, "Returns the current date and time.", "CURRENT_TIMESTAMP");
 
-    private SqlFunctionDefintion Round() =>
-        Create("Round", [new("value", DataType.Number), new("digits", DataType.Number)],
+    private SqlFunctionDefintion Round()
+        => Create("Round", [new("value", DataType.Number), new("digits", DataType.Number)],
             DataType.Number, "Rounds a number to the specified number of decimal places.",
-            "ROUND({1}, 2)");
+            "ROUND({1}, CAST({2} AS INTEGER))");
 
     protected override SqlFunctionDefintion Day() => ExtractDatePart("DAY");
     protected override SqlFunctionDefintion Month() => ExtractDatePart("MONTH");
     protected override SqlFunctionDefintion Year() => ExtractDatePart("YEAR");
 
-    protected override SqlFunctionDefintion DateSub() => DateDifference("DateSub",
-        "TRUNC(CAST({2} AS DATE) - CAST({1} AS DATE))",
+    protected override SqlFunctionDefintion DateSub() => DateDifference("DateSub", "day",
+        "(CAST({2} AS DATE) - CAST({1} AS DATE))",
         "Returns the number of elapsed whole days from startDate to endDate.");
 
-    protected override SqlFunctionDefintion MonthSub() => DateDifference("MonthSub",
+    protected override SqlFunctionDefintion MonthSub() => DateDifference("MonthSub", "month",
         "((EXTRACT(YEAR FROM {2}) - EXTRACT(YEAR FROM {1})) * 12 + EXTRACT(MONTH FROM {2}) - EXTRACT(MONTH FROM {1}))",
         "Returns the number of calendar-month boundaries from startDate to endDate.");
 
-    protected override SqlFunctionDefintion YearSub() => DateDifference("YearSub",
+    protected override SqlFunctionDefintion YearSub() => DateDifference("YearSub", "year",
         "(EXTRACT(YEAR FROM {2}) - EXTRACT(YEAR FROM {1}))",
         "Returns the number of calendar-year boundaries from startDate to endDate.");
 
@@ -45,24 +45,9 @@ internal sealed class FirebirdFunctionDefinitionBuiltin : SqlFunctionDefinitionB
         "({1} + ({2} * INTERVAL '1 year'))",
         "Adds the specified number of years to a date or date-time.");
 
-    protected override SqlFunctionDefintion IfNull() =>
-        Create("IfNull", [new("value", DataType.Number), new("fallback", DataType.Number)],
-            DataType.Number, "Returns the first non-null numeric value.", "COALESCE({1}, 0)");
-
-    protected override SqlFunctionDefintion MedicalLossRatio() =>
-        Create("MedicalLossRatio",
-            [new("claimsPaid", DataType.Number), new("premiumRevenue", DataType.Number)],
-            DataType.Number, "Calculates paid claims as a percentage of premium revenue.",
-            "ROUND(100 * COALESCE(MAX({1}), 0) / NULLIF(MAX({2}), 0), 2)");
-
-    protected override SqlFunctionDefintion Concat() =>
-        Create("Concat",
-            [new("first", DataType.String), new("separator", DataType.String), new("last", DataType.String)],
-            DataType.String, "Concatenates three text values.", "({1} || ' ' || {3})");
-
     protected override SqlFunctionDefintion MonthKey() =>
         Create("MonthKey", [new("value", DataType.Datetime)], DataType.String,
-            "Formats a date as a year-month key.", "SUBSTRING(CAST({1} AS VARCHAR(10)) FROM 1 FOR 7)");
+            "Formats a date as a year-month key.", "TO_CHAR({1}, 'YYYY-MM')");
 
     protected override SqlFunctionDefintion YearsTo() =>
         Create("YearsTo", [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],
@@ -79,16 +64,16 @@ internal sealed class FirebirdFunctionDefinitionBuiltin : SqlFunctionDefinitionB
             DataType.Number, "Returns the previous row's value in ascending order.",
             "LAG({1}, CAST({2} AS INTEGER)) OVER (ORDER BY {3} ASC)");
 
-    private SqlFunctionDefintion ExtractDatePart(string part) =>
-        Create(part, [new("extractDate", DataType.Datetime)], DataType.Number,
+    private SqlFunctionDefintion ExtractDatePart(string part)
+        => Create(part, [new("extractDate", DataType.Datetime)], DataType.Number,
             $"Extracts the {part.ToLowerInvariant()} part from a date.",
             $"CAST(EXTRACT({part} FROM {{1}}) AS INTEGER)");
 
-    private SqlFunctionDefintion DateDifference(string name, string template, string description) =>
-        Create(name, [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],
+    private SqlFunctionDefintion DateDifference(string name, string datePart, string template, string description)
+        => Create(name, [new("startDate", DataType.Datetime), new("endDate", DataType.Datetime)],
             DataType.Number, description, template);
 
-    private SqlFunctionDefintion DateAdjustment(string name, string datePart, string template, string description) =>
-        Create(name, [new("value", DataType.Datetime), new("amount", DataType.Number)],
+    private SqlFunctionDefintion DateAdjustment(string name, string unit, string template, string description)
+        => Create(name, [new("value", DataType.Datetime), new("amount", DataType.Number)],
             DataType.Datetime, description, template);
 }
