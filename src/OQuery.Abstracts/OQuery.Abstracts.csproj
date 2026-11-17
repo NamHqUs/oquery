@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+
+		<PackageId>OQuery.Abstracts</PackageId>
+		<Version>1.0.2</Version>
+		<Authors>Namh</Authors>
+		<Description>OQuery input and output contracts: query definitions, metadata, results and security abstractions. Contains no engine logic.</Description>
+		<PackageTags>oquery;query-builder;metadata;contracts</PackageTags>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<RepositoryUrl>https://github.com/NamHqUs/oquery</RepositoryUrl>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+</Project>

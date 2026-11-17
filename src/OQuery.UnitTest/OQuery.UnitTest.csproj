@@ -44,6 +44,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\OQuery\OQuery.csproj" />
+	  <ProjectReference Include="..\OQuery.Core\OQuery.Core.csproj" />
 	</ItemGroup>
 </Project>

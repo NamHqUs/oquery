@@ -42,7 +42,7 @@ The model types are included through the library package. A local project
 reference looks like this:
 
 ```xml
-<ProjectReference Include="path\to\src\OQuery\OQuery.csproj" />
+<ProjectReference Include="path\to\src\OQuery.Core\OQuery.Core.csproj" />
 ```
 
 ## Define metadata

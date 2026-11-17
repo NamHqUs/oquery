@@ -24,6 +24,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\OQuery.Abstracts\OQuery.Abstracts.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
 		<None Include="..\..\MANUAL.md" Pack="true" PackagePath="\" />
 		<None Include="..\..\TECH.md" Pack="true" PackagePath="\" />

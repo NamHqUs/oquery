@@ -5,10 +5,10 @@ default. Use it when generating OQuery text or when checking whether a
 function is available for a given SQL dialect.
 
 Source of truth:
-[SqlFunctionDefinitionBuiltinBase.cs](./src/OQuery/Contracts/SqlDialects/SqlFunctionDefinitionBuiltinBase.cs)
+[SqlFunctionDefinitionBuiltinBase.cs](./src/OQuery.Core/Contracts/FunctionDefintions/SqlFunctionDefinitionBuiltinBase.cs)
 (base set, 38 functions) and the per-dialect
 `*FunctionDefinition*.cs` / `*FunctionDefinitionBuiltin.cs` files under
-[SqlDialects](./src/OQuery/Contracts/SqlDialects). This document was written
+[SqlDialects](./src/OQuery.Core/Contracts/SqlDialects). This document was written
 from those files. If the code changes, update this document.
 
 ## How to read this document

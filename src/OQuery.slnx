@@ -5,5 +5,6 @@
   </Folder>
   <Project Path="../../src/Demo.Services.UnitTest/Demo.Services.UnitTest.csproj" />
   <Project Path="OQuery.UnitTest/OQuery.UnitTest.csproj" Id="f65d7da3-d0b0-49c3-b963-a0ee3519366c" />
-  <Project Path="OQuery/OQuery.csproj" />
+  <Project Path="OQuery.Abstracts/OQuery.Abstracts.csproj" />
+  <Project Path="OQuery.Core/OQuery.Core.csproj" />
 </Solution>

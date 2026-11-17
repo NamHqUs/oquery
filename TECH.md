@@ -118,15 +118,21 @@ metadata entity or add a dummy join to make it resolvable.
 ## Projects
 
 ```text
-src/OQuery
-    Public query API, context, dialects, provider contracts, and result types
+src/OQuery.Abstracts
+    INPUT and OUTPUT contracts only (no engine logic): query definitions,
+    metadata models, results, and security abstractions
 
-src/OQuery/Internal
+src/OQuery.Core
+    Engine: public query API, context, dialect and provider extension
+    interfaces, and result types. References OQuery.Abstracts
+
+src/OQuery.Core/Compilation and src/OQuery.Core/Execution
     QueryContext, visitors, SqlExpression IR, SqlQueryCompiler,
     SqlStatementGenerator, ADO.NET execution, and result mapping
 
-src/OQuery/Contracts
-    Entity, Field, Relation, QueryDto, and JSON filter models
+src/OQuery.Core/Contracts
+    Parsers (JSON and OQuery text), dialect extension points, and function
+    definitions
 
 src/OQuery.UnitTest
     NUnit tests, metadata fixtures, provider tests, and SQL diagnostics tests

@@ -9,9 +9,9 @@ syntax or compiler internals.
   execution invariants.
 
 The model types are defined under
-[`src/OQuery/Contracts/QueryDefinitions`](./src/OQuery/Contracts/QueryDefinitions).
+[`src/OQuery.Abstracts/Contracts/QueryDefinitions`](./src/OQuery.Abstracts/Contracts/QueryDefinitions).
 JSON conversion is implemented by
-[`QueryDefinitionJsonParser`](./src/OQuery/Contracts/QueryDefinitions/Parsers/JsonParsers/QueryDefinitionJsonParser.cs).
+[`QueryDefinitionJsonParser`](./src/OQuery.Core/Contracts/QueryDefinitions/Parsers/JsonParsers/QueryDefinitionJsonParser.cs).
 
 ## 1. Top-level query definition
 

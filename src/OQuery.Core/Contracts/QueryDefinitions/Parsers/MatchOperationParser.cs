@@ -2,19 +2,6 @@ namespace OQuery;
 
 internal static class MatchOperationParser
 {
-    public static string ToSymbol(this MatchOperation operation)
-        => operation switch
-        {
-            MatchOperation.Add => "+",
-            MatchOperation.Subtract => "-",
-            MatchOperation.Multiply => "*",
-            MatchOperation.Divide => "/",
-            MatchOperation.Modulus => "%",
-            MatchOperation.BitwiseAnd => "&",
-            MatchOperation.BitwiseOr => "|",
-            _ => throw new ArgumentOutOfRangeException(nameof(operation), operation, "Unsupported match operation.")
-        };
-
     public static MatchOperation Parse(string operation)
         => operation switch
         {

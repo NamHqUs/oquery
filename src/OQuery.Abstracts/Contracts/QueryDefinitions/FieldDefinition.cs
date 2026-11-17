@@ -65,6 +65,22 @@ public enum MatchOperation
     BitwiseOr,
 }
 
+public static class MatchOperationSymbols
+{
+    public static string ToSymbol(this MatchOperation operation)
+        => operation switch
+        {
+            MatchOperation.Add => "+",
+            MatchOperation.Subtract => "-",
+            MatchOperation.Multiply => "*",
+            MatchOperation.Divide => "/",
+            MatchOperation.Modulus => "%",
+            MatchOperation.BitwiseAnd => "&",
+            MatchOperation.BitwiseOr => "|",
+            _ => throw new ArgumentOutOfRangeException(nameof(operation), operation, "Unsupported match operation.")
+        };
+}
+
 internal static class FieldDefinitionHelper
 {
     public static string Format(IEnumerable<IFieldDefinition> fields)
