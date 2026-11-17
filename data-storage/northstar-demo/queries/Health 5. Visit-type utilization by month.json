@@ -1,0 +1,92 @@
+{
+  "domainId": "HEALTHCARE_DOMAIN",
+  "name": "H5. Visit-type utilization by month",
+  "rawText": "# Do you know when your healthcare facilities are busiest and how many appointments are being missed?\n#  - Which months experience the highest patient visit volumes?\n#  - Which types of visits account for the largest share of healthcare activity?\n#  - Are no-show rates increasing during particular months or for specific visit types?\n#  - What percentage of scheduled visits are missed, and where is the problem most significant?\n#  - How much time do physicians spend with patients on average across different visit types?\n#  - Which visit types generate the highest total charges?\n#  - Are certain months experiencing high appointment volumes but also unusually high no-show rates?\n#  - How can we identify seasonal demand patterns to improve staffing and appointment scheduling?\n#  - Are there opportunities to reduce missed appointments and improve healthcare resource utilization?\n# __________________________________________________\n\nVisitUtilizationByMonth is Visits:\n    VisitDate.Year() VisitYear,\n    VisitDate.Month() VisitMonth,\n    VisitType,\n    Count(Id) ScheduledVisits,\n    CountIf(Status = \u003CNo-Show\u003E) NoShows,\n    (CountIf(Status = \u003CNo-Show\u003E) * 100.0 / Count(Id)).Round(2) NoShowPercent,\n    AvgIf(DurationMinutes, Status = \u003CCompleted\u003E).Round(1) AverageMinutes,\n    Sum(Charge).Round(2) Charges\n  Order ScheduledVisits DESC\n  Take 10",
+  "id": "Health 5. Visit-type utilization by month",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Visits",
+  "projections": [
+    {
+      "field": {
+        "kind": "function",
+        "function": "VisitDate.Year",
+        "arguments": []
+      },
+      "alias": "VisitYear"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "VisitDate.Month",
+        "arguments": []
+      },
+      "alias": "VisitMonth"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "VisitType"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Count",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ]
+      },
+      "alias": "ScheduledVisits"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "CountIf",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Status = \u003CNo-Show\u003E"
+          }
+        ]
+      },
+      "alias": "NoShows"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "(CountIf(Status = \u003CNo-Show\u003E) * 100.0 / Count(Id)).Round(2)"
+      },
+      "alias": "NoShowPercent"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "AvgIf(DurationMinutes, Status = \u003CCompleted\u003E).Round(1)"
+      },
+      "alias": "AverageMinutes"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Sum(Charge).Round(2)"
+      },
+      "alias": "Charges"
+    }
+  ],
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "ScheduledVisits"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "take": 10,
+  "joins": []
+}

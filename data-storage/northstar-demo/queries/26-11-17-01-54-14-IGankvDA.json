@@ -1,0 +1,63 @@
+{
+  "domainId": "EXAMPLES_DOMAIN",
+  "name": "E10. Any() filter",
+  "rawText": "# Question: Which products have been ordered in bulk (5 or more units on a line)?\n# Answer: Any() with a predicate over a related collection, used as a filter.\nProducts: Id,\n    Name,\n    Category\n  Where Items.Any(Quantity \u003E= \u003C5\u003E)\n  Order Name\n  Take 20",
+  "id": "26-11-17-01-54-14-IGankvDA",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Products",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Name"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Category"
+      },
+      "alias": null
+    }
+  ],
+  "filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "kind": "function",
+        "function": "Any",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Items"
+          },
+          {
+            "kind": "field",
+            "field": "Quantity \u003E= \u003C5\u003E"
+          }
+        ]
+      }
+    ]
+  },
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Name"
+      },
+      "direction": "Ascending"
+    }
+  ],
+  "isDistinct": false,
+  "take": 20,
+  "joins": []
+}

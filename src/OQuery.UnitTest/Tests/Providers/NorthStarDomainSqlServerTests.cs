@@ -684,16 +684,16 @@ internal sealed class NorthStarDomainSqlServerTests
     }
 
     private static string GetDomainsRoot()
-        => Path.Combine(GetRepositoryRoot(), "data-storage", "UserData", "123", "domains");
+        => Path.Combine(GetRepositoryRoot(), "oquery", "data-storage", "northstar-demo", "domains");
 
     private static string GetRepositoryRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !Directory.Exists(Path.Combine(directory.FullName, "data-storage", "UserData", "123", "domains")))
+        while (directory is not null && !Directory.Exists(Path.Combine(directory.FullName, "oquery", "data-storage")))
             directory = directory.Parent;
 
         return directory?.FullName
-            ?? throw new DirectoryNotFoundException("Could not find data-storage/UserData/123/domains above the test output folder.");
+            ?? throw new DirectoryNotFoundException("Could not find oquery/data-storage above the test output folder.");
     }
 
     private sealed class DomainFile

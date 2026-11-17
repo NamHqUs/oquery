@@ -1,0 +1,132 @@
+{
+  "domainId": "INSURANCE_DOMAIN",
+  "name": "I4. Claims adjudication by plan",
+  "rawText": "# Do you know which insurance plans receive the most claims, have the highest denial rates, and take the longest to process claims?\n#  - Which insurance plans receive the highest number of claims?\n#  - Which plans have the highest number of paid and denied claims?\n#  - Which insurance plans have the highest claim denial percentages?\n#  - How long does each insurance plan take, on average, to process claims?\n#  - Which plans have the longest claim processing times?\n#  - Which insurance plans pay out the most in total claims?\n#  - Are plans with high claim volumes also experiencing higher denial rates?\n#  - Which insurance plans combine high denial rates with long processing times?\n#  - How does claim processing efficiency vary across different insurance tiers?\n#  - Which insurance plans should we prioritize to reduce claim denials and processing delays?\n# __________________________________________________\n\nInsurancePlans: Name Plan,\n    Tier,\n    Policies.Sum(Claims.Count()) ClaimsReceived,\n    Policies.Sum(Claims.CountIf(Status = \u003CPaid\u003E)) PaidClaims,\n    Policies.Sum(Claims.CountIf(Status = \u003CDenied\u003E)) DeniedClaims,\n    (DeniedClaims * 100.0 / NullIf(ClaimsReceived, 0)).Round(2) DenialPercent,\n    (Policies.Sum(Claims.Sum(DateSub(ClaimDate, ProcessedDate))) * 1.0\n        / NullIf(Policies.Sum(Claims.Count(ProcessedDate)), 0)).Round(1) AverageProcessingDays,\n    Policies.Sum(Claims.Sum(PaidAmount)).Round(2) TotalPaid\n  Where ClaimsReceived \u003E 0\n  Order ClaimsReceived DESC\n  Take 10",
+  "id": "Insurance 4. Claims adjudication by plan",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "InsurancePlans",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Name"
+      },
+      "alias": "Plan"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Tier"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Policies.Sum",
+        "arguments": [
+          {
+            "kind": "function",
+            "function": "CountOver",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Claims"
+              }
+            ]
+          }
+        ]
+      },
+      "alias": "ClaimsReceived"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Policies.Sum",
+        "arguments": [
+          {
+            "kind": "function",
+            "function": "Claims.CountIf",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Status = \u003CPaid\u003E"
+              }
+            ]
+          }
+        ]
+      },
+      "alias": "PaidClaims"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Policies.Sum",
+        "arguments": [
+          {
+            "kind": "function",
+            "function": "Claims.CountIf",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Status = \u003CDenied\u003E"
+              }
+            ]
+          }
+        ]
+      },
+      "alias": "DeniedClaims"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "(DeniedClaims * 100.0 / NullIf(ClaimsReceived, 0)).Round(2)"
+      },
+      "alias": "DenialPercent"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "(Policies.Sum(Claims.Sum(DateSub(ClaimDate, ProcessedDate))) * 1.0\n/ NullIf(Policies.Sum(Claims.Count(ProcessedDate)), 0)).Round(1)"
+      },
+      "alias": "AverageProcessingDays"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Policies.Sum(Claims.Sum(PaidAmount)).Round(2)"
+      },
+      "alias": "TotalPaid"
+    }
+  ],
+  "filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "ClaimsReceived"
+        },
+        "operation": 4,
+        "right": {
+          "kind": "value",
+          "value": 0
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "ClaimsReceived"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "take": 10,
+  "joins": []
+}

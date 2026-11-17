@@ -133,7 +133,7 @@ internal sealed class TestDatabase
         if (isExisted != 1)
         {
             StringBuilder sb = new("ATTACH DATABASE ':memory:' AS dbo;");
-            sb.Append(LoadScript("unit-test.sqlite.sql", "sale-demo.sqlite.sql"));
+            sb.Append(LoadScript("unit-test.sqlite.sql"));
             ExecuteNonQuery(cn, sb.ToString());
         }
 
@@ -144,7 +144,6 @@ internal sealed class TestDatabase
         => CreateSqlServerInstance(
             String.Format("Server=localhost;Database=DynamicSqlTest;User Id=sa;Password={0};Connect Timeout=2;TrustServerCertificate=True;", GetSqlServerPassword()),
             "unit-test.sqlserver.sql",
-            "sale-demo.sqlserver.sql",
             "northstar-demo.sqlserver.sql");
 
 
@@ -155,8 +154,7 @@ internal sealed class TestDatabase
     private static IDbConnection CreatePostgresDbConnection()
         => CreatePostgresInstance(
             $"Host=localhost;Port={GetPostgresHostPort()};Database=DynamicSqlTest;Username=postgres;Password=NoPassword123!",
-            "unit-test.postgres.sql",
-            "sale-demo.postgres.sql");
+            "unit-test.postgres.sql");
 
     private static int GetPostgresHostPort()
     {
@@ -254,8 +252,18 @@ internal sealed class TestDatabase
 
     private static string[] GetScriptPaths(IEnumerable<string> scriptNames)
         => scriptNames
-            .Select(name => Path.Combine("data-storage", "scripts", name))
+            .Select(GetScriptPath)
             .ToArray();
+
+    // Script files are named "<dataset>.<provider>.sql" and live under data-storage/<dataset>/scripts.
+    private static string GetScriptPath(string fileName)
+    {
+        var dataset = fileName[..fileName.IndexOf('.', StringComparison.Ordinal)];
+        return Path.Combine(GetDataStorageRoot(), dataset, "scripts", fileName);
+    }
+
+    private static string GetDataStorageRoot()
+        => new DirectoryInfo(Path.Combine(AppContext.BaseDirectory, "../../../../../data-storage")).FullName;
 
     private static string GetScriptVersion(IEnumerable<string> scriptNames)
     {
@@ -274,10 +282,7 @@ internal sealed class TestDatabase
 
 
     private static string LoadScript(params string[] fileNames)
-    {
-        var path = new DirectoryInfo("../../../../../").FullName;
-        return string.Join(Environment.NewLine, fileNames.Select(fileName => File.ReadAllText(Path.Combine(path, "data-storage", "scripts", fileName))));
-    }
+        => string.Join(Environment.NewLine, fileNames.Select(fileName => File.ReadAllText(GetScriptPath(fileName))));
     private static void ExecuteNonQuery(IDbConnection cn, string sql)
     {
         using var cmd = cn.CreateCommand();

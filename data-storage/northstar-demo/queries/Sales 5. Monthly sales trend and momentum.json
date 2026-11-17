@@ -1,0 +1,171 @@
+{
+  "domainId": "SALES_DOMAIN",
+  "name": "S5. Monthly sales trend and momentum",
+  "rawText": "# Do you know whether your business is gaining sales momentum or losing ground over time?\n# - How has our monthly revenue changed over the last 10 months?\n# - Which months generated the highest and lowest revenue?\n# - Are our sales growing or declining compared with the previous month?\n# - Which months experienced the biggest revenue increases or drops?\n# - How much cumulative revenue have we generated over time?\n# - Are our monthly sales showing consistent growth or significant fluctuations?\n# - Which months contributed the most to our overall revenue?\n# - How many completed orders did we receive each month?\n# - Is our business building stronger revenue momentum month after month?\n# - Are recent sales trends indicating growth, stagnation, or a potential slowdown?\n# __________________________________________________\n\nOrderItems:\n    MonthKey(Order.OrderDate) SalesMonth,\n    SUM(Quantity * UnitPrice - DiscountAmount) NetRevenue,\n    Count(distinct OrderId) OrderCount,\n    NetRevenue Revenue,\n    Lag(NetRevenue, \u003C1\u003E, SalesMonth) PriorMonthRevenue,\n    NetRevenue - Lag(NetRevenue, \u003C1\u003E, SalesMonth) RevenueChange,\n    WindowSum(NetRevenue, SalesMonth) RunningRevenue\n  Where Order.Status = \u003CCompleted\u003E\n  Order SalesMonth DESC\n  Take 10",
+  "id": "Sales 5. Monthly sales trend and momentum",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "OrderItems",
+  "projections": [
+    {
+      "field": {
+        "kind": "function",
+        "function": "MonthKey",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Order.OrderDate"
+          }
+        ]
+      },
+      "alias": "SalesMonth"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "SUM",
+        "arguments": [
+          {
+            "kind": "group",
+            "fields": [
+              {
+                "kind": "field",
+                "field": "Quantity"
+              },
+              {
+                "oper": "*",
+                "kind": "field",
+                "field": "UnitPrice"
+              },
+              {
+                "oper": "-",
+                "kind": "field",
+                "field": "DiscountAmount"
+              }
+            ]
+          }
+        ]
+      },
+      "alias": "NetRevenue"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Count",
+        "distinct": true,
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "OrderId"
+          }
+        ]
+      },
+      "alias": "OrderCount"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "NetRevenue"
+      },
+      "alias": "Revenue"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Lag",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "NetRevenue"
+          },
+          {
+            "kind": "value",
+            "value": 1
+          },
+          {
+            "kind": "field",
+            "field": "SalesMonth"
+          }
+        ]
+      },
+      "alias": "PriorMonthRevenue"
+    },
+    {
+      "field": {
+        "kind": "group",
+        "fields": [
+          {
+            "kind": "field",
+            "field": "NetRevenue"
+          },
+          {
+            "oper": "-",
+            "kind": "function",
+            "function": "Lag",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "NetRevenue"
+              },
+              {
+                "kind": "value",
+                "value": 1
+              },
+              {
+                "kind": "field",
+                "field": "SalesMonth"
+              }
+            ]
+          }
+        ]
+      },
+      "alias": "RevenueChange"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "WindowSum",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "NetRevenue"
+          },
+          {
+            "kind": "field",
+            "field": "SalesMonth"
+          }
+        ]
+      },
+      "alias": "RunningRevenue"
+    }
+  ],
+  "filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "Order.Status"
+        },
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "Completed"
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "SalesMonth"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "take": 10,
+  "joins": []
+}

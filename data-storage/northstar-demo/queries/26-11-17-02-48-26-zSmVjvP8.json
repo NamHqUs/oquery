@@ -1,0 +1,58 @@
+{
+  "domainId": "EXAMPLES_DOMAIN",
+  "name": "E21. Any() and NotAny() as projected columns",
+  "rawText": "# Question: Which orders contain a bulk line, and which have no items at all?\n# Answer: Any() and NotAny() as projected Boolean columns, using the dotted collection syntax.\nOrders: Id,\n    Status,\n    Items.Any(Quantity \u003E= \u003C5\u003E) HasBulk,\n    Items.NotAny() NoItems\n  Order Id\n  Take 20",
+  "id": "26-11-17-02-48-26-zSmVjvP8",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Orders",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Status"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Items.Any",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Quantity \u003E= \u003C5\u003E"
+          }
+        ]
+      },
+      "alias": "HasBulk"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Items.NotAny",
+        "arguments": []
+      },
+      "alias": "NoItems"
+    }
+  ],
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "direction": "Ascending"
+    }
+  ],
+  "isDistinct": false,
+  "take": 20,
+  "joins": []
+}

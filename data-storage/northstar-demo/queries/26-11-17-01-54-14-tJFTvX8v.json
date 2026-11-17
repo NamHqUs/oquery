@@ -1,0 +1,81 @@
+{
+  "domainId": "EXAMPLES_DOMAIN",
+  "name": "E08. Combined AND filter",
+  "rawText": "# Question: Which customers live in California and were born before 1980?\n# Answer: Combining two conditions with AND on the Customers root.\nCustomers: Id,\n    FirstName,\n    LastName,\n    City,\n    BirthDate\n  Where State = \u003CCA\u003E AND BirthDate \u003C \u003C1980-01-01\u003E\n  Take 10",
+  "id": "26-11-17-01-54-14-tJFTvX8v",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Customers",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "FirstName"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "LastName"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "City"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "BirthDate"
+      },
+      "alias": null
+    }
+  ],
+  "filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "State"
+        },
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "CA"
+        },
+        "parameterized": true
+      },
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "BirthDate"
+        },
+        "operation": 5,
+        "right": {
+          "kind": "value",
+          "value": "1980-01-01"
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "sorts": [],
+  "isDistinct": false,
+  "take": 10,
+  "joins": []
+}

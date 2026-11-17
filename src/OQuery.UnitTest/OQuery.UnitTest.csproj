@@ -13,7 +13,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Content Include="..\..\data-storage\metadata\*.yml" Link="Metadata\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+		<Content Include="..\..\data-storage\*\metadata\*.yml" Link="Metadata\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -1,0 +1,85 @@
+{
+  "domainId": "HR_Domain",
+  "name": "HR 1. Department compensation and performance",
+  "rawText": "# Would you know which departments cost the most and how well they perform?\n#  - How many employees does each department have?\n#  - What is the average employee salary?\n#  - What is the total annual payroll for each department?\n#  - What is the average performance rating for each department in 2025?\n#  - How much bonus compensation did each department distribute in 2025?\n#  - Which departments have the highest payroll costs?\n# ____________________________________________________________\n \nDepartments:\n    Name\n    Employees.Count(Id) TotalEmployees\n    Employees.Avg(Salary).Round(2) AverageSalary\n    Employees.Sum(Salary) AnnualPayroll\n    Employees.PerformanceReviews.AvgIf(Rating, ReviewYear = 2025).Round(2) AverageRating\n    Employees.PerformanceReviews.SumIf(BonusAmount, ReviewYear = 2025) TotalBonuses\n Order AnnualPayroll ASC\n ",
+  "id": "HR 1. Department compensation and performance",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Departments",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Name"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Employees.Count",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ]
+      },
+      "alias": "TotalEmployees"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Employees.Avg(Salary).Round(2)"
+      },
+      "alias": "AverageSalary"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Employees.Sum",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Salary"
+          }
+        ]
+      },
+      "alias": "AnnualPayroll"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Employees.PerformanceReviews.AvgIf(Rating, ReviewYear = 2025).Round(2)"
+      },
+      "alias": "AverageRating"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Employees.PerformanceReviews.SumIf",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "BonusAmount"
+          },
+          {
+            "kind": "field",
+            "field": "ReviewYear = 2025"
+          }
+        ]
+      },
+      "alias": "TotalBonuses"
+    }
+  ],
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "AnnualPayroll"
+      },
+      "direction": "Ascending"
+    }
+  ],
+  "joins": []
+}

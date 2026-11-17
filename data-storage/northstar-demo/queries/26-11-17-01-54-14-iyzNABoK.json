@@ -1,0 +1,62 @@
+{
+  "domainId": "EXAMPLES_DOMAIN",
+  "name": "E16. Grouped aggregate by key",
+  "rawText": "# Question: Which product categories sell the most units per product?\n# Answer: Combines a root aggregate (Count) with a collection aggregate (Items.Sum) in one grouped query.\nProducts: Category,\n    Count(Id) ProductCount,\n    Items.Sum(Quantity) UnitsSold,\n    (Items.Sum(Quantity) * 1.0 / Count(Id)).Round(\u003C1\u003E) UnitsPerProduct\n  Order UnitsPerProduct DESC",
+  "id": "26-11-17-01-54-14-iyzNABoK",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Products",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Category"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Count",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ]
+      },
+      "alias": "ProductCount"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Items.Sum",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Quantity"
+          }
+        ]
+      },
+      "alias": "UnitsSold"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "(Items.Sum(Quantity) * 1.0 / Count(Id)).Round(\u003C1\u003E)"
+      },
+      "alias": "UnitsPerProduct"
+    }
+  ],
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "UnitsPerProduct"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "isDistinct": false,
+  "joins": []
+}

@@ -5,7 +5,6 @@ using YamlDotNet.Serialization.NamingConventions;
 
 public static class MetadataLoader
 {
-    public static IReadOnlyCollection<Entity> SaleDemoData { get; } = Load("sale-demo.yml");
     public static IReadOnlyCollection<Entity> NorthStarDemoData { get; } = Load("northstar-demo.yml");
     public static IReadOnlyCollection<Entity> UnitTestData { get; } = Load("unit-test.yml");
 

@@ -1,0 +1,122 @@
+{
+  "domainId": "HR_Domain",
+  "name": "HR 3. Workforce Distribution \u0026 Location Analysis",
+  "rawText": "# Do you know how your workforce is distributed across locations?\n#  - Which offices have the largest workforces?\n#  - How many departments are represented at each location?\n#  - What is the mix of full-time, part-time, and contract employees?\n#  - How long have employees been with the company on average?\n#  - What is the total annual payroll for each office?\n#  - Which locations have the highest staffing costs?\n# ____________________________________________________________\n\nLocations:\n    City OfficeCity\n    State\n    Employees.Count(Id) Headcount\n    Employees.Count(distinct DepartmentId) DepartmentsRepresented\n    Employees.CountIf(EmploymentType = \u0027Full-time\u0027) FullTime\n    Employees.CountIf(EmploymentType = \u0027Part-time\u0027) PartTime\n    Employees.CountIf(EmploymentType = \u0027Contract\u0027) Contractors\n    Employees.Avg(HireDate.DateSub(\u003C2025-10-31\u003E) / 365.25).Round(2) AverageTenureYears\n    Employees.Sum(Salary).Round(2) AnnualPayroll\nOrder Headcount DESC, AnnualPayroll DESC\n    \n    ",
+  "id": "HR 3. Workforce composition by location",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Locations",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "City"
+      },
+      "alias": "OfficeCity"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "State"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Employees.Count",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ]
+      },
+      "alias": "Headcount"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Employees.Count",
+        "distinct": true,
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "DepartmentId"
+          }
+        ]
+      },
+      "alias": "DepartmentsRepresented"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Employees.CountIf",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "EmploymentType = \u0027Full-time\u0027"
+          }
+        ]
+      },
+      "alias": "FullTime"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Employees.CountIf",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "EmploymentType = \u0027Part-time\u0027"
+          }
+        ]
+      },
+      "alias": "PartTime"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Employees.CountIf",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "EmploymentType = \u0027Contract\u0027"
+          }
+        ]
+      },
+      "alias": "Contractors"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Employees.Avg(HireDate.DateSub(\u003C2025-10-31\u003E) / 365.25).Round(2)"
+      },
+      "alias": "AverageTenureYears"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Employees.Sum(Salary).Round(2)"
+      },
+      "alias": "AnnualPayroll"
+    }
+  ],
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Headcount"
+      },
+      "direction": "Descending"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "AnnualPayroll"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "joins": []
+}

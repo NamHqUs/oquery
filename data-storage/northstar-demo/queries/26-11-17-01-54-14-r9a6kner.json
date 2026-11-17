@@ -1,0 +1,43 @@
+{
+  "domainId": "EXAMPLES_DOMAIN",
+  "name": "E01. Basic projection",
+  "rawText": "# Question: Which orders were placed, with their date, status, and channel?\n# Answer: The simplest projection: list fields from the Orders root.\nOrders: Id,\n    OrderDate,\n    Status,\n    Channel\n  Take 10",
+  "id": "26-11-17-01-54-14-r9a6kner",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Orders",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "OrderDate"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Status"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Channel"
+      },
+      "alias": null
+    }
+  ],
+  "sorts": [],
+  "isDistinct": false,
+  "take": 10,
+  "joins": []
+}

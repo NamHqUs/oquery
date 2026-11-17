@@ -1,0 +1,102 @@
+{
+  "domainId": "INSURANCE_DOMAIN",
+  "name": "I1. Denial analysis by plan and reason",
+  "rawText": "# Do you know whether your business is gaining sales momentum or losing ground over time?\n# - How has our monthly revenue changed over the last 10 months?\n# - Which months generated the highest and lowest revenue?\n# - Are our sales growing or declining compared with the previous month?\n# - Which months experienced the biggest revenue increases or drops?\n# - How much cumulative revenue have we generated over time?\n# - Are our monthly sales showing consistent growth or significant fluctuations?\n# - Which months contributed the most to our overall revenue?\n# - How many completed orders did we receive each month?\n# - Is our business building stronger revenue momentum month after month?\n# - Are recent sales trends indicating growth, stagnation, or a potential slowdown?\n# __________________________________________________\n\nClaims: Policy.InsurancePlan.Tier Tier,\n    Policy.InsurancePlan.Name Plan,\n    DenialReason,\n    Count(Id) DeniedClaims,\n    Sum(BilledAmount).Round(2) BilledAmount,\n    Sum(AllowedAmount).Round(2) AllowedAmount,\n    Avg(BilledAmount).Round(2) AverageBilledAmount\n  Where Status = \u003CDenied\u003E\n  Order DeniedClaims DESC, BilledAmount DESC\n  Take 10",
+  "id": "Insurance 1. Denial analysis by plan and reason",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Claims",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Policy.InsurancePlan.Tier"
+      },
+      "alias": "Tier"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Policy.InsurancePlan.Name"
+      },
+      "alias": "Plan"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "DenialReason"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Count",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ]
+      },
+      "alias": "DeniedClaims"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Sum(BilledAmount).Round(2)"
+      },
+      "alias": "BilledAmount"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Sum(AllowedAmount).Round(2)"
+      },
+      "alias": "AllowedAmount"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Avg(BilledAmount).Round(2)"
+      },
+      "alias": "AverageBilledAmount"
+    }
+  ],
+  "filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "Status"
+        },
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "Denied"
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "DeniedClaims"
+      },
+      "direction": "Descending"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "BilledAmount"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "take": 10,
+  "joins": []
+}

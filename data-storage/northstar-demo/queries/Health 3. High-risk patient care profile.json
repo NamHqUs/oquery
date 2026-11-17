@@ -1,0 +1,140 @@
+{
+  "domainId": "HEALTHCARE_DOMAIN",
+  "name": "H3. High-risk patient care profile",
+  "rawText": "# Do you know which patients are at the highest risk and need closer medical attention?\n#  - Which patients have the highest number of abnormal laboratory results?\n#  - Which patients have chronic conditions requiring ongoing monitoring?\n#  - How many completed visits do high-risk patients have?\n#  - How much are we spending on healthcare for high-risk patients?\n#  - Which patients have a combination of chronic conditions and frequent abnormal results?\n#  - When did high-risk patients last receive medical care?\n#  - Which patients should be prioritized for follow-up and preventive care?\n#  - Are there patients with abnormal laboratory results who may need additional medical evaluation?\n# ____________________________________________________________\n\nHighRiskPatientCare is Patients:\n    Id PatientId,\n    FirstName,\n    LastName,\n    BirthDate.YearsTo(\u003C2025-10-31\u003E) Age,\n    Visits.SumIf(Charge, Status = \u003CCompleted\u003E).Round(\u003C2\u003E) TotalCharges,\n    Visits.CountIf(Status = \u003CCompleted\u003E) CompletedVisits,\n    Visits.CountIf(Diagnose.IsChronic = \u003CTrue\u003E) ChronicVisits,\n    Visits.Sum(LabResults.CountIf(IsAbnormal = \u003CTrue\u003E)) AbnormalResults\n  Where AbnormalResults \u003E 0\n  Order AbnormalResults DESC, ChronicVisits DESC, TotalCharges DESC\n  Take 10",
+  "id": "Health 3. High-risk patient care profile",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Patients",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "alias": "PatientId"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "FirstName"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "LastName"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "BirthDate.YearsTo",
+        "arguments": [
+          {
+            "kind": "value",
+            "value": "2025-10-31"
+          }
+        ]
+      },
+      "alias": "Age"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Visits.SumIf(Charge, Status = \u003CCompleted\u003E).Round(\u003C2\u003E)"
+      },
+      "alias": "TotalCharges"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Visits.CountIf",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Status = \u003CCompleted\u003E"
+          }
+        ]
+      },
+      "alias": "CompletedVisits"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Visits.CountIf",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Diagnose.IsChronic = \u003CTrue\u003E"
+          }
+        ]
+      },
+      "alias": "ChronicVisits"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Visits.Sum",
+        "arguments": [
+          {
+            "kind": "function",
+            "function": "LabResults.CountIf",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "IsAbnormal = \u003CTrue\u003E"
+              }
+            ]
+          }
+        ]
+      },
+      "alias": "AbnormalResults"
+    }
+  ],
+  "filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "AbnormalResults"
+        },
+        "operation": 4,
+        "right": {
+          "kind": "value",
+          "value": 0
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "AbnormalResults"
+      },
+      "direction": "Descending"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "ChronicVisits"
+      },
+      "direction": "Descending"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "TotalCharges"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "take": 10,
+  "joins": []
+}

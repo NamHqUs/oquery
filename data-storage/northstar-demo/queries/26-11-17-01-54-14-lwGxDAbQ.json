@@ -1,0 +1,68 @@
+{
+  "domainId": "EXAMPLES_DOMAIN",
+  "name": "E03. Computed field per row",
+  "rawText": "# Question: What is the margin per unit for each product?\n# Answer: Arithmetic on fields inside a projection.\nProducts: Id,\n    Name,\n    UnitPrice,\n    CostPrice,\n    (UnitPrice - CostPrice) MarginPerUnit\n  Order MarginPerUnit DESC\n  Take 10",
+  "id": "26-11-17-01-54-14-lwGxDAbQ",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Products",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Name"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "UnitPrice"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "CostPrice"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "group",
+        "fields": [
+          {
+            "kind": "field",
+            "field": "UnitPrice"
+          },
+          {
+            "oper": "-",
+            "kind": "field",
+            "field": "CostPrice"
+          }
+        ]
+      },
+      "alias": "MarginPerUnit"
+    }
+  ],
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "MarginPerUnit"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "isDistinct": false,
+  "take": 10,
+  "joins": []
+}

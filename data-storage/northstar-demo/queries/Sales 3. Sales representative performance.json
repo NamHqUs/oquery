@@ -1,0 +1,160 @@
+{
+  "domainId": "SALES_DOMAIN",
+  "name": "S3. Sales representative performance",
+  "rawText": "# Do you know which sales representatives drive the most revenue and deliver the highest profits?\n#  - Which sales representatives generate the highest net sales?\n#  - Who completes the largest number of customer orders?\n#  - Which sales representatives sell the highest number of units?\n#  - Who generates the highest gross profit for the business?\n#  - Are sales representatives with the highest sales volumes also delivering the highest profitability?\n#  - Which representatives generate strong sales but relatively low gross profit?\n#  - How does each sales representative contribute to overall sales performance?\n#  - Who are our top-performing sales representatives, and what makes their performance stand out?\n#  - Which sales representatives should we recognize, reward, or support to improve sales performance?\n# __________________________________________________\n\nSalesRepPerformance is OrderItems:\n    Order.SalesRepId SalesRepId,\n    Order.Seller.FirstName \u002B \u003C \u003E \u002B Order.Seller.LastName SalesRep,\n    Count(distinct Order.Id) CompletedOrders,\n    SUM(Quantity) UnitsSold,\n    SUM(Quantity * UnitPrice - DiscountAmount) NetSales,\n    SUM(Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount) GrossProfit\n  Where Order.Status = \u003CCompleted\u003E\n  Order NetSales DESC\n  Take 10",
+  "id": "Sales 3. Sales representative performance",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "OrderItems",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Order.SalesRepId"
+      },
+      "alias": "SalesRepId"
+    },
+    {
+      "field": {
+        "kind": "group",
+        "fields": [
+          {
+            "kind": "field",
+            "field": "Order.Seller.FirstName"
+          },
+          {
+            "kind": "value",
+            "value": " "
+          },
+          {
+            "kind": "field",
+            "field": "Order.Seller.LastName"
+          }
+        ]
+      },
+      "alias": "SalesRep"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Count",
+        "distinct": true,
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Order.Id"
+          }
+        ]
+      },
+      "alias": "CompletedOrders"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "SUM",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Quantity"
+          }
+        ]
+      },
+      "alias": "UnitsSold"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "SUM",
+        "arguments": [
+          {
+            "kind": "group",
+            "fields": [
+              {
+                "kind": "field",
+                "field": "Quantity"
+              },
+              {
+                "oper": "*",
+                "kind": "field",
+                "field": "UnitPrice"
+              },
+              {
+                "oper": "-",
+                "kind": "field",
+                "field": "DiscountAmount"
+              }
+            ]
+          }
+        ]
+      },
+      "alias": "NetSales"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "SUM",
+        "arguments": [
+          {
+            "kind": "group",
+            "fields": [
+              {
+                "kind": "field",
+                "field": "Quantity"
+              },
+              {
+                "oper": "*",
+                "kind": "group",
+                "fields": [
+                  {
+                    "kind": "field",
+                    "field": "UnitPrice"
+                  },
+                  {
+                    "oper": "-",
+                    "kind": "field",
+                    "field": "Product.CostPrice"
+                  }
+                ]
+              },
+              {
+                "oper": "-",
+                "kind": "field",
+                "field": "DiscountAmount"
+              }
+            ]
+          }
+        ]
+      },
+      "alias": "GrossProfit"
+    }
+  ],
+  "filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "Order.Status"
+        },
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "Completed"
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "NetSales"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "take": 10,
+  "joins": []
+}

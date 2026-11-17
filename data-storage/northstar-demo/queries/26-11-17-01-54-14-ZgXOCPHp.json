@@ -1,0 +1,160 @@
+{
+  "domainId": "EXAMPLES_DOMAIN",
+  "name": "E20. Compare with overall average",
+  "rawText": "# Question: Which sellers exceed 1000 in completed-order revenue, and how do they compare with the average?\n# Answer: Combined: a context, a join, a filter, a window function, sort and Take in one query.\nSellerRevenue is OrderItems: Order.Seller.Id SellerId,\n    SUM(Quantity * UnitPrice).Round(2) Revenue,\n    Count(Id) LineCount\n  Where Order.Status = \u003CCompleted\u003E\nSeller:\n  Inner Join SellerRevenue On Id = SellerRevenue.SellerId\n  Select Id,\n    FirstName,\n    LastName,\n    SellerRevenue.Revenue Revenue,\n    SellerRevenue.LineCount LineCount,\n    AverageOver(SellerRevenue.Revenue).Round(2) AverageSellerRevenue\n  Where SellerRevenue.Revenue \u003E \u003C1000\u003E\n  Order Revenue DESC\n  Take 10",
+  "id": "26-11-17-01-54-14-ZgXOCPHp",
+  "isBuiltin": false,
+  "contexts": {
+    "SellerRevenue": {
+      "entity": "OrderItems",
+      "projection": [
+        {
+          "field": {
+            "kind": "field",
+            "field": "Order.Seller.Id"
+          },
+          "alias": "SellerId"
+        },
+        {
+          "field": {
+            "kind": "field",
+            "field": "SUM(Quantity * UnitPrice).Round(2)"
+          },
+          "alias": "Revenue"
+        },
+        {
+          "field": {
+            "kind": "function",
+            "function": "Count",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ]
+          },
+          "alias": "LineCount"
+        }
+      ],
+      "filter": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Order.Status"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "value",
+              "value": "Completed"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "sorts": [],
+      "isDistinct": false,
+      "joins": []
+    }
+  },
+  "entity": "Seller",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "FirstName"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "LastName"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "SellerRevenue.Revenue"
+      },
+      "alias": "Revenue"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "SellerRevenue.LineCount"
+      },
+      "alias": "LineCount"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "AverageOver(SellerRevenue.Revenue).Round(2)"
+      },
+      "alias": "AverageSellerRevenue"
+    }
+  ],
+  "filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "SellerRevenue.Revenue"
+        },
+        "operation": 4,
+        "right": {
+          "kind": "value",
+          "value": 1000
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Revenue"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "isDistinct": false,
+  "take": 10,
+  "joins": [
+    {
+      "refContext": "SellerRevenue",
+      "condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Id"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "SellerRevenue.SellerId"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "joinType": "Inner"
+    }
+  ]
+}

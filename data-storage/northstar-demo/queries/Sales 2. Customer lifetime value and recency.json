@@ -1,0 +1,129 @@
+{
+  "domainId": "SALES_DOMAIN",
+  "name": "S2. Customer lifetime value and recency",
+  "rawText": "# Do you know who your most valuable customers are and how their purchasing behavior is changing?\n#  - Which customers generate the highest revenue from completed purchases?\n#  - Who are our most frequent customers, and how often do they place orders?\n#  - Which high-value customers have purchased most recently?\n#  - Are our most valuable customers purchasing through multiple sales channels?\n#  - Which customers contribute the most to our overall sales revenue?\n#  - Are there high-value customers who haven\u0027t placed an order recently and may be at risk of becoming inactive?\n#  - How does customer purchasing frequency relate to their total lifetime revenue?\n#  - Which customers should we prioritize for loyalty programs and retention campaigns?\n# __________________________________________________\nCustomerLifetimeValue is OrderItems:\n    Order.Customer.Id UserId,\n    Order.Customer.FirstName FirstName,\n    Order.Customer.LastName LastName,\n    Count(distinct OrderId) OrderCount,\n    Sum(Quantity * UnitPrice - DiscountAmount).Round(2) LifetimeValue,\n    Max(Order.OrderDate) LastOrderDate,\n    Count(distinct Order.Channel) ChannelsUsed\n  Where Order.Status = \u003CCompleted\u003E AND Count(distinct OrderId) \u003E \u003C1\u003E\n  Order LifetimeValue DESC, LastOrderDate DESC\n  Take 10",
+  "id": "Sales 2. Customer lifetime value and recency",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "OrderItems",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Order.Customer.Id"
+      },
+      "alias": "UserId"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Order.Customer.FirstName"
+      },
+      "alias": "FirstName"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Order.Customer.LastName"
+      },
+      "alias": "LastName"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Count",
+        "distinct": true,
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "OrderId"
+          }
+        ]
+      },
+      "alias": "OrderCount"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Sum(Quantity * UnitPrice - DiscountAmount).Round(2)"
+      },
+      "alias": "LifetimeValue"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Max",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Order.OrderDate"
+          }
+        ]
+      },
+      "alias": "LastOrderDate"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Count",
+        "distinct": true,
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Order.Channel"
+          }
+        ]
+      },
+      "alias": "ChannelsUsed"
+    }
+  ],
+  "filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "Order.Status"
+        },
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "Completed"
+        },
+        "parameterized": true
+      },
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "Count(distinct OrderId)"
+        },
+        "operation": 4,
+        "right": {
+          "kind": "value",
+          "value": 1
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "LifetimeValue"
+      },
+      "direction": "Descending"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "LastOrderDate"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "take": 10,
+  "joins": []
+}

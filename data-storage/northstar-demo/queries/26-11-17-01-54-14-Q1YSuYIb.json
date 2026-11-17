@@ -1,0 +1,69 @@
+{
+  "domainId": "EXAMPLES_DOMAIN",
+  "name": "E19. Group by two keys",
+  "rawText": "# Question: How many orders does each sales channel place, by status?\n# Answer: Grouping by two keys on the Orders root.\nOrders: Channel,\n    Status,\n    Count(Id) OrderCount,\n    Items.Sum(Quantity) UnitsSold\n  Order Channel ASC, OrderCount DESC",
+  "id": "26-11-17-01-54-14-Q1YSuYIb",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Orders",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Channel"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Status"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Count",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ]
+      },
+      "alias": "OrderCount"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Items.Sum",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Quantity"
+          }
+        ]
+      },
+      "alias": "UnitsSold"
+    }
+  ],
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Channel"
+      },
+      "direction": "Ascending"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "OrderCount"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "isDistinct": false,
+  "joins": []
+}

@@ -1,0 +1,109 @@
+{
+  "domainId": "SALES_DOMAIN",
+  "name": "S4. Best-selling products and margin",
+  "rawText": "# Do you know which products generate the highest profits and deliver the best profit margins?\n#  - Which products generate the highest gross profit?\n#  - Which products sell the most units and generate the highest net revenue?\n#  - Which products deliver the strongest profit margins?\n#  - Are our best-selling products also our most profitable products?\n#  - Which products generate high revenue but have relatively low profit margins?\n#  - How much does product cost affect the profitability of each product?\n#  - Which product categories contribute the most to overall product profitability?\n#  - Are discounts significantly reducing the profit margins of certain products?\n#  - Which products should we prioritize to maximize revenue and profitability?\n# __________________________________________________\n\nProductMargin is OrderItems: Product.Id ProductId,\n    Product.Name Product,\n    Product.Category Category,\n    Count(distinct Order.Id) OrderCount,\n    SUM(Quantity) UnitsSold,\n    SUM(Quantity * UnitPrice - DiscountAmount).Round(2) NetRevenue,\n    SUM(Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount).Round(2) GrossProfit,\n    (\u003C100\u003E * SUM(Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount)\n        / NullIf(SUM(Quantity * UnitPrice - DiscountAmount), \u003C0\u003E)).Round(2) MarginPercent\n  Where Order.Status = \u003CCompleted\u003E\n  Order GrossProfit DESC\n  Take 10",
+  "id": "Sales 4. Best-selling products and margin",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "OrderItems",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Product.Id"
+      },
+      "alias": "ProductId"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Product.Name"
+      },
+      "alias": "Product"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Product.Category"
+      },
+      "alias": "Category"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Count",
+        "distinct": true,
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Order.Id"
+          }
+        ]
+      },
+      "alias": "OrderCount"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "SUM",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Quantity"
+          }
+        ]
+      },
+      "alias": "UnitsSold"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "SUM(Quantity * UnitPrice - DiscountAmount).Round(2)"
+      },
+      "alias": "NetRevenue"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "SUM(Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount).Round(2)"
+      },
+      "alias": "GrossProfit"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "(\u003C100\u003E * SUM(Quantity * (UnitPrice - Product.CostPrice) - DiscountAmount)\n/ NullIf(SUM(Quantity * UnitPrice - DiscountAmount), \u003C0\u003E)).Round(2)"
+      },
+      "alias": "MarginPercent"
+    }
+  ],
+  "filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "Order.Status"
+        },
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "Completed"
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "GrossProfit"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "take": 10,
+  "joins": []
+}

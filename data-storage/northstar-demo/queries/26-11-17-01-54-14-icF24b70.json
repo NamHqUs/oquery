@@ -1,0 +1,44 @@
+{
+  "domainId": "EXAMPLES_DOMAIN",
+  "name": "E04. Percentage computation",
+  "rawText": "# Question: Which products have the highest margin percentage?\n# Answer: A chained Round on a computed expression, sorted and limited.\nProducts: Id,\n    Name,\n    ((UnitPrice - CostPrice) * 100.0 / UnitPrice).Round(\u003C1\u003E) MarginPercent\n  Order MarginPercent DESC\n  Take 10",
+  "id": "26-11-17-01-54-14-icF24b70",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Products",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Name"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "((UnitPrice - CostPrice) * 100.0 / UnitPrice).Round(\u003C1\u003E)"
+      },
+      "alias": "MarginPercent"
+    }
+  ],
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "MarginPercent"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "isDistinct": false,
+  "take": 10,
+  "joins": []
+}

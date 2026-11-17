@@ -1,0 +1,479 @@
+{
+  "Id": "INSURANCE_DOMAIN",
+  "Name": "Insurance",
+  "Description": "Insurance operations analytics for plans, policies, claims, premium payments, agents, and members. Covers denial reasons, plan profitability and medical loss ratio, agent portfolio and premium collection, claims adjudication and processing time, and member premiums versus claims.",
+  "Entities": [
+    {
+      "Name": "Claims",
+      "Fields": [
+        {
+          "Name": "Id",
+          "DbColumn": "Id",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "PolicyId",
+          "DbColumn": "PolicyId",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "VisitId",
+          "DbColumn": "VisitId",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "ClaimDate",
+          "DbColumn": "ClaimDate",
+          "DataType": 2,
+          "IsRawSql": false
+        },
+        {
+          "Name": "BilledAmount",
+          "DbColumn": "BilledAmount",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "AllowedAmount",
+          "DbColumn": "AllowedAmount",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "PaidAmount",
+          "DbColumn": "PaidAmount",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "Status",
+          "DbColumn": "Status",
+          "DataType": 0,
+          "IsRawSql": false
+        },
+        {
+          "Name": "DenialReason",
+          "DbColumn": "DenialReason",
+          "DataType": 0,
+          "IsRawSql": false
+        },
+        {
+          "Name": "ProcessedDate",
+          "DbColumn": "ProcessedDate",
+          "DataType": 2,
+          "IsRawSql": false
+        }
+      ],
+      "RawSql": "Claims",
+      "DbTable": "Claims",
+      "DbSchema": "in",
+      "IsRawSql": false
+    },
+    {
+      "Name": "InsurancePlans",
+      "Fields": [
+        {
+          "Name": "Id",
+          "DbColumn": "Id",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "Name",
+          "DbColumn": "Name",
+          "DataType": 0,
+          "IsRawSql": false
+        },
+        {
+          "Name": "Tier",
+          "DbColumn": "Tier",
+          "DataType": 0,
+          "IsRawSql": false
+        },
+        {
+          "Name": "MonthlyPremium",
+          "DbColumn": "MonthlyPremium",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "Deductible",
+          "DbColumn": "Deductible",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "OutOfPocketMax",
+          "DbColumn": "OutOfPocketMax",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "CoinsuranceRate",
+          "DbColumn": "CoinsuranceRate",
+          "DataType": 1,
+          "IsRawSql": false
+        }
+      ],
+      "RawSql": "InsurancePlans",
+      "DbTable": "InsurancePlans",
+      "DbSchema": "in",
+      "IsRawSql": false
+    },
+    {
+      "Name": "Policies",
+      "Fields": [
+        {
+          "Name": "Id",
+          "DbColumn": "Id",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "UserId",
+          "DbColumn": "UserId",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "PlanId",
+          "DbColumn": "PlanId",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "AgentId",
+          "DbColumn": "AgentId",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "StartDate",
+          "DbColumn": "StartDate",
+          "DataType": 2,
+          "IsRawSql": false
+        },
+        {
+          "Name": "EndDate",
+          "DbColumn": "EndDate",
+          "DataType": 2,
+          "IsRawSql": false
+        },
+        {
+          "Name": "Status",
+          "DbColumn": "Status",
+          "DataType": 0,
+          "IsRawSql": false
+        }
+      ],
+      "RawSql": "Policies",
+      "DbTable": "Policies",
+      "DbSchema": "in",
+      "IsRawSql": false
+    },
+    {
+      "Name": "PremiumPayments",
+      "Fields": [
+        {
+          "Name": "Id",
+          "DbColumn": "Id",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "PolicyId",
+          "DbColumn": "PolicyId",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "PaymentDate",
+          "DbColumn": "PaymentDate",
+          "DataType": 2,
+          "IsRawSql": false
+        },
+        {
+          "Name": "Amount",
+          "DbColumn": "Amount",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "Status",
+          "DbColumn": "Status",
+          "DataType": 0,
+          "IsRawSql": false
+        }
+      ],
+      "RawSql": "PremiumPayments",
+      "DbTable": "PremiumPayments",
+      "DbSchema": "in",
+      "IsRawSql": false
+    },
+    {
+      "Name": "Agents",
+      "Fields": [
+        {
+          "Name": "Id",
+          "DbColumn": "Id",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "FirstName",
+          "DbColumn": "FirstName",
+          "DataType": 0,
+          "IsRawSql": false
+        },
+        {
+          "Name": "LastName",
+          "DbColumn": "LastName",
+          "DataType": 0,
+          "IsRawSql": false
+        },
+        {
+          "Name": "DepartmentId",
+          "DbColumn": "DepartmentId",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "LocationId",
+          "DbColumn": "LocationId",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "ManagerId",
+          "DbColumn": "ManagerId",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "JobTitle",
+          "DbColumn": "JobTitle",
+          "DataType": 0,
+          "IsRawSql": false
+        },
+        {
+          "Name": "HireDate",
+          "DbColumn": "HireDate",
+          "DataType": 2,
+          "IsRawSql": false
+        },
+        {
+          "Name": "Salary",
+          "DbColumn": "Salary",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "EmploymentType",
+          "DbColumn": "EmploymentType",
+          "DataType": 0,
+          "IsRawSql": false
+        }
+      ],
+      "RawSql": "Employees",
+      "DbTable": "Employees",
+      "DbSchema": "main",
+      "IsRawSql": false
+    },
+    {
+      "Name": "Clients",
+      "Fields": [
+        {
+          "Name": "Id",
+          "DbColumn": "Id",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "FirstName",
+          "DbColumn": "FirstName",
+          "DataType": 0,
+          "IsRawSql": false
+        },
+        {
+          "Name": "LastName",
+          "DbColumn": "LastName",
+          "DataType": 0,
+          "IsRawSql": false
+        },
+        {
+          "Name": "BirthDate",
+          "DbColumn": "BirthDate",
+          "DataType": 2,
+          "IsRawSql": false
+        },
+        {
+          "Name": "Gender",
+          "DbColumn": "Gender",
+          "DataType": 0,
+          "IsRawSql": false
+        },
+        {
+          "Name": "City",
+          "DbColumn": "City",
+          "DataType": 0,
+          "IsRawSql": false
+        },
+        {
+          "Name": "State",
+          "DbColumn": "State",
+          "DataType": 0,
+          "IsRawSql": false
+        }
+      ],
+      "RawSql": "Users",
+      "DbTable": "Users",
+      "DbSchema": "main",
+      "IsRawSql": false
+    },
+    {
+      "Name": "Departments",
+      "Fields": [
+        {
+          "Name": "Id",
+          "DbColumn": "Id",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "Name",
+          "DbColumn": "Name",
+          "DataType": 0,
+          "IsRawSql": false
+        }
+      ],
+      "RawSql": "Departments",
+      "DbTable": "Departments",
+      "DbSchema": "hr",
+      "IsRawSql": false
+    },
+    {
+      "Name": "Locations",
+      "Fields": [
+        {
+          "Name": "Id",
+          "DbColumn": "Id",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "City",
+          "DbColumn": "City",
+          "DataType": 0,
+          "IsRawSql": false
+        }
+      ],
+      "RawSql": "Locations",
+      "DbTable": "Locations",
+      "DbSchema": "main",
+      "IsRawSql": false
+    }
+  ],
+  "Relations": [
+    {
+      "SourceEntity": "Claims",
+      "SourceRelationName": "Policy",
+      "SourceFields": [
+        "PolicyId"
+      ],
+      "TargetEntity": "Policies",
+      "TargetRelationName": "Claims",
+      "TargetFields": [
+        "Id"
+      ]
+    },
+    {
+      "SourceEntity": "Policies",
+      "SourceRelationName": "InsurancePlan",
+      "SourceFields": [
+        "PlanId"
+      ],
+      "TargetEntity": "InsurancePlans",
+      "TargetRelationName": "Policies",
+      "TargetFields": [
+        "Id"
+      ]
+    },
+    {
+      "SourceEntity": "Policies",
+      "SourceRelationName": "Agent",
+      "SourceFields": [
+        "AgentId"
+      ],
+      "TargetEntity": "Agents",
+      "TargetRelationName": "Policies",
+      "TargetFields": [
+        "Id"
+      ]
+    },
+    {
+      "SourceEntity": "Policies",
+      "SourceRelationName": "Client",
+      "SourceFields": [
+        "UserId"
+      ],
+      "TargetEntity": "Clients",
+      "TargetRelationName": "Policies",
+      "TargetFields": [
+        "Id"
+      ]
+    },
+    {
+      "SourceEntity": "PremiumPayments",
+      "SourceRelationName": "Policy",
+      "SourceFields": [
+        "PolicyId"
+      ],
+      "TargetEntity": "Policies",
+      "TargetRelationName": "PremiumPayments",
+      "TargetFields": [
+        "Id"
+      ]
+    },
+    {
+      "SourceEntity": "Agents",
+      "SourceRelationName": "Manager",
+      "SourceFields": [
+        "ManagerId"
+      ],
+      "TargetEntity": "Agents",
+      "TargetRelationName": "Members",
+      "TargetFields": [
+        "Id"
+      ]
+    },
+    {
+      "SourceEntity": "Agents",
+      "SourceRelationName": "Department",
+      "SourceFields": [
+        "DepartmentId"
+      ],
+      "TargetEntity": "Departments",
+      "TargetRelationName": "Agents",
+      "TargetFields": [
+        "Id"
+      ]
+    },
+    {
+      "SourceEntity": "Agents",
+      "SourceRelationName": "Location",
+      "SourceFields": [
+        "LocationId"
+      ],
+      "TargetEntity": "Locations",
+      "TargetRelationName": "Agents",
+      "TargetFields": [
+        "Id"
+      ]
+    }
+  ],
+  "CanDelete": true,
+  "IsBuiltin": false
+}

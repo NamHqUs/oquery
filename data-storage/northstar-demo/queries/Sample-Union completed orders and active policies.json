@@ -1,0 +1,190 @@
+{
+  "DomainId": "ALL_DOMAIN",
+  "Name": "Sample-Union completed orders and active policies",
+  "Entity": "Users",
+  "Projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "Alias": "UserId"
+    }
+  ],
+  "Filter": {
+    "logicalOperation": 1,
+    "filters": [
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "CompletedOrders.UserId"
+        },
+        "operation": 13,
+        "right": null,
+        "parameterized": true
+      },
+      {
+        "logicalOperator": 1,
+        "left": {
+          "kind": "field",
+          "field": "ActivePolicies.UserId"
+        },
+        "operation": 13,
+        "right": null,
+        "parameterized": true
+      }
+    ]
+  },
+  "Sorts": null,
+  "Take": null,
+  "Skip": null,
+  "Joins": [
+    {
+      "Alias": "CompletedOrders",
+      "Condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Id"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "CompletedOrders.UserId"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "JoinType": "Left",
+      "RefContext": "CompletedOrders"
+    },
+    {
+      "Alias": "ActivePolicies",
+      "Condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Id"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "ActivePolicies.UserId"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "JoinType": "Left",
+      "RefContext": "ActivePolicies"
+    }
+  ],
+  "Id": "Sample-Union completed orders and active policies",
+  "Contexts": {
+    "CompletedOrders": {
+      "Entity": "Orders",
+      "Projections": [
+        {
+          "field": {
+            "kind": "field",
+            "field": "UserId"
+          },
+          "Alias": "UserId"
+        },
+        {
+          "field": {
+            "kind": "function",
+            "function": "Count",
+            "distinct": true,
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ]
+          },
+          "Alias": "MatchCount"
+        }
+      ],
+      "Filter": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Status"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "value",
+              "value": "Completed"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "Sorts": null,
+      "Take": null,
+      "Skip": null,
+      "Joins": null
+    },
+    "ActivePolicies": {
+      "Entity": "Policies",
+      "Projections": [
+        {
+          "field": {
+            "kind": "field",
+            "field": "UserId"
+          },
+          "Alias": "UserId"
+        },
+        {
+          "field": {
+            "kind": "function",
+            "function": "Count",
+            "distinct": true,
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ]
+          },
+          "Alias": "MatchCount"
+        }
+      ],
+      "Filter": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Status"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "value",
+              "value": "Active"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "Sorts": null,
+      "Take": null,
+      "Skip": null,
+      "Joins": null
+    }
+  },
+  "IsBuiltin": false
+}

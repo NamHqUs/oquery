@@ -1,0 +1,122 @@
+{
+  "domainId": "INSURANCE_DOMAIN",
+  "name": "I5. Member utilization versus premium",
+  "rawText": "# Do you know which insurance members generate the highest medical costs compared with the premiums they contribute?\n#  - Which members have the highest medical loss ratios?\n#  - How much premium revenue has been collected from each member?\n#  - How much have insurance companies paid out for each member\u0027s claims?\n#  - Which members have the highest total allowed claim amounts?\n#  - Which members have submitted the most insurance claims?\n#  - Are members with high premium contributions also generating high claim costs?\n#  - Which members receive significantly more in insurer payments than they contribute in premiums?\n#  - Which members have high medical loss ratios despite having relatively few claims?\n#  - How does insurer-paid claim cost compare with premium collections across members?\n#  - Which members should we review to better understand medical costs and insurance utilization?\n# __________________________________________________\n\nClients: Id MemberId,\n    Concat(FirstName, \u003C \u003E, LastName) Member,\n    Policies.Sum(PremiumPayments.SumIf(Amount, Status = \u003CPaid\u003E)).Round(2) PremiumsCollected,\n    Policies.Sum(Claims.Sum(AllowedAmount)).Round(2) AllowedAmount,\n    Policies.Sum(Claims.Sum(PaidAmount)).Round(2) InsurerPaid,\n    Policies.Sum(Claims.Count(Id)) ClaimCount,\n    (100.0 * InsurerPaid / NullIf(PremiumsCollected, 0)).Round(2) MemberLossRatioPercent\n  Where Policies.Count(Id) \u003E 0\n  Order MemberLossRatioPercent DESC, ClaimCount DESC\n  Take 10",
+  "id": "Insurance 5. Member utilization versus premium",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Clients",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "alias": "MemberId"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Concat",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "FirstName"
+          },
+          {
+            "kind": "value",
+            "value": " "
+          },
+          {
+            "kind": "field",
+            "field": "LastName"
+          }
+        ]
+      },
+      "alias": "Member"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Policies.Sum(PremiumPayments.SumIf(Amount, Status = \u003CPaid\u003E)).Round(2)"
+      },
+      "alias": "PremiumsCollected"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Policies.Sum(Claims.Sum(AllowedAmount)).Round(2)"
+      },
+      "alias": "AllowedAmount"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Policies.Sum(Claims.Sum(PaidAmount)).Round(2)"
+      },
+      "alias": "InsurerPaid"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Policies.Sum",
+        "arguments": [
+          {
+            "kind": "function",
+            "function": "Claims.Count",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Id"
+              }
+            ]
+          }
+        ]
+      },
+      "alias": "ClaimCount"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "(100.0 * InsurerPaid / NullIf(PremiumsCollected, 0)).Round(2)"
+      },
+      "alias": "MemberLossRatioPercent"
+    }
+  ],
+  "filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "Policies.Count(Id)"
+        },
+        "operation": 4,
+        "right": {
+          "kind": "value",
+          "value": 0
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "MemberLossRatioPercent"
+      },
+      "direction": "Descending"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "ClaimCount"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "take": 10,
+  "joins": []
+}

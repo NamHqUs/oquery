@@ -1,0 +1,202 @@
+{
+  "domainId": "INSURANCE_DOMAIN",
+  "name": "I3. Agent portfolio and premium collection",
+  "rawText": "# Do you know which insurance agents generate the most premium revenue and how effectively they manage their policy portfolios and payment collections?\n#  - Which insurance agents generate the highest paid premium revenue?\n#  - Who has sold the most insurance policies?\n#  - Which agents manage the largest number of active policies?\n#  - Which agents have the highest number of late premium payments?\n#  - Which agents have the most missed premium payments?\n#  - Are agents with the highest premium revenue also managing the largest policy portfolios?\n#  - Which agents have strong premium collections but relatively few late or missed payments?\n#  - How does payment collection performance vary across insurance agency locations?\n#  - Which agents may need attention due to high numbers of late or missed payments?\n#  - Who are our top-performing insurance agents based on premium revenue and policy activity?\n# __________________________________________________\n\nAgents: Id AgentId,\n    Concat(FirstName, \u003C \u003E, LastName) Agent,\n    Location.City OfficeCity,\n    Policies.Count() PoliciesSold,\n    Policies.CountIf(Status = \u003CActive\u003E) ActivePolicies,\n    Round(IfNull(Policies.Sum(PremiumPayments.SumIf(Amount, Status = \u003CPaid\u003E)), 0), 2) PaidPremiums,\n    IfNull(Policies.Sum(PremiumPayments.CountIf(Status = \u003CLate\u003E)), 0) LatePayments,\n    IfNull(Policies.Sum(PremiumPayments.CountIf(Status = \u003CMissed\u003E)), 0) MissedPayments\n  Where Department.Name = \u003CInsurance Agency\u003E\n  Order PaidPremiums DESC\n  Take 10",
+  "id": "Insurance 3. Agent portfolio and premium collection",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Agents",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "alias": "AgentId"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Concat",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "FirstName"
+          },
+          {
+            "kind": "value",
+            "value": " "
+          },
+          {
+            "kind": "field",
+            "field": "LastName"
+          }
+        ]
+      },
+      "alias": "Agent"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Location.City"
+      },
+      "alias": "OfficeCity"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "CountOver",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Policies"
+          }
+        ]
+      },
+      "alias": "PoliciesSold"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Policies.CountIf",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Status = \u003CActive\u003E"
+          }
+        ]
+      },
+      "alias": "ActivePolicies"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Round",
+        "arguments": [
+          {
+            "kind": "function",
+            "function": "IfNull",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "Policies.Sum",
+                "arguments": [
+                  {
+                    "kind": "function",
+                    "function": "PremiumPayments.SumIf",
+                    "arguments": [
+                      {
+                        "kind": "field",
+                        "field": "Amount"
+                      },
+                      {
+                        "kind": "field",
+                        "field": "Status = \u003CPaid\u003E"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "value",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "kind": "value",
+            "value": 2
+          }
+        ]
+      },
+      "alias": "PaidPremiums"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "IfNull",
+        "arguments": [
+          {
+            "kind": "function",
+            "function": "Policies.Sum",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "PremiumPayments.CountIf",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "Status = \u003CLate\u003E"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "value",
+            "value": 0
+          }
+        ]
+      },
+      "alias": "LatePayments"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "IfNull",
+        "arguments": [
+          {
+            "kind": "function",
+            "function": "Policies.Sum",
+            "arguments": [
+              {
+                "kind": "function",
+                "function": "PremiumPayments.CountIf",
+                "arguments": [
+                  {
+                    "kind": "field",
+                    "field": "Status = \u003CMissed\u003E"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "value",
+            "value": 0
+          }
+        ]
+      },
+      "alias": "MissedPayments"
+    }
+  ],
+  "filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "Department.Name"
+        },
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "Insurance Agency"
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "PaidPremiums"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "take": 10,
+  "joins": []
+}

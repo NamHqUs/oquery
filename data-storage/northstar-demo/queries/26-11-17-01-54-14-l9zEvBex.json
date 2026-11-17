@@ -1,0 +1,70 @@
+{
+  "domainId": "EXAMPLES_DOMAIN",
+  "name": "E02. NotAny() filter",
+  "rawText": "# Question: Which orders contain no bulk line (5 or more units)?\n# Answer: NotAny() keeps orders with no related line that matches the predicate.\nOrders: Id,\n    OrderDate,\n    Status,\n    Channel\n  Where Items.NotAny(Quantity \u003E= \u003C5\u003E)\n  Order OrderDate DESC\n  Take 10",
+  "id": "26-11-17-01-54-14-l9zEvBex",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Orders",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "OrderDate"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Status"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Channel"
+      },
+      "alias": null
+    }
+  ],
+  "filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "kind": "function",
+        "function": "NotAny",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Items"
+          },
+          {
+            "kind": "field",
+            "field": "Quantity \u003E= \u003C5\u003E"
+          }
+        ]
+      }
+    ]
+  },
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "OrderDate"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "isDistinct": false,
+  "take": 10,
+  "joins": []
+}

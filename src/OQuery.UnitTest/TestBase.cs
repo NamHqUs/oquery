@@ -17,7 +17,6 @@ public class TestBase
         _connection = TestDatabase.GetDbConnection(DbServerType.Sqlite);
 
         var entities = MetadataLoader.UnitTestData
-            .Concat(MetadataLoader.SaleDemoData)
             .Concat(MetadataLoader.NorthStarDemoData)
             .GroupBy(entity => entity.Name, StringComparer.OrdinalIgnoreCase)
             .Select(group => group.Last());

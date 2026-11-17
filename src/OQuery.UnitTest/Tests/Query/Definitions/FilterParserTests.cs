@@ -10,15 +10,15 @@ internal sealed class FilterParserTests : TestBase
     [Test]
     public void Filter_FromText()
     {
-        var query = new QueryDefinition("Invoices")
+        var query = new QueryDefinition("User")
         {
 
-            Projections = QueryDefinitionJsonParser.ParseProjection("Year(InvoiceDate) | Year, Month(InvoiceDate) | Month, COUNT(Id) | InvoiceCount, SUM(TotalAmount) | Revenue, AVG(TotalAmount) | AverageOrderValue"),
-            Filter = QueryDefinitionJsonParser.ParseFilter("Status <> <Draft> And Sum(TotalAmount) > 200"),
+            Projections = QueryDefinitionJsonParser.ParseProjection("Name | Name, Age | Age, Birthday | Birthday"),
+            Filter = QueryDefinitionJsonParser.ParseFilter("Name <> <Draft> And Age > <20>"),
         };
 
         var queryText = QueryDefinitionOQueryParser.Write(query);
-        Assert.That(queryText, Does.Contain("Where Status <> <Draft> AND Sum(TotalAmount) > <200>"));
+        Assert.That(queryText, Does.Contain("Where Name <> <Draft> AND Age > <20>"));
 
         var data = _db.Query(query).ToList();
         Assert.That(data.Count, Is.GreaterThan(0));

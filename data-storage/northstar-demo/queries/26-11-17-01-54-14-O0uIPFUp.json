@@ -1,0 +1,81 @@
+{
+  "domainId": "EXAMPLES_DOMAIN",
+  "name": "E09. OR filter",
+  "rawText": "# Question: Which products belong to First Aid or Skin Care?\n# Answer: OR conditions on the Products root.\nProducts: Id,\n    Name,\n    Category,\n    UnitPrice\n  Where Category = \u003CFirst Aid\u003E OR Category = \u003CSkin Care\u003E\n  Order UnitPrice DESC",
+  "id": "26-11-17-01-54-14-O0uIPFUp",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Products",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Name"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Category"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "UnitPrice"
+      },
+      "alias": null
+    }
+  ],
+  "filter": {
+    "logicalOperation": 1,
+    "filters": [
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "Category"
+        },
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "First Aid"
+        },
+        "parameterized": true
+      },
+      {
+        "logicalOperator": 1,
+        "left": {
+          "kind": "field",
+          "field": "Category"
+        },
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "Skin Care"
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "UnitPrice"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "isDistinct": false,
+  "joins": []
+}

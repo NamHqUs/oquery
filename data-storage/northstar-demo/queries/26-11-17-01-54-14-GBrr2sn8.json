@@ -1,0 +1,104 @@
+{
+  "domainId": "EXAMPLES_DOMAIN",
+  "name": "E18. Window function",
+  "rawText": "# Question: How does each product\u0027s revenue compare with its category average?\n# Answer: A window function (AverageOver) with a partition, without collapsing rows.\nProductSales is OrderItems: ProductId,\n    SUM(Quantity * UnitPrice).Round(2) TotalRevenue\nProducts:\n  Inner Join ProductSales On Id = ProductSales.ProductId\n  Select Id,\n    Name,\n    Category,\n    ProductSales.TotalRevenue TotalRevenue,\n    AverageOver(ProductSales.TotalRevenue, Category).Round(2) CategoryAverage\nOrder TotalRevenue DESC\nTake 10",
+  "id": "26-11-17-01-54-14-GBrr2sn8",
+  "isBuiltin": false,
+  "contexts": {
+    "ProductSales": {
+      "entity": "OrderItems",
+      "projection": [
+        {
+          "field": {
+            "kind": "field",
+            "field": "ProductId"
+          },
+          "alias": null
+        },
+        {
+          "field": {
+            "kind": "field",
+            "field": "SUM(Quantity * UnitPrice).Round(2)"
+          },
+          "alias": "TotalRevenue"
+        }
+      ],
+      "sorts": [],
+      "isDistinct": false,
+      "joins": []
+    }
+  },
+  "entity": "Products",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Name"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Category"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "ProductSales.TotalRevenue"
+      },
+      "alias": "TotalRevenue"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "AverageOver(ProductSales.TotalRevenue, Category).Round(2)"
+      },
+      "alias": "CategoryAverage"
+    }
+  ],
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "TotalRevenue"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "isDistinct": false,
+  "take": 10,
+  "joins": [
+    {
+      "refContext": "ProductSales",
+      "condition": {
+        "logicalOperation": 0,
+        "filters": [
+          {
+            "logicalOperator": 0,
+            "left": {
+              "kind": "field",
+              "field": "Id"
+            },
+            "operation": 0,
+            "right": {
+              "kind": "field",
+              "field": "ProductSales.ProductId"
+            },
+            "parameterized": true
+          }
+        ]
+      },
+      "joinType": "Inner"
+    }
+  ]
+}

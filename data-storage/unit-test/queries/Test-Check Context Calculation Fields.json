@@ -1,0 +1,67 @@
+{
+  "DomainId": "UNITTEST_DOMAIN",
+  "Name": "Test - Check Context Calculation Fields",
+  "Entity": "User Context",
+  "Projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "Alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Name"
+      },
+      "Alias": null
+    }
+  ],
+  "Filter": null,
+  "Sorts": null,
+  "Take": 50,
+  "Skip": 0,
+  "Joins": [],
+  "Id": "Test-Check Context Calculation Fields",
+  "Contexts": {
+    "User Context": {
+      "Entity": "User",
+      "Projections": [
+        {
+          "field": {
+            "kind": "field",
+            "field": "Id"
+          },
+          "Alias": null
+        },
+        {
+          "field": {
+            "kind": "field",
+            "field": "Name"
+          },
+          "Alias": null
+        },
+        {
+          "field": {
+            "kind": "function",
+            "function": "COUNT",
+            "arguments": [
+              {
+                "kind": "field",
+                "field": "Members.Id"
+              }
+            ]
+          },
+          "Alias": "Total Members"
+        }
+      ],
+      "Filter": null,
+      "Sorts": null,
+      "Take": null,
+      "Skip": null,
+      "Joins": null
+    }
+  },
+  "IsBuiltin": false
+}

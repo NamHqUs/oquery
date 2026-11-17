@@ -1,0 +1,22 @@
+- name: School
+  dbSchema: 
+  dbTable: School
+  fields:
+  - { name: Name }
+  relations:
+  - { name: Students, refEntity: Student, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: SchoolId }] }
+  - { name: Teachers, refEntity: Teacher, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: SchoolId }] }
+- name: User
+  dbSchema: 
+  dbTable: User
+  fields:
+  - { name: Id, dataType: Number }
+  - { name: Name }
+  - { name: ManagerId, dataType: Number }
+  - { name: Age, dataType: Number }
+  - { name: Birthday, dataType: Datetime }
+  - { name: IsMale, dataType: Boolean }
+  relations:
+  - { name: Manager, refEntity: User, type: Lookup, refKeys: [{ dbColumn: ManagerId, refDbColumn: Id }] }
+  - { name: Members, refEntity: User, type: Collection, refKeys: [{ dbColumn: Id, refDbColumn: ManagerId }] }
+  - { name: MySchool, refEntity: School, type: Lookup, refKeys: [{ dbColumn: SchoolId, refDbColumn: Id }] }

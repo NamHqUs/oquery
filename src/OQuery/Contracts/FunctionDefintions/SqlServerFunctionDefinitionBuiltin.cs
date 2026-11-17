@@ -9,7 +9,7 @@ internal sealed class SqlServerFunctionDefinitionBuiltin : SqlFunctionDefinition
     protected override string CurrentDateTimeSql => "GETDATE()";
 
     internal override IEnumerable<SqlFunctionDefintion> CreateAllFunctions() =>
-        base.CreateAllFunctions().Append(GetDate()).Append(Round());
+        base.CreateAllFunctions().Append(GetDate()).Append(Round()).Append(ElapsedYears());
 
     private SqlFunctionDefintion GetDate() =>
         Create("GetDate", [], DataType.Datetime, "Returns the current date and time.", "GETDATE()");

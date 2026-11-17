@@ -1,0 +1,103 @@
+{
+  "domainId": "HR_Domain",
+  "name": "HR 5. Performance and bonus trends",
+  "rawText": "# Do you know how employee performance translates into compensation across your organization?\n#  - Which departments achieve the highest average performance ratings?\n#  - How many performance reviews are conducted each year?\n#  - How many employees receive high performance ratings?\n#  - What percentage of reviews result in high ratings?\n#  - What is the average salary of employees in each department?\n#  - How much bonus compensation does each department distribute?\n#  - How do performance ratings and bonus distributions change over time?\n#  - Which departments combine strong performance with higher bonus compensation?\n# ____________________________________________________________\n\nPerformanceReviews:\n    Employee.Department.Name Department\n    ReviewYear\n    Count(Id) Reviews\n    Avg(Rating).Round(2) AverageRating\n    CountIf(Rating \u003E= 4) HighRatings\n    (CountIf(Rating \u003E= 4) * 100.0 / Count(Id)).Round(2) HighRatingPercent\n    Avg(Employee.Salary).Round(2) AverageSalary\n    Sum(BonusAmount).Round(2) TotalBonus\nOrder ReviewYear DESC, AverageRating DESC, TotalBonus DESC",
+  "id": "HR 5. Performance and bonus trends",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "PerformanceReviews",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Employee.Department.Name"
+      },
+      "alias": "Department"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "ReviewYear"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Count",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ]
+      },
+      "alias": "Reviews"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Avg(Rating).Round(2)"
+      },
+      "alias": "AverageRating"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "CountIf",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Rating \u003E= 4"
+          }
+        ]
+      },
+      "alias": "HighRatings"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "(CountIf(Rating \u003E= 4) * 100.0 / Count(Id)).Round(2)"
+      },
+      "alias": "HighRatingPercent"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Avg(Employee.Salary).Round(2)"
+      },
+      "alias": "AverageSalary"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Sum(BonusAmount).Round(2)"
+      },
+      "alias": "TotalBonus"
+    }
+  ],
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "ReviewYear"
+      },
+      "direction": "Descending"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "AverageRating"
+      },
+      "direction": "Descending"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "TotalBonus"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "joins": []
+}

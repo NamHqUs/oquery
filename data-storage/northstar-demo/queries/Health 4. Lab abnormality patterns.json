@@ -1,0 +1,121 @@
+{
+  "domainId": "HEALTHCARE_DOMAIN",
+  "name": "H4. Lab abnormality patterns",
+  "rawText": "# Do you know which laboratory tests reveal the highest rates of abnormalities across different diagnosis categories?\n#  - Which laboratory tests have the highest abnormal result rates?\n#  - Which diagnosis categories are most frequently associated with abnormal laboratory results?\n#  - Are certain laboratory tests consistently producing abnormal results across different diagnosis categories?\n#  - How frequently are abnormal results observed compared with all tests performed?\n#  - How do average observed test values compare with their reference maximums?\n#  - Which test and diagnosis-category combinations show the most concerning abnormality patterns?\n#  - Are there specific laboratory tests or diagnosis categories that deserve closer clinical investigation?\n# __________________________________________________\n\nLabAbnormalityPatterns is LabResults:\n    TestName,\n    Visit.Diagnose.Category DiagnosisCategory,\n    Count(Id) TestCount,\n    CountIf(IsAbnormal = \u003CTrue\u003E) AbnormalCount,\n    (CountIf(IsAbnormal = \u003CTrue\u003E) * 100.0 / Count(Id)).Round(2) AbnormalPercent,\n    Avg(ResultValue).Round(2) AverageResult,\n    Avg(ReferenceMax).Round(2) AverageReferenceMaximum\n  Where Visit.Status = \u003CCompleted\u003E AND Count(Id) \u003E= 5\n  Order AbnormalPercent DESC, TestCount DESC\n  Take 10",
+  "id": "Health 4. Lab abnormality patterns",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "LabResults",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "TestName"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Visit.Diagnose.Category"
+      },
+      "alias": "DiagnosisCategory"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Count",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ]
+      },
+      "alias": "TestCount"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "CountIf",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "IsAbnormal = \u003CTrue\u003E"
+          }
+        ]
+      },
+      "alias": "AbnormalCount"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "(CountIf(IsAbnormal = \u003CTrue\u003E) * 100.0 / Count(Id)).Round(2)"
+      },
+      "alias": "AbnormalPercent"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Avg(ResultValue).Round(2)"
+      },
+      "alias": "AverageResult"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Avg(ReferenceMax).Round(2)"
+      },
+      "alias": "AverageReferenceMaximum"
+    }
+  ],
+  "filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "Visit.Status"
+        },
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "Completed"
+        },
+        "parameterized": true
+      },
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "Count(Id)"
+        },
+        "operation": 6,
+        "right": {
+          "kind": "value",
+          "value": 5
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "AbnormalPercent"
+      },
+      "direction": "Descending"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "TestCount"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "take": 10,
+  "joins": []
+}

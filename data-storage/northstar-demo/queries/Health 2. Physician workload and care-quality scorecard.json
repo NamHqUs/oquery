@@ -1,0 +1,156 @@
+{
+  "domainId": "HEALTHCARE_DOMAIN",
+  "name": "H2. Physician workload and care-quality scorecard",
+  "rawText": "# Do you know how effectively your physicians manage their workload and patient care?\n#  - Which physicians handle the highest number of completed visits?\n#  - How many unique patients does each physician serve?\n#  - How much time do physicians spend with patients on average?\n#  - Which physicians generate the highest total charges?\n#  - What percentage of laboratory results are abnormal for each physician\u0027s patients?\n#  - Which physicians manage high patient volumes while maintaining better laboratory outcomes?\n#  - How does physician workload and care quality compare across departments and clinic locations?\n#  - Are there physicians with no completed visits who may need further operational attention?\n# ____________________________________________________________\n\nPhysicianScorecard is Doctors:\n    FirstName \u002B \u003C \u003E \u002B LastName Physician,\n    Department.Name Department,\n    Location.City ClinicCity,\n    Examinations.CountIf(Status = \u003CCompleted\u003E) VisitCount,\n    Examinations.CountIf(distinct UserId, Status = \u003CCompleted\u003E) PatientCount,\n    Examinations.AvgIf(DurationMinutes, Status = \u003CCompleted\u003E).Round(2) AverageVisitMinutes,\n    Examinations.SumIf(Charge, Status = \u003CCompleted\u003E) Charges,\n    (100 * Examinations.SumIf(LabResults.CountIf(IsAbnormal = \u003CTrue\u003E), Status = \u003CCompleted\u003E)\n        / NullIf(Examinations.SumIf(LabResults.Count(Id), Status = \u003CCompleted\u003E), 0)).Round(2) AbnormalLabPercent\n  Where Department.Name In \u003CPrimary Care, Specialty Care, Emergency Medicine\u003E\n  Order VisitCount DESC, Charges DESC\n  Take 10",
+  "id": "Health 2. Physician workload and care-quality scorecard",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Doctors",
+  "projections": [
+    {
+      "field": {
+        "kind": "group",
+        "fields": [
+          {
+            "kind": "field",
+            "field": "FirstName"
+          },
+          {
+            "kind": "value",
+            "value": " "
+          },
+          {
+            "kind": "field",
+            "field": "LastName"
+          }
+        ]
+      },
+      "alias": "Physician"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Department.Name"
+      },
+      "alias": "Department"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Location.City"
+      },
+      "alias": "ClinicCity"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Examinations.CountIf",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Status = \u003CCompleted\u003E"
+          }
+        ]
+      },
+      "alias": "VisitCount"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Examinations.CountIf",
+        "distinct": true,
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "UserId"
+          },
+          {
+            "kind": "field",
+            "field": "Status = \u003CCompleted\u003E"
+          }
+        ]
+      },
+      "alias": "PatientCount"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Examinations.AvgIf(DurationMinutes, Status = \u003CCompleted\u003E).Round(2)"
+      },
+      "alias": "AverageVisitMinutes"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Examinations.SumIf",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Charge"
+          },
+          {
+            "kind": "field",
+            "field": "Status = \u003CCompleted\u003E"
+          }
+        ]
+      },
+      "alias": "Charges"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "(100 * Examinations.SumIf(LabResults.CountIf(IsAbnormal = \u003CTrue\u003E), Status = \u003CCompleted\u003E)\n/ NullIf(Examinations.SumIf(LabResults.Count(Id), Status = \u003CCompleted\u003E), 0)).Round(2)"
+      },
+      "alias": "AbnormalLabPercent"
+    }
+  ],
+  "filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "Department.Name"
+        },
+        "operation": 10,
+        "right": {
+          "kind": "group",
+          "fields": [
+            {
+              "kind": "value",
+              "value": "Primary Care"
+            },
+            {
+              "kind": "value",
+              "value": "Specialty Care"
+            },
+            {
+              "kind": "value",
+              "value": "Emergency Medicine"
+            }
+          ]
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "VisitCount"
+      },
+      "direction": "Descending"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Charges"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "take": 10,
+  "joins": []
+}

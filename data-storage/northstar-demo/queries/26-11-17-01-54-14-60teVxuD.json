@@ -1,0 +1,65 @@
+{
+  "domainId": "EXAMPLES_DOMAIN",
+  "name": "E15. NotAny() with predicate",
+  "rawText": "# Question: Which products have never been ordered?\n# Answer: NotAny() keeps only products with no related order lines.\nProducts: Id,\n    Name,\n    Category,\n    UnitPrice\n  Where Items.NotAny()\n  Order Name",
+  "id": "26-11-17-01-54-14-60teVxuD",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Products",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Name"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Category"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "UnitPrice"
+      },
+      "alias": null
+    }
+  ],
+  "filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "kind": "function",
+        "function": "NotAny",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Items"
+          }
+        ]
+      }
+    ]
+  },
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Name"
+      },
+      "direction": "Ascending"
+    }
+  ],
+  "isDistinct": false,
+  "joins": []
+}

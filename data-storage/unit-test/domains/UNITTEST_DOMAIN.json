@@ -1,0 +1,158 @@
+{
+  "Id": "UNITTEST_DOMAIN",
+  "Name": "Unit Test",
+  "Description": "",
+  "Entities": [
+    {
+      "Name": "User",
+      "Fields": [
+        {
+          "Name": "Id",
+          "DbColumn": "Id",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "ManagerId",
+          "DbColumn": "ManagerId",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "SchoolId",
+          "DbColumn": "SchoolId",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "Name",
+          "DbColumn": "Name",
+          "DataType": 0,
+          "IsRawSql": false
+        },
+        {
+          "Name": "Age",
+          "DbColumn": "Age",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "Birthday",
+          "DbColumn": "Birthday",
+          "DataType": 2,
+          "IsRawSql": false
+        },
+        {
+          "Name": "IsMale",
+          "DbColumn": "IsMale",
+          "DataType": 3,
+          "IsRawSql": false
+        }
+      ],
+      "RawSql": "User",
+      "DbTable": "User",
+      "DbSchema": "dbo",
+      "IsRawSql": false
+    },
+    {
+      "Name": "School",
+      "Fields": [
+        {
+          "Name": "Id",
+          "DbColumn": "Id",
+          "DataType": 1,
+          "IsRawSql": false
+        },
+        {
+          "Name": "Name",
+          "DbColumn": "Name",
+          "DataType": 0,
+          "IsRawSql": false
+        },
+        {
+          "Name": "Address",
+          "DbColumn": "Address",
+          "DataType": 0,
+          "IsRawSql": false
+        }
+      ],
+      "RawSql": "School",
+      "DbTable": "School",
+      "DbSchema": "main",
+      "IsRawSql": false
+    },
+    {
+      "Name": "Teacher",
+      "Fields": [
+        {
+          "Name": "Id",
+          "DbColumn": "Id",
+          "DataType": 1,
+          "IsRawSql": true
+        },
+        {
+          "Name": "ManagerId",
+          "DbColumn": "ManagerId",
+          "DataType": 1,
+          "IsRawSql": true
+        },
+        {
+          "Name": "SchoolId",
+          "DbColumn": "SchoolId",
+          "DataType": 1,
+          "IsRawSql": true
+        },
+        {
+          "Name": "Name",
+          "DbColumn": "Name",
+          "DataType": 0,
+          "IsRawSql": true
+        }
+      ],
+      "RawSql": "Select * From [User]",
+      "DbTable": "Select * From [User]",
+      "DbSchema": "dbo",
+      "IsRawSql": false
+    }
+  ],
+  "Relations": [
+    {
+      "SourceEntity": "User",
+      "SourceRelationName": "School",
+      "SourceFields": [
+        "SchoolId"
+      ],
+      "TargetEntity": "School",
+      "TargetRelationName": "Students",
+      "TargetFields": [
+        "Id"
+      ]
+    },
+    {
+      "SourceEntity": "User",
+      "SourceRelationName": "Manager",
+      "SourceFields": [
+        "ManagerId"
+      ],
+      "TargetEntity": "User",
+      "TargetRelationName": "Members",
+      "TargetFields": [
+        "Id"
+      ]
+    },
+    {
+      "SourceEntity": "Teacher",
+      "SourceRelationName": "School",
+      "SourceFields": [
+        "SchoolId"
+      ],
+      "TargetEntity": "School",
+      "TargetRelationName": "Teachers",
+      "TargetFields": [
+        "Id"
+      ]
+    }
+  ],
+  "CanDelete": true,
+  "IsBuiltin": false
+}

@@ -1,0 +1,94 @@
+{
+  "domainId": "HEALTHCARE_DOMAIN",
+  "name": "H1. Diagnosis Burden \u0026 Clinic Performance Analysis",
+  "rawText": "# Do you know which diagnoses place the greatest burden on your clinics?\n#  - Which diagnoses generate the highest number of completed visits?\n#  - How many unique patients are affected by each diagnosis?\n#  - Which clinics handle the largest volume of visits for each diagnosis?\n#  - What is the average charge associated with each diagnosis?\n#  - Where are abnormal laboratory results most concentrated?\n#  - Which diagnoses combine high visit volumes with higher abnormal lab rates?\n#  - How does the clinical workload differ across locations?\n# ____________________________________________________________\n\nDiagnosisBurden is Visits:\n    Diagnose.Name DiagnosisName,\n    Diagnose.Category DiagnosisCategory,\n    Location.City ClinicCity,\n    Count(distinct Id) VisitCount,\n    Count(distinct UserId) UniquePatients,\n    Avg(Charge).Round(2) AverageCharge,\n    (100.0 * Sum(LabResults.CountIf(IsAbnormal = \u003CTrue\u003E))\n        / NullIf(Sum(LabResults.Count(Id)), 0)).Round(2) AbnormalLabPercent\n  Where Status = \u003CCompleted\u003E",
+  "id": "Health 1. Diagnosis burden by clinic",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Visits",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Diagnose.Name"
+      },
+      "alias": "DiagnosisName"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Diagnose.Category"
+      },
+      "alias": "DiagnosisCategory"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Location.City"
+      },
+      "alias": "ClinicCity"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Count",
+        "distinct": true,
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ]
+      },
+      "alias": "VisitCount"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Count",
+        "distinct": true,
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "UserId"
+          }
+        ]
+      },
+      "alias": "UniquePatients"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Avg(Charge).Round(2)"
+      },
+      "alias": "AverageCharge"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "(100.0 * Sum(LabResults.CountIf(IsAbnormal = \u003CTrue\u003E))\n/ NullIf(Sum(LabResults.Count(Id)), 0)).Round(2)"
+      },
+      "alias": "AbnormalLabPercent"
+    }
+  ],
+  "filter": {
+    "logicalOperation": 0,
+    "filters": [
+      {
+        "logicalOperator": 0,
+        "left": {
+          "kind": "field",
+          "field": "Status"
+        },
+        "operation": 0,
+        "right": {
+          "kind": "value",
+          "value": "Completed"
+        },
+        "parameterized": true
+      }
+    ]
+  },
+  "sorts": [],
+  "joins": []
+}

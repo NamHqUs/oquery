@@ -1,0 +1,59 @@
+{
+  "domainId": "EXAMPLES_DOMAIN",
+  "name": "E11. Take and Skip paging",
+  "rawText": "# Question: Which products are the 6th to 15th most expensive?\n# Answer: A two-key sort with Skip and Take for paging.\nProducts: Id,\n    Name,\n    Category,\n    UnitPrice\n  Order UnitPrice DESC, Name ASC\n  Skip 5\n  Take 10",
+  "id": "26-11-17-01-54-14-KF6YXQib",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Products",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Id"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Name"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Category"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "UnitPrice"
+      },
+      "alias": null
+    }
+  ],
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "UnitPrice"
+      },
+      "direction": "Descending"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Name"
+      },
+      "direction": "Ascending"
+    }
+  ],
+  "isDistinct": false,
+  "take": 10,
+  "skip": 5,
+  "joins": []
+}

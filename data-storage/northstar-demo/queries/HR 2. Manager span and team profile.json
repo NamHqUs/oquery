@@ -1,0 +1,133 @@
+{
+  "domainId": "HR_Domain",
+  "name": "HR 2. Team Structure \u0026 Performance Overview",
+  "rawText": "# Do you really know how your teams are structured and performing?\n#  - Which team leads oversee the largest teams?\n#  - How many members does each team have?\n#  - How many unique locations does each team cover?\n#  - What is the average salary within each team?\n#  - What is the total payroll cost of each team?\n#  - What are the lowest and highest salaries within each team?\n#  - What is the average performance rating across each team?\n#  - How many performance reviews have been recorded for each team?\n# ____________________________________________________________\n\nEmployees:\n    FirstName \u002B \u003C \u003E \u002B LastName TeamLead\n    Members.Count(Id) TotalMembers\n    Members.Count(LocationId) TotalLocations\n    Members.Avg(Salary).Round(2) AverageTeamSalary\n    Members.Sum(Salary) TeamPayroll\n    Members.Min(Salary) LowestSalary\n    Members.Max(Salary) HighestSalary\n    Members.PerformanceReviews.Avg(Rating).Round(2) AverageTeamRating\n    Members.Count(PerformanceReviews.Id) TotalReviews\nOrder TotalMembers DESC\n    \n    ",
+  "id": "HR 2. Manager span and team profile",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Employees",
+  "projections": [
+    {
+      "field": {
+        "kind": "group",
+        "fields": [
+          {
+            "kind": "field",
+            "field": "FirstName"
+          },
+          {
+            "kind": "value",
+            "value": " "
+          },
+          {
+            "kind": "field",
+            "field": "LastName"
+          }
+        ]
+      },
+      "alias": "TeamLead"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Members.Count",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ]
+      },
+      "alias": "TotalMembers"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Members.Count",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "LocationId"
+          }
+        ]
+      },
+      "alias": "TotalLocations"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Members.Avg(Salary).Round(2)"
+      },
+      "alias": "AverageTeamSalary"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Members.Sum",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Salary"
+          }
+        ]
+      },
+      "alias": "TeamPayroll"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Members.Min",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Salary"
+          }
+        ]
+      },
+      "alias": "LowestSalary"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Members.Max",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Salary"
+          }
+        ]
+      },
+      "alias": "HighestSalary"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Members.PerformanceReviews.Avg(Rating).Round(2)"
+      },
+      "alias": "AverageTeamRating"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Members.Count",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "PerformanceReviews.Id"
+          }
+        ]
+      },
+      "alias": "TotalReviews"
+    }
+  ],
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "TotalMembers"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "joins": []
+}

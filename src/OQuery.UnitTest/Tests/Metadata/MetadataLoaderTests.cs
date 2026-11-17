@@ -46,7 +46,6 @@ public sealed class MetadataLoaderTests
     public void MetadataFixturesLoadValidEntitiesFieldsAndRelations()
     {
         var entities = MetadataLoader.UnitTestData
-            .Concat(MetadataLoader.SaleDemoData)
             .Concat(MetadataLoader.NorthStarDemoData)
             .GroupBy(entity => entity.Name)
             .Select(group => group.Last())

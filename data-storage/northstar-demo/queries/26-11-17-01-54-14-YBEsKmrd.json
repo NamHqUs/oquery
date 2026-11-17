@@ -1,0 +1,49 @@
+{
+  "domainId": "EXAMPLES_DOMAIN",
+  "name": "E05. Group by summary",
+  "rawText": "# Question: How many products does each category have, and what is their average price?\n# Answer: Grouping by a field with Count and Avg on the Products root.\nProducts: Category,\n    Count(Id) ProductCount,\n    Avg(UnitPrice).Round(\u003C2\u003E) AvgPrice\n  Order ProductCount DESC",
+  "id": "26-11-17-01-54-14-YBEsKmrd",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "Products",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Category"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Count",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ]
+      },
+      "alias": "ProductCount"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Avg(UnitPrice).Round(\u003C2\u003E)"
+      },
+      "alias": "AvgPrice"
+    }
+  ],
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "ProductCount"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "isDistinct": false,
+  "joins": []
+}

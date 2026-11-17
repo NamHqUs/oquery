@@ -1,0 +1,96 @@
+{
+  "domainId": "HR_Domain",
+  "name": "HR 4. Leave Demand \u0026 Approval Analysis",
+  "rawText": "# Do you understand your organization\u0027s leave demand and approval patterns?\n#  - Which departments generate the most leave requests?\n#  - Which types of leave are requested most frequently?\n#  - How many leave requests are approved, rejected, or pending?\n#  - How many total days of leave are employees requesting?\n#  - What is the average duration of each leave request?\n#  - How many unique employees are requesting leave?\n#  - Which departments have the highest leave demand?\n# ____________________________________________________________\n\nLeaveRequests:\n    Employee.Department.Name Department\n    LeaveType\n    Status\n    Count(Id) Requests\n    Sum(Days) DaysRequested\n    Avg(Days).Round(1) AverageRequestDays\n    Count(distinct EmployeeId) EmployeesRequesting\nOrder DaysRequested DESC, Requests DESC",
+  "id": "HR 4. Leave demand and approval status",
+  "isBuiltin": false,
+  "contexts": {},
+  "entity": "LeaveRequests",
+  "projections": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "Employee.Department.Name"
+      },
+      "alias": "Department"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "LeaveType"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Status"
+      },
+      "alias": null
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Count",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Id"
+          }
+        ]
+      },
+      "alias": "Requests"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Sum",
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "Days"
+          }
+        ]
+      },
+      "alias": "DaysRequested"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Avg(Days).Round(1)"
+      },
+      "alias": "AverageRequestDays"
+    },
+    {
+      "field": {
+        "kind": "function",
+        "function": "Count",
+        "distinct": true,
+        "arguments": [
+          {
+            "kind": "field",
+            "field": "EmployeeId"
+          }
+        ]
+      },
+      "alias": "EmployeesRequesting"
+    }
+  ],
+  "sorts": [
+    {
+      "field": {
+        "kind": "field",
+        "field": "DaysRequested"
+      },
+      "direction": "Descending"
+    },
+    {
+      "field": {
+        "kind": "field",
+        "field": "Requests"
+      },
+      "direction": "Descending"
+    }
+  ],
+  "joins": []
+}

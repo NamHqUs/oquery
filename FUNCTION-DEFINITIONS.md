@@ -96,7 +96,6 @@ renders as `COUNT(DISTINCT CASE WHEN Status = ... THEN Quantity * UnitPrice END)
 |---|---|---|---|---|
 | `NullIf` | `value: Number`, `otherValue: Number` | Number | `NULLIF({1}, {2})` | Null when the two values are equal; otherwise the first value. |
 | `IfNull` | `value: Number`, `fallback: Number` | Number | `COALESCE({1}, {2})` | First non-null numeric value. |
-| `Difference` | `left: Number`, `right: Number` | Number | `({1} - {2})` | Difference of two numeric values. |
 | `Concat` | `first: String`, `separator: String`, `last: String` | String | `CONCAT({1}, {2}, {3})` | Concatenates three text values. |
 | `Round` | `value: Number`, `digits: Number` | Number | `ROUND({1}, {2})` | Rounds to the given decimal places. SQL Server, and other dialects, append this. |
 | `GetDate` | none | Datetime | `GETDATE()` | Current date and time. |

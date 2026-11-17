@@ -47,7 +47,6 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
         YearsToNow(),
         MonthsToNow(),
         DaysToNow(),
-        Difference(),
         Lag(),
         WindowSum(),
         Rank(),
@@ -257,11 +256,6 @@ internal abstract class SqlFunctionDefinitionBuiltinBase
 
     private string DayPart(string date) =>
         Day().GetSqlTemplate(Dialect).Replace("{1}", date, StringComparison.Ordinal);
-
-    protected virtual SqlFunctionDefintion Difference() =>
-        Create("Difference",
-            [new("left", DataType.Number), new("right", DataType.Number)],
-            DataType.Number, "Returns the difference between two numeric values.", "({1} - {2})");
 
     protected virtual SqlFunctionDefintion Lag() =>
         Create("Lag",
