@@ -78,7 +78,6 @@ public sealed class SqlFunctionDefintion
         Name = name;
         Arguments = Array.AsReadOnly(arguments.ToArray());
         ResultType = resultType;
-        IsAggregate = BuiltInAggregateFunctions.Contains(name);
         WindowOf = windowOf;
         NegatesCollection = negatesCollection;
         BindArgumentsFromEnd = bindArgumentsFromEnd;
@@ -102,7 +101,6 @@ public sealed class SqlFunctionDefintion
     public string Name { get; }
     public IReadOnlyList<SqlFunctionArgumentDefinition> Arguments { get; }
     public DataType ResultType { get; }
-    public bool IsAggregate { get; }
     /// <summary>The aggregate this window function computes over a partition, e.g. CountOver wraps Count.</summary>
     public string? WindowOf { get; }
     /// <summary>True for a collection predicate that tests for no matching rows (NOT EXISTS).</summary>

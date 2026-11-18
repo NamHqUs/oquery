@@ -301,7 +301,7 @@ class QueryCompilationResolver(
             return ParseFieldReceiverFunction(tableContext, expression, depth);
 
         var definition = functionProvider.GetFunction(expression.FunctionName);
-        if (expression.IsDistinct && !definition.IsAggregate)
+        if (expression.IsDistinct && !BuiltInAggregateFunctions.Contains(definition.Name))
             throw new FormatException(
                 $"Distinct is only supported for aggregate functions, not [{definition.Name}].");
         var suppliedArguments = expression.Arguments
@@ -478,7 +478,7 @@ class QueryCompilationResolver(
         var receiverPath = expression.FunctionName[..separator];
         var functionName = expression.FunctionName[(separator + 1)..];
         var definition = functionProvider.GetFunction(functionName);
-        if (definition.IsAggregate)
+        if (BuiltInAggregateFunctions.Contains(definition.Name))
             throw new FormatException($"Aggregate function [{functionName}] requires a collection receiver, not a scalar field [{receiverPath}].");
         if (definition.Arguments.Count == 0)
             throw new FormatException($"Function [{functionName}] cannot be called on a field receiver.");
@@ -515,7 +515,7 @@ class QueryCompilationResolver(
         var relationPath = expression.FunctionName[..separator];
         var functionName = expression.FunctionName[(separator + 1)..];
         if (!functionProvider.TryGetFunction(functionName, out var definition) ||
-            definition is not { IsAggregate: true })
+            !BuiltInAggregateFunctions.Contains(definition.Name))
             return false;
 
         var aggregateDefinition = expression with { FunctionName = functionName };
@@ -746,7 +746,7 @@ class QueryCompilationResolver(
         out AggregateExpression aggregate)
     {
         aggregate = null!;
-        if (!definition.IsAggregate ||
+        if (!BuiltInAggregateFunctions.Contains(definition.Name) ||
             expression.Arguments.Length != 1 ||
             expression.Arguments[0] is not FieldDefinition field)
             return false;
@@ -990,7 +990,7 @@ class QueryCompilationResolver(
         function = null!;
         if (FieldDefinitionParser.Parse(fieldName) is not FunctionFieldDefinition parsedFunction ||
             !functionProvider.TryGetFunction(parsedFunction.FunctionName, out var definition) ||
-            definition is not { IsAggregate: true })
+            !BuiltInAggregateFunctions.Contains(definition.Name))
             return false;
 
         function = parsedFunction;
@@ -1118,7 +1118,7 @@ class QueryCompilationResolver(
 
     private bool IsAggregateCall(FunctionFieldDefinition function)
         => function.FunctionName.Contains('.') ||
-            (functionProvider.TryGetFunction(function.FunctionName, out var definition) && definition.IsAggregate);
+            (functionProvider.TryGetFunction(function.FunctionName, out var definition) && BuiltInAggregateFunctions.Contains(definition.Name));
 
     private IEnumerable<string> RawPathTexts(IFieldDefinition argument)
         => argument switch
@@ -1158,7 +1158,7 @@ class QueryCompilationResolver(
             expression.Arguments is null ||
             expression.Arguments.Length == 0 ||
             !functionProvider.TryGetFunction(expression.FunctionName, out var definition) ||
-            !definition.IsAggregate)
+            !BuiltInAggregateFunctions.Contains(definition.Name))
             return false;
 
         var fieldArguments = expression.Arguments.SelectMany(FieldTexts).ToArray();

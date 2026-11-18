@@ -4,6 +4,7 @@ using System.Data.Common;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using OQuery.UI.Abstracts.Dto;
 
 namespace OQuery.Database;
 

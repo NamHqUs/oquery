@@ -9,7 +9,7 @@ internal static class SqlExpressionExtensions
         {
             AggregateExpression { GroupWithQuery: true } => true,
             FunctionSqlExpression function =>
-                function.Definition.IsAggregate ||
+                BuiltInAggregateFunctions.Contains(function.Definition.Name) ||
                 function.Arguments
                     .OfType<FunctionSqlExpressionArgument>()
                     .Any(argument => argument.Expression.ContainsGroupedAggregate()),

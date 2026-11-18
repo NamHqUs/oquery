@@ -25,6 +25,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\OQuery.Abstracts\OQuery.Abstracts.csproj" />
+		<ProjectReference Include="..\..\..\src\OQuery.UI.Abstracts\OQuery.UI.Abstracts.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -2,6 +2,7 @@ using System.Data;
 using System.Data.Common;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using OQuery.UI.Abstracts.Dto;
 
 namespace OQuery.Database;
 
