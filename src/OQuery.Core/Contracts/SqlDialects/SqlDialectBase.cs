@@ -1,5 +1,6 @@
 using OQuery;
 using System.Data;
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 #pragma warning disable IDE0130
@@ -51,7 +52,16 @@ public abstract class SqlDialectBase : ISqlDialect
         => string.IsNullOrWhiteSpace(schema) ? DefaultSchema : schema;
 
     public string FormatParameterValue(object? value)
-        => SqlDialect.FormatParameterValue(value);
+        => value switch
+        {
+            null => "NULL",
+            string text => $"'{text.Replace("'", "''", StringComparison.Ordinal)}'",
+            bool boolean => boolean ? "1" : "0",
+            DateTime dateTime => $"'{dateTime.ToString("O", CultureInfo.InvariantCulture)}'",
+            DateTimeOffset dateTimeOffset => $"'{dateTimeOffset.ToString("O", CultureInfo.InvariantCulture)}'",
+            IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture) ?? "NULL",
+            _ => $"'{value}'"
+        };
 
     public virtual object? NormalizeParameterValue(object? value) => value;
 

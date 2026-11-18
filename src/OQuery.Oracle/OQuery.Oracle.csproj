@@ -13,8 +13,5 @@
 		<ProjectReference Include="..\OQuery.Core\OQuery.Core.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.4.0" />
-	</ItemGroup>
 
 </Project>

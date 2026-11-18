@@ -2,9 +2,7 @@ namespace OQuery;
 
 public static class SapHanaDialectModule
 {
-    public static void Register() => SqlDialectRegistry.Register(new SqlDialectRegistration(
-        "SapHana",
-        ["Hana", "Hdb"],
-        () => new SapHanaDialect(),
-        Aliases: ["hana"]));
+    public static ISqlDialect CreateDialect() => new SapHanaDialect();
+
+    public static string[] ProviderAliases => ["hana"];
 }

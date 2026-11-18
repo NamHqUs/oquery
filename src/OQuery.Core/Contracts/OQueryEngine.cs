@@ -9,27 +9,27 @@ public class OQueryEngine(
     IDbConnection dbConnection,
     IMetadataProvider metaProvider,
     IFunctionProvider functionProvider,
-    ISqlDialect? sqlDialect = null) : IDisposable
+    ISqlDialect sqlDialect) : IDisposable
 {
-    private readonly ISqlDialect _sqlDialect = sqlDialect ?? SqlDialect.ForConnection(dbConnection);
+    private readonly ISqlDialect _sqlDialect = sqlDialect;
     private bool _disposed;
 
     internal IFunctionProvider FunctionProvider => functionProvider;
 
-    public OQueryEngine(IDbConnection dbConnection, IMetadataProvider metaProvider, ISqlDialect? sqlDialect = null)
+    public OQueryEngine(IDbConnection dbConnection, IMetadataProvider metaProvider, ISqlDialect sqlDialect)
         : this(
             dbConnection,
             metaProvider,
-            new FunctionProvider(sqlDialect ?? SqlDialect.ForConnection(dbConnection)),
+            new FunctionProvider(sqlDialect),
             sqlDialect)
     {
     }
 
-    public OQueryEngine(IDbConnection dbConnection, IEnumerable<Entity> entities, IEnumerable<SqlFunctionDefintion>? functions = null, ISqlDialect? sqlDialect = null):
+    public OQueryEngine(IDbConnection dbConnection, IEnumerable<Entity> entities, ISqlDialect sqlDialect, IEnumerable<SqlFunctionDefintion>? functions = null):
         this(
             dbConnection,
             new MetadataProvider(entities),
-            new FunctionProvider(sqlDialect ?? SqlDialect.ForConnection(dbConnection), functions),
+            new FunctionProvider(sqlDialect, functions),
             sqlDialect)
     {
     }
