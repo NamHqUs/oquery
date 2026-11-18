@@ -145,7 +145,18 @@ Oracle, Db2, Firebird, SapHana)
     Each references OQuery.Core and targets net10.0
 
 src/OQuery.UnitTest
-    NUnit tests, metadata fixtures, provider tests, and SQL diagnostics tests
+    NUnit tests for DB-independent Core behavior: metadata authorization and
+    provider rules, function metadata validation, and SQL diagnostics. No
+    database connection or shared test data is used here.
+
+src/OQuery.UI.SetupTests (outer repo)
+    Shared test infrastructure: TestDatabase (SQLite, SQL Server, Postgres,
+    Db2, and other server connections), DbInstance classes that run
+    data-storage scripts, MetadataLoader, and QueryDefinitionLoader.
+
+src/OQuery.UI.UnitTest (outer repo)
+    NUnit tests that execute queries against real databases (SQLite by default)
+    through OQuery.UI.SetupTests, plus dialect SQL-generation tests.
 
 ```
 
