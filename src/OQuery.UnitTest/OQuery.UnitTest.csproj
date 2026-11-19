@@ -33,7 +33,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\OQuery.Core\OQuery.Core.csproj" />
 	  <ProjectReference Include="..\OQuery.Sqlite\OQuery.Sqlite.csproj" />
 	  <ProjectReference Include="..\OQuery.SqlServer\OQuery.SqlServer.csproj" />
 	</ItemGroup>
