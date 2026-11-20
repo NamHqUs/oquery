@@ -11,6 +11,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\OQuery.Core\OQuery.Core.csproj" />
+		<PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.4.0" />
 	</ItemGroup>
 
 

@@ -11,6 +11,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\OQuery.Core\OQuery.Core.csproj" />
+		<PackageReference Include="Net.IBM.Data.Db2" Version="10.0.0.400" />
 	</ItemGroup>
 
 
