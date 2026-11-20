@@ -2,7 +2,7 @@
 namespace OQuery;
 #pragma warning restore IDE0130
 
-internal sealed class SapHanaFunctionDefinitionBuiltin : SqlFunctionDefinitionBuiltinBase
+internal sealed class SapHanaFunctionDefinitionBuiltin : BuiltinSqlFunctionBase
 {
     protected override string Dialect => "SapHana";
 

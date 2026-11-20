@@ -4,7 +4,7 @@ using static OQuery.SqlFunctionDefintion;
 namespace OQuery;
 #pragma warning restore IDE0130
 
-public abstract class SqlFunctionDefinitionBuiltinBase
+public abstract class BuiltinSqlFunctionBase : IBuiltinSqlFunction
 {
     protected abstract string Dialect { get; }
 
@@ -54,6 +54,50 @@ public abstract class SqlFunctionDefinitionBuiltinBase
         Any(),
         NotAny()
     ];
+
+    // Explicit implementations expose the builtins through the interface while dialects keep overriding them as protected.
+    SqlFunctionDefintion IBuiltinSqlFunction.Count() => Count();
+    SqlFunctionDefintion IBuiltinSqlFunction.CountOver() => CountOver();
+    SqlFunctionDefintion IBuiltinSqlFunction.Sum() => Sum();
+    SqlFunctionDefintion IBuiltinSqlFunction.SumOver() => SumOver();
+    SqlFunctionDefintion IBuiltinSqlFunction.Average() => Average();
+    SqlFunctionDefintion IBuiltinSqlFunction.AverageOver() => AverageOver();
+    SqlFunctionDefintion IBuiltinSqlFunction.Maximum() => Maximum();
+    SqlFunctionDefintion IBuiltinSqlFunction.MaximumOver() => MaximumOver();
+    SqlFunctionDefintion IBuiltinSqlFunction.Minimum() => Minimum();
+    SqlFunctionDefintion IBuiltinSqlFunction.MinimumOver() => MinimumOver();
+    SqlFunctionDefintion IBuiltinSqlFunction.NullIf() => NullIf();
+    SqlFunctionDefintion IBuiltinSqlFunction.Day() => Day();
+    SqlFunctionDefintion IBuiltinSqlFunction.Month() => Month();
+    SqlFunctionDefintion IBuiltinSqlFunction.Year() => Year();
+    SqlFunctionDefintion IBuiltinSqlFunction.DateSub() => DateSub();
+    SqlFunctionDefintion IBuiltinSqlFunction.DateAdd() => DateAdd();
+    SqlFunctionDefintion IBuiltinSqlFunction.MonthSub() => MonthSub();
+    SqlFunctionDefintion IBuiltinSqlFunction.MonthAdd() => MonthAdd();
+    SqlFunctionDefintion IBuiltinSqlFunction.YearSub() => YearSub();
+    SqlFunctionDefintion IBuiltinSqlFunction.YearAdd() => YearAdd();
+    SqlFunctionDefintion IBuiltinSqlFunction.CountIf() => CountIf();
+    SqlFunctionDefintion IBuiltinSqlFunction.AverageIf() => AverageIf();
+    SqlFunctionDefintion IBuiltinSqlFunction.SumIf() => SumIf();
+    SqlFunctionDefintion IBuiltinSqlFunction.MinimumIf() => MinimumIf();
+    SqlFunctionDefintion IBuiltinSqlFunction.MaximumIf() => MaximumIf();
+    SqlFunctionDefintion IBuiltinSqlFunction.IfNull() => IfNull();
+    SqlFunctionDefintion IBuiltinSqlFunction.MedicalLossRatio() => MedicalLossRatio();
+    SqlFunctionDefintion IBuiltinSqlFunction.Concat() => Concat();
+    SqlFunctionDefintion IBuiltinSqlFunction.MonthKey() => MonthKey();
+    SqlFunctionDefintion IBuiltinSqlFunction.YearsTo() => YearsTo();
+    SqlFunctionDefintion IBuiltinSqlFunction.ElapsedYears() => ElapsedYears();
+    SqlFunctionDefintion IBuiltinSqlFunction.YearsToNow() => YearsToNow();
+    SqlFunctionDefintion IBuiltinSqlFunction.MonthsTo() => MonthsTo();
+    SqlFunctionDefintion IBuiltinSqlFunction.MonthsToNow() => MonthsToNow();
+    SqlFunctionDefintion IBuiltinSqlFunction.DaysTo() => DaysTo();
+    SqlFunctionDefintion IBuiltinSqlFunction.DaysToNow() => DaysToNow();
+    SqlFunctionDefintion IBuiltinSqlFunction.Lag() => Lag();
+    SqlFunctionDefintion IBuiltinSqlFunction.WindowSum() => WindowSum();
+    SqlFunctionDefintion IBuiltinSqlFunction.Rank() => Rank();
+    SqlFunctionDefintion IBuiltinSqlFunction.RowNumber() => RowNumber();
+    SqlFunctionDefintion IBuiltinSqlFunction.Any() => Any();
+    SqlFunctionDefintion IBuiltinSqlFunction.NotAny() => NotAny();
 
     protected virtual SqlFunctionDefintion Count() =>
         Create("Count", [new("value", DataType.Number, 1)], DataType.Number,

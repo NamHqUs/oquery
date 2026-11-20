@@ -11,7 +11,7 @@ namespace OQuery;
 /// <summary>
 /// Reads schema and table data from a provider database. Provisioning (version table, seed scripts) is owned by the host.
 /// </summary>
-public abstract class DbSchemaLoader
+public abstract class DbSchemaLoader : IDbSchemaLoader
 {
     private readonly string _identifierQuotePrefix;
     private readonly string _identifierQuoteSuffix;
@@ -67,7 +67,7 @@ public abstract class DbSchemaLoader
         return execute(command);
     }
 
-    public virtual DatabaseSchemaDto GetDatabaseSchema()
+    public virtual DatabaseSchema LoadSchema()
     {
         using var connection = CreateDbConnection();
         if (connection.State != ConnectionState.Open)
@@ -81,10 +81,10 @@ public abstract class DbSchemaLoader
         var tables = columns.Rows
             .Cast<DataRow>()
             .GroupBy(row => (Schema: Value(row, "SchemaName"), Name: Value(row, "TableName")))
-            .Select(group => new DatabaseTableDto(
+            .Select(group => new DatabaseTable(
                 group.Key.Schema,
                 group.Key.Name,
-                group.Select(row => new DatabaseColumnDto(
+                group.Select(row => new DatabaseColumn(
                     Value(row, "ColumnName"),
                     Value(row, "DataType"),
                     Convert.ToBoolean(row["IsPrimaryKey"]),
@@ -98,7 +98,7 @@ public abstract class DbSchemaLoader
             .Select(group =>
             {
                 var first = group.First();
-                return new DatabaseRelationshipDto(
+                return new DatabaseRelationship(
                     Value(first, "RelationName"),
                     Value(first, "SourceSchema"),
                     Value(first, "SourceTable"),
@@ -114,17 +114,17 @@ public abstract class DbSchemaLoader
             })
             .ToArray();
 
-        return new DatabaseSchemaDto(tables, relationDtos);
+        return new DatabaseSchema(tables, relationDtos);
     }
 
-    public DatabaseTableDataDto GetTableData(string tableName, string? schema = null, int? limit = null)
+    public DatabaseTableData GetTableData(string tableName, string? schema = null, int? limit = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(tableName);
         if (limit is <= 0)
             throw new ArgumentOutOfRangeException(nameof(limit), "The row limit must be greater than zero.");
         var rowLimit = Math.Min(limit ?? 10, 10);
 
-        var matchingTables = GetDatabaseSchema().Tables.Where(table =>
+        var matchingTables = LoadSchema().Tables.Where(table =>
             string.Equals(table.Name, tableName, StringComparison.OrdinalIgnoreCase)
             && (string.IsNullOrWhiteSpace(schema)
                 || string.Equals(table.Schema, schema, StringComparison.OrdinalIgnoreCase)))
@@ -159,7 +159,7 @@ public abstract class DbSchemaLoader
             rows.Add(row);
         }
 
-        return new DatabaseTableDataDto(selectedTable.Name, columns, rows);
+        return new DatabaseTableData(selectedTable.Name, columns, rows);
     }
 
     protected virtual DataTable ReadSchemaRows(DbConnection connection, string sql)

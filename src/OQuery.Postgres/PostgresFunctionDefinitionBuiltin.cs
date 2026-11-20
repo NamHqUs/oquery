@@ -2,7 +2,7 @@
 namespace OQuery;
 #pragma warning restore IDE0130
 
-internal sealed class PostgresFunctionDefinitionBuiltin : SqlFunctionDefinitionBuiltinBase
+internal sealed class PostgresFunctionDefinitionBuiltin : BuiltinSqlFunctionBase
 {
     protected override string Dialect => "Postgres";
 

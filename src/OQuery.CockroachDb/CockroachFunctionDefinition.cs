@@ -2,7 +2,7 @@
 namespace OQuery;
 #pragma warning restore IDE0130
 
-internal sealed class CockroachFunctionDefinition : SqlFunctionDefinitionBuiltinBase
+internal sealed class CockroachFunctionDefinition : BuiltinSqlFunctionBase
 {
     protected override string Dialect => "Cockroach";
 

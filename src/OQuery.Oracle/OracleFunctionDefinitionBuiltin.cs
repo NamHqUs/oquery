@@ -2,7 +2,7 @@
 namespace OQuery;
 #pragma warning restore IDE0130
 
-internal sealed class OracleFunctionDefinitionBuiltin : SqlFunctionDefinitionBuiltinBase
+internal sealed class OracleFunctionDefinitionBuiltin : BuiltinSqlFunctionBase
 {
     protected override string Dialect => "Oracle";
 

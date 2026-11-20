@@ -3,22 +3,22 @@ using System.Collections.Generic;
 
 namespace OQuery;
 
-public sealed record DatabaseSchemaDto(
-    IReadOnlyList<DatabaseTableDto> Tables,
-    IReadOnlyList<DatabaseRelationshipDto> Relationships);
+public sealed record DatabaseSchema(
+    IReadOnlyList<DatabaseTable> Tables,
+    IReadOnlyList<DatabaseRelationship> Relationships);
 
-public sealed record DatabaseTableDto(
+public sealed record DatabaseTable(
     string Schema,
     string Name,
-    IReadOnlyList<DatabaseColumnDto> Columns);
+    IReadOnlyList<DatabaseColumn> Columns);
 
-public sealed record DatabaseColumnDto(
+public sealed record DatabaseColumn(
     string Name,
     string DataType,
     bool IsPrimaryKey,
     bool IsNullable);
 
-public sealed record DatabaseRelationshipDto(
+public sealed record DatabaseRelationship(
     string Name,
     string SourceSchema,
     string SourceTable,

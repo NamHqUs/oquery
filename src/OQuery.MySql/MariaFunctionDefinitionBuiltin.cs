@@ -2,7 +2,7 @@
 namespace OQuery;
 #pragma warning restore IDE0130
 
-internal sealed class MariaFunctionDefinitionBuiltin : SqlFunctionDefinitionBuiltinBase
+internal sealed class MariaFunctionDefinitionBuiltin : BuiltinSqlFunctionBase
 {
     protected override string Dialect => "Maria";
 

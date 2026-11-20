@@ -50,7 +50,7 @@ public sealed class SqliteDbSchemaLoader : DbSchemaLoader, IDisposable
             return false;
         }
     }
-    public override DatabaseSchemaDto GetDatabaseSchema()
+    public override DatabaseSchema LoadSchema()
     {
         using var connection = CreateDbConnection();
         if (connection.State != ConnectionState.Open)
@@ -58,20 +58,20 @@ public sealed class SqliteDbSchemaLoader : DbSchemaLoader, IDisposable
         var dbConnection = connection as DbConnection
             ?? throw new InvalidOperationException("The configured database connection does not support schema discovery.");
 
-        var tables = new List<DatabaseTableDto>();
-        var relationships = new List<DatabaseRelationshipDto>();
+        var tables = new List<DatabaseTable>();
+        var relationships = new List<DatabaseRelationship>();
         foreach (var table in GetTables(dbConnection))
         {
             var columns = ReadSchemaRows(dbConnection,
                 $"PRAGMA {QuoteIdentifier(table.Schema)}.table_info({QuoteLiteral(table.Name)});");
             var tableColumns = columns.Rows.Cast<DataRow>()
-                .Select(row => new DatabaseColumnDto(
+                .Select(row => new DatabaseColumn(
                     row["name"]?.ToString() ?? string.Empty,
                     row["type"]?.ToString() ?? string.Empty,
                     Convert.ToInt32(row["pk"]) > 0,
                     Convert.ToInt32(row["notnull"]) == 0 && Convert.ToInt32(row["pk"]) == 0))
                 .ToArray();
-            tables.Add(new DatabaseTableDto(table.Schema, table.Name, tableColumns));
+            tables.Add(new DatabaseTable(table.Schema, table.Name, tableColumns));
 
             var uniqueColumnSets = GetUniqueColumnSets(dbConnection, table.Schema, table.Name);
             var foreignKeys = ReadSchemaRows(dbConnection,
@@ -81,7 +81,7 @@ public sealed class SqliteDbSchemaLoader : DbSchemaLoader, IDisposable
                 var orderedColumns = foreignKey.OrderBy(row => Convert.ToInt32(row["seq"])).ToArray();
                 var sourceColumns = orderedColumns.Select(row => row["from"]?.ToString() ?? string.Empty).ToArray();
                 var targetColumns = orderedColumns.Select(row => row["to"]?.ToString() ?? string.Empty).ToArray();
-                relationships.Add(new DatabaseRelationshipDto(
+                relationships.Add(new DatabaseRelationship(
                     $"FK_{table.Schema}_{table.Name}_{foreignKey.Key}",
                     table.Schema,
                     table.Name,
@@ -94,7 +94,7 @@ public sealed class SqliteDbSchemaLoader : DbSchemaLoader, IDisposable
         }
 
         relationships.AddRange(ReadCrossSchemaRelationships(dbConnection));
-        return new DatabaseSchemaDto(tables, relationships);
+        return new DatabaseSchema(tables, relationships);
     }
 
     public override IDbConnection CreateDbConnection()
@@ -148,7 +148,7 @@ public sealed class SqliteDbSchemaLoader : DbSchemaLoader, IDisposable
         return tables;
     }
 
-    private List<DatabaseRelationshipDto> ReadCrossSchemaRelationships(DbConnection connection)
+    private List<DatabaseRelationship> ReadCrossSchemaRelationships(DbConnection connection)
     {
         var metadataTable = ReadSchemaRows(connection,
             $"SELECT 1 FROM {QuoteIdentifier("main")}.sqlite_master " +
@@ -167,7 +167,7 @@ public sealed class SqliteDbSchemaLoader : DbSchemaLoader, IDisposable
             {
                 var orderedRows = group.OrderBy(row => Convert.ToInt32(row["Ordinal"])).ToArray();
                 var first = orderedRows[0];
-                return new DatabaseRelationshipDto(
+                return new DatabaseRelationship(
                     first["RelationName"]?.ToString() ?? string.Empty,
                     first["SourceSchema"]?.ToString() ?? string.Empty,
                     first["SourceTable"]?.ToString() ?? string.Empty,
