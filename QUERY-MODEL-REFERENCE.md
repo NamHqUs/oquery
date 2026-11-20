@@ -11,7 +11,7 @@ syntax or compiler internals.
 The model types are defined under
 [`src/OQuery.Abstracts/Contracts/QueryDefinitions`](./src/OQuery.Abstracts/Contracts/QueryDefinitions).
 JSON conversion is implemented by
-[`QueryDefinitionJsonParser`](./src/OQuery.Core/Contracts/QueryDefinitions/Parsers/JsonParsers/QueryDefinitionJsonParser.cs).
+[`QueryDefinitionJsonParser`](./src/OQuery.Core/Contracts/QueryParsers/JsonParsers/QueryDefinitionJsonParser.cs).
 
 ## 1. Top-level query definition
 
