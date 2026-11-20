@@ -1162,12 +1162,13 @@ class QueryCompilationResolver(
             return false;
 
         var fieldArguments = expression.Arguments.SelectMany(FieldTexts).ToArray();
+        // Any/NotAny are correlated EXISTS predicates, not a collection receiver for the aggregate.
         var match = (tableContext.Entity.Relations ?? [])
             .Where(relation => relation.Type == RelationType.Collection)
             .Select(relation => relation.Name)
             .FirstOrDefault(name => fieldArguments.Any(text => System.Text.RegularExpressions.Regex.IsMatch(
                 text,
-                @"(?<![\w.])" + System.Text.RegularExpressions.Regex.Escape(name) + @"\.",
+                @"(?<![\w.])" + System.Text.RegularExpressions.Regex.Escape(name) + @"\.(?!(?:Not)?Any\b)",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase)));
         if (match is null)
             return false;

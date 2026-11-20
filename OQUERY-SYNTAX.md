@@ -4,6 +4,10 @@ This document is the authoring reference for generating OQuery statements.
 Use semantic entity and field names from metadata. Do not copy physical SQL
 schema names into OQuery.
 
+When a rule and an example disagree, the rule wins. Check the explicit rule
+before relying on an example, and do not call a construct invalid without a
+rule that says so.
+
 ## 1. OQuery is semantic, not SQL text
 
 OQuery describes the business query shape. The SQL compiler adds physical

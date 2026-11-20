@@ -1,3 +1,4 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.Data.SqlClient;
 namespace OQuery.UnitTest.Tests.Sql;
 
@@ -62,5 +63,50 @@ public sealed class SqlDiagnosticsTests
 
         Assert.That(sql, Does.Contain("[Id]"));
         Assert.That(sql, Does.Not.Contain("[Secret]"));
+    }
+
+    [Test]
+    public void OQueryLineBreakProjectionWithCountIfAndAnyCompilesToGroupedSql()
+    {
+        var metadata = new MetadataProvider(
+        [
+            new Entity("Products", [new Field("Id", "Id"), new Field("Name", "Name")],
+                Relations: [new Relation("Items", "Items", RelationType.Collection, [new RelationItem("Id", "ProductId")])]),
+            new Entity("Items", [new Field("Id", "Id"), new Field("ProductId", "ProductId")])
+        ]);
+
+        using var connection = new SqliteConnection();
+        using var db = new OQueryEngine(connection, metadata, new SqliteDialect());
+
+        var sql = db.QueryOqr("""
+            Products:
+              Name
+              CountIf(Id > 1 And Items.Any(Id > 0))
+            """).ToSql().CommandText;
+
+        Assert.That(sql, Does.Contain("GROUP BY t0.\"Name\""));
+        Assert.That(sql, Does.Match(@"(?s)COUNT \(CASE WHEN .*AND\s+EXISTS \("));
+        Assert.That(sql, Does.Contain("t1.\"ProductId\" = t0.\"Id\""));
+    }
+
+    [Test]
+    public void OQueryWhereNotAnyCompilesToNotExists()
+    {
+        var metadata = new MetadataProvider(
+        [
+            new Entity("Products", [new Field("Id", "Id"), new Field("Name", "Name")],
+                Relations: [new Relation("Items", "Items", RelationType.Collection, [new RelationItem("Id", "ProductId")])]),
+            new Entity("Items", [new Field("Id", "Id"), new Field("ProductId", "ProductId")])
+        ]);
+
+        using var connection = new SqliteConnection();
+        using var db = new OQueryEngine(connection, metadata, new SqliteDialect());
+
+        var sql = db.QueryOqr("""
+            Products: Name
+              Where Items.NotAny()
+            """).ToSql().CommandText;
+
+        Assert.That(sql, Does.Contain("NOT EXISTS"));
     }
 }

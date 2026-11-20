@@ -115,6 +115,20 @@ internal sealed class QueryDefinitionTests
     }
 
     [Test]
+    public void OQueryAcceptsLineBreakSeparatedProjectionWithCountIfCondition()
+    {
+        var definition = QueryDefinitionOQueryParser.Parse("""
+            Products:
+              Name
+              CountIf(Id > 1 And Items.Any(Id > 0))
+            """);
+
+        Assert.That(definition.Entity, Is.EqualTo("Products"));
+        Assert.That(definition.Projections.Select(field => field.ToText()),
+            Is.EqualTo(["Name", "CountIf(Id > 1 And Items.Any(Id > 0))"]));
+    }
+
+    [Test]
     public void OQueryParsesMultilineOrderAndContextProjection()
     {
         var definition = QueryDefinitionOQueryParser.Parse("""
