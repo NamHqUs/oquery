@@ -82,7 +82,7 @@ internal static class FieldDefinitionParser
                     var functionName = suffix[..opening].Trim();
                     var argumentsText = suffix[(opening + 1)..^1];
                     if (source is not GroupFieldDefintion &&
-                        BuiltInAggregateFunctions.Contains(functionName) &&
+                        BuiltinSqlFunctions.IsAggregate(functionName) &&
                         string.IsNullOrWhiteSpace(argumentsText))
                     {
                         pipeline = new FunctionFieldDefinition(functionName, [source]) { IsWindow = true };

@@ -2,7 +2,7 @@
 namespace OQuery;
 #pragma warning restore IDE0130
 
-internal sealed class FirebirdFunctionDefinitionBuiltin : BuiltinSqlFunctionBase
+internal sealed class FirebirdFunctionDefinitionBuiltin : BuiltinSqlFunctions
 {
     protected override string Dialect => "Firebird";
 

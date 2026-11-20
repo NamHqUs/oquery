@@ -2,7 +2,7 @@
 namespace OQuery;
 #pragma warning restore IDE0130
 
-internal sealed class SqliteFunctionDefinitionBuiltin : BuiltinSqlFunctionBase
+internal sealed class SqliteFunctionDefinitionBuiltin : BuiltinSqlFunctions
 {
     protected override string Dialect => "Sqlite";
 

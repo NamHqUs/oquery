@@ -4,11 +4,21 @@ using static OQuery.SqlFunctionDefintion;
 namespace OQuery;
 #pragma warning restore IDE0130
 
-public abstract class BuiltinSqlFunctionBase : IBuiltinSqlFunction
+public abstract class BuiltinSqlFunctions : IBuiltinSqlFunction
 {
+    // Aggregates are built-in SQL grouping functions, so the engine identifies them by name.
+    private static readonly HashSet<string> AggregateNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Count", "Sum", "Avg", "Min", "Max",
+        "CountIf", "SumIf", "AvgIf", "MinIf", "MaxIf",
+        "MedicalLossRatio",
+    };
+
     protected abstract string Dialect { get; }
 
     protected virtual string CurrentDateTimeSql => "CURRENT_TIMESTAMP";
+
+    public static bool IsAggregate(string functionName) => AggregateNames.Contains(functionName);
 
     public virtual IEnumerable<SqlFunctionDefintion> CreateAllFunctions() =>
     [
@@ -372,7 +382,7 @@ public abstract class BuiltinSqlFunctionBase : IBuiltinSqlFunction
         string name,
         IReadOnlyList<SqlFunctionDefintion.SqlFunctionArgumentDefinition> arguments)
     {
-        if (BuiltInAggregateFunctions.Contains(name))
+        if (IsAggregate(name))
             return FunctionApplyFor.DataSet;
         if (arguments.Count == 0)
             return FunctionApplyFor.DataSet;

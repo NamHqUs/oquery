@@ -4,7 +4,7 @@ using static OQuery.SqlFunctionDefintion;
 namespace OQuery;
 #pragma warning restore IDE0130
 
-internal sealed class Db2FunctionDefinition : BuiltinSqlFunctionBase
+internal sealed class Db2FunctionDefinition : BuiltinSqlFunctions
 {
     protected override string Dialect => "Db2";
 
